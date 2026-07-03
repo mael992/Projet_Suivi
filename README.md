@@ -72,7 +72,8 @@ connexion SSH au serveur via un tunnel **cloudflared**, puis `git reset --hard`,
    composer install --no-dev --optimize-autoloader
    npm install && npm run build
    cp .env.example .env && php artisan key:generate
-   # configurer .env : APP_ENV=production, APP_DEBUG=false, DB mysql "mgds", MAIL smtp
+   # configurer .env : APP_ENV=production, APP_DEBUG=false, APP_URL=https://m-gds.com,
+   #                   DB mysql "mgds", MAIL smtp
    php artisan migrate --force --seed
    php artisan storage:link
    sudo chown -R www-data:www-data storage bootstrap/cache
@@ -80,11 +81,11 @@ connexion SSH au serveur via un tunnel **cloudflared**, puis `git reset --hard`,
 
 2. **Base de données** : créer la base MySQL `mgds` et un utilisateur dédié.
 
-3. **Vhost** (nginx, comme planex — adapter le domaine) :
+3. **Vhost** (nginx — le site a son propre domaine **m-gds.com**) :
    ```nginx
    server {
        listen 80;
-       server_name mgds.planex26.com;   # ou votre domaine dédié
+       server_name m-gds.com www.m-gds.com;
        root /var/www/mgds/public;
        index index.php;
        location / { try_files $uri $uri/ /index.php?$query_string; }
@@ -100,8 +101,14 @@ connexion SSH au serveur via un tunnel **cloudflared**, puis `git reset --hard`,
    (la même clé privée de déploiement que planex, l'utilisateur `roro` passe par
    le tunnel cloudflared `ssh.planex26.com`).
 
-5. Si le domaine/tunnel diffère de planex, adapter `Host`/`HostName` dans
-   [deploy.yml](.github/workflows/deploy.yml).
+5. **DNS / Cloudflare** : faire pointer `m-gds.com` (et `www`) vers le serveur
+   (proxy Cloudflare recommandé pour le HTTPS, comme planex).
+
+   Note : le déploiement SSH continue de passer par le tunnel cloudflared
+   `ssh.planex26.com` (c'est l'accès au serveur, indépendant du domaine du site).
+   Si vous créez un tunnel dédié `ssh.m-gds.com` dans la zone Cloudflare de
+   m-gds.com, remplacez simplement les deux occurrences de `ssh.planex26.com`
+   dans [deploy.yml](.github/workflows/deploy.yml).
 
 ### CI
 
