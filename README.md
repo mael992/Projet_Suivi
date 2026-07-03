@@ -65,12 +65,16 @@ connexion SSH au serveur via un tunnel **cloudflared**, puis `git reset --hard`,
 
 ### Configuration serveur (une seule fois)
 
-1. **Cloner le dépôt** sur le serveur :
+1. **Cloner le dépôt** sur le serveur (⚠️ le dossier doit appartenir à l'utilisateur
+   de déploiement `roro`, pas à root — le workflow GitHub Actions y fait des
+   `git reset` / `composer install` sans sudo). **npm n'est pas nécessaire en
+   production** : le CSS est servi statiquement (`public/css/app.css` + CDN).
    ```bash
    sudo git clone https://github.com/mael992/Projet_Suivi.git /var/www/mgds
+   sudo chown -R roro:roro /var/www/mgds
+   git config --global --add safe.directory /var/www/mgds
    cd /var/www/mgds
    composer install --no-dev --optimize-autoloader
-   npm install && npm run build
    cp .env.example .env && php artisan key:generate
    # configurer .env : APP_ENV=production, APP_DEBUG=false, APP_URL=https://m-gds.com,
    #                   DB mysql "mgds", MAIL smtp
@@ -79,9 +83,14 @@ connexion SSH au serveur via un tunnel **cloudflared**, puis `git reset --hard`,
    sudo chown -R www-data:www-data storage bootstrap/cache
    ```
 
-2. **Base de données** : créer la base MySQL `mgds` et un utilisateur dédié.
+2. **Base de données** (avant le `migrate`) :
+   ```bash
+   sudo mysql -e "CREATE DATABASE mgds CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+   # puis donner les droits à l'utilisateur MySQL utilisé dans le .env
+   ```
 
-3. **Vhost** (nginx — le site a son propre domaine **m-gds.com**) :
+3. **Vhost** nginx — créer le fichier `/etc/nginx/sites-available/mgds`
+   avec ce contenu (le site a son propre domaine **m-gds.com**) :
    ```nginx
    server {
        listen 80;
@@ -94,6 +103,11 @@ connexion SSH au serveur via un tunnel **cloudflared**, puis `git reset --hard`,
            fastcgi_pass unix:/run/php/php8.2-fpm.sock;
        }
    }
+   ```
+   puis l'activer :
+   ```bash
+   sudo ln -s /etc/nginx/sites-available/mgds /etc/nginx/sites-enabled/
+   sudo nginx -t && sudo systemctl reload nginx
    ```
 
 4. **Secret GitHub** : dans le dépôt `mael992/Projet_Suivi` →
