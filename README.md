@@ -89,26 +89,31 @@ connexion SSH au serveur via un tunnel **cloudflared**, puis `git reset --hard`,
    # puis donner les droits à l'utilisateur MySQL utilisé dans le .env
    ```
 
-3. **Vhost** nginx — créer le fichier `/etc/nginx/sites-available/mgds`
+3. **Vhost** Apache2 — créer le fichier `/etc/apache2/sites-available/mgds.conf`
    avec ce contenu (le site a son propre domaine **m-gds.com**) :
-   ```nginx
-   server {
-       listen 80;
-       server_name m-gds.com www.m-gds.com;
-       root /var/www/mgds/public;
-       index index.php;
-       location / { try_files $uri $uri/ /index.php?$query_string; }
-       location ~ \.php$ {
-           include snippets/fastcgi-php.conf;
-           fastcgi_pass unix:/run/php/php8.2-fpm.sock;
-       }
-   }
+   ```apache
+   <VirtualHost *:80>
+       ServerName m-gds.com
+       ServerAlias www.m-gds.com
+       DocumentRoot /var/www/mgds/public
+
+       <Directory /var/www/mgds/public>
+           AllowOverride All
+           Require all granted
+       </Directory>
+
+       ErrorLog ${APACHE_LOG_DIR}/mgds-error.log
+       CustomLog ${APACHE_LOG_DIR}/mgds-access.log combined
+   </VirtualHost>
    ```
    puis l'activer :
    ```bash
-   sudo ln -s /etc/nginx/sites-available/mgds /etc/nginx/sites-enabled/
-   sudo nginx -t && sudo systemctl reload nginx
+   sudo a2ensite mgds
+   sudo a2enmod rewrite   # si pas déjà actif
+   sudo apachectl configtest && sudo systemctl reload apache2
    ```
+   (Le `.htaccess` de Laravel dans `public/` gère la réécriture — d'où
+   `AllowOverride All`.)
 
 4. **Secret GitHub** : dans le dépôt `mael992/Projet_Suivi` →
    *Settings → Secrets and variables → Actions* → créer `SSH_PRIVATE_KEY`
