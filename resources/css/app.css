@@ -1,0 +1,6 @@
+/*
+ * MGDS — point d'entrée Vite.
+ * Le style principal de l'application est servi statiquement depuis
+ * public/css/app.css (même approche que PlanEx : Bootstrap 5 via CDN
+ * + surcharges personnalisées).
+ */
