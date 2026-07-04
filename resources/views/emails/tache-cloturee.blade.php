@@ -29,7 +29,7 @@ body { font-family: Arial, sans-serif; color: #111; background:#f4f6f9; margin:0
         </div>
 
         <a href="{{ url('/dashboard') }}" style="display:inline-block;margin-top:8px;padding:10px 22px;background:#16a34a;color:white;text-decoration:none;border-radius:6px;font-size:14px;font-weight:600;">
-            Voir le tableau des anomalies →
+            Voir le suivi des tâches →
         </a>
     </div>
     <div class="footer">

@@ -2,10 +2,10 @@
    VARIABLES
 ========================= */
 :root {
-    --brand:      #e30613;
-    --brand-dark: #c0040f;
-    --dark:       #111111;
-    --bg:         #f4f6f9;
+    --brand:      #1d3a63;
+    --brand-dark: #12294a;
+    --dark:       #10233f;
+    --bg:         #f5f4ef;
     --radius:     8px;
     --radius-lg:  10px;
 }
@@ -1654,3 +1654,42 @@ textarea {
     transition: background 0.15s;
 }
 .btn-buy:hover { background: #d97706; color: white; }
+
+
+/* ═══════════ CHARTE MGDS (bleu marine & or, distincte de PlanEx) ═══════════ */
+:root {
+    --gold:      #b08d4a;
+    --gold-dark: #93743a;
+}
+.btn-primary {
+    background-color: var(--brand) !important;
+    border-color: var(--brand) !important;
+}
+.btn-primary:hover, .btn-primary:focus {
+    background-color: var(--brand-dark) !important;
+    border-color: var(--brand-dark) !important;
+}
+.btn-outline-primary {
+    color: var(--brand) !important;
+    border-color: var(--brand) !important;
+}
+.btn-outline-primary:hover {
+    background-color: var(--brand) !important;
+    color: #fff !important;
+}
+.table-dark {
+    --bs-table-bg: var(--dark);
+}
+.nav-tabs .nav-link.active {
+    color: var(--brand);
+    font-weight: 600;
+    border-bottom: 2px solid var(--gold);
+}
+.badge.bg-primary { background-color: var(--brand) !important; }
+a { color: var(--brand); }
+.sidebar-cta {
+    background: var(--gold) !important;
+}
+.sidebar-cta:hover {
+    background: var(--gold-dark) !important;
+}

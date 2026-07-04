@@ -1,9 +1,27 @@
 @extends('layouts.app')
 
-@section('title', 'Logs d\'activité — Admin MGDS')
+@section('title', 'Administration — MGDS')
 
 @section('content')
 <div class="container-fluid px-3 px-md-4 py-4">
+
+    <h1 class="h3 mb-3">🛡️ Administration</h1>
+
+    {{-- Onglets : partie réservée aux vrais admins (nous) / gestion des utilisateurs (sous-admins) --}}
+    <ul class="nav nav-tabs mb-3">
+        <li class="nav-item">
+            <a class="nav-link active" href="{{ route('admin.logs.index') }}">Logs d'activité</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{{ route('users.index') }}">Gestion des utilisateurs</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{{ route('mairies.index') }}">Accès mairies</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{{ route('admin.messages.index') }}">Messages</a>
+        </li>
+    </ul>
 
     <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
         <div>
@@ -26,7 +44,7 @@
         <div class="col-12 col-md-3">
 
             <div class="card border-0 shadow-sm mb-3">
-                <div class="card-header py-2 px-3" style="background:#111;color:white;font-size:13px;font-weight:600;">
+                <div class="card-header py-2 px-3" style="background:var(--dark);color:white;font-size:13px;font-weight:600;">
                     Fichiers de logs
                 </div>
                 <div class="list-group list-group-flush">
@@ -72,7 +90,7 @@
                             <label class="form-label small fw-semibold mb-1">Catégorie</label>
                             <select name="cat" class="form-select form-select-sm">
                                 <option value="">Toutes</option>
-                                @foreach(['AUTH','USER','TICKET','INCIDENT','CHANTIER','SYSTEM'] as $cat)
+                                @foreach(['AUTH','USER','TACHE','MAIRIE','CONTACT','SYSTEM'] as $cat)
                                     <option value="{{ $cat }}" {{ $filterCat === $cat ? 'selected' : '' }}>{{ $cat }}</option>
                                 @endforeach
                             </select>
@@ -109,9 +127,9 @@
                                         $color = '#333';
                                         if (str_contains($line, '[AUTH]'))     $color = '#1a56db';
                                         if (str_contains($line, '[USER]'))     $color = '#7e3af2';
-                                        if (str_contains($line, '[TICKET]'))   $color = '#c27803';
-                                        if (str_contains($line, '[INCIDENT]')) $color = '#e02424';
-                                        if (str_contains($line, '[CHANTIER]')) $color = '#057a55';
+                                        if (str_contains($line, '[TACHE]'))    $color = '#c27803';
+                                        if (str_contains($line, '[MAIRIE]'))   $color = '#e02424';
+                                        if (str_contains($line, '[CONTACT]'))  $color = '#057a55';
                                         if (str_contains($line, '[SYSTEM]'))   $color = '#6b7280';
                                     @endphp
                                     <tr>

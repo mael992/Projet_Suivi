@@ -38,9 +38,8 @@
         }
 
         .guest-card-header img {
-            height: 56px;
+            height: 88px;
             object-fit: contain;
-            border-radius: 8px;
         }
 
         .guest-card-header .guest-subtitle {
@@ -66,7 +65,7 @@
     <div class="guest-card">
         <div class="guest-card-header">
             <a href="{{ route('home') }}">
-                <img src="{{ asset('images/logo-mairie.jpg') }}" alt="MGDS">
+                <img src="{{ asset('images/logo-mgds.png') }}" alt="MGDS">
             </a>
             <p class="guest-subtitle">MGDS — Gestion des services de la mairie</p>
         </div>

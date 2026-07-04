@@ -3,11 +3,82 @@
 @php use App\Support\Referentiel; @endphp
 
 @section('content')
+
+{{-- SIDEBAR (menu de gauche, comme PlanEx) --}}
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+<div class="sidebar" id="sidebar">
+    <button class="sidebar-close" onclick="closeSidebar()">✕</button>
+    <div class="sidebar-logo">
+        <img src="{{ asset('images/logo-mgds.png') }}" alt="MGDS">
+    </div>
+    <div class="sidebar-divider"></div>
+    <nav class="sidebar-nav">
+        <a href="{{ route('dashboard') }}" class="sidebar-link active">
+            <span class="sidebar-icon" style="font-size:16px">📋</span> Suivi des tâches
+        </a>
+        @if(auth()->user()->peutGererTaches())
+        <a href="{{ route('taches.create') }}" class="sidebar-link">
+            <span class="sidebar-icon" style="font-size:16px">➕</span> Nouvelle tâche
+        </a>
+        @endif
+        @if(!auth()->user()->isAdmin() && auth()->user()->peutGererMairie())
+            <div class="sidebar-divider"></div>
+            <a href="{{ route('gestion.utilisateurs.index') }}" class="sidebar-link">
+                <span class="sidebar-icon" style="font-size:16px">👥</span> Gestion des utilisateurs
+            </a>
+            <a href="{{ route('gestion.contacts.index') }}" class="sidebar-link">
+                <span class="sidebar-icon" style="font-size:16px">📇</span> Fiche Contact
+            </a>
+            <a href="{{ route('gestion.avancement') }}" class="sidebar-link">
+                <span class="sidebar-icon" style="font-size:16px">📊</span> Avancement des tâches
+            </a>
+        @endif
+        @if(auth()->user()->isAdmin())
+            <div class="sidebar-divider"></div>
+            <a href="{{ route('users.index') }}" class="sidebar-link">
+                <span class="sidebar-icon" style="font-size:16px">👥</span> Gestion des utilisateurs
+            </a>
+            <a href="{{ route('mairies.index') }}" class="sidebar-link">
+                <span class="sidebar-icon" style="font-size:16px">🏛️</span> Mairies
+            </a>
+            <a href="{{ route('admin.logs.index') }}" class="sidebar-link">
+                <span class="sidebar-icon" style="font-size:16px">🛡️</span> Administration
+            </a>
+        @endif
+        @if(auth()->user()->peutGererTaches())
+            <div class="sidebar-divider"></div>
+            <a href="{{ route('taches.create') }}" class="sidebar-cta">
+                <span style="font-size:16px">💬</span> Ajouter une tâche
+            </a>
+        @endif
+    </nav>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-footer">
+        <div class="sidebar-footer-item">
+            <span style="font-size:16px">👤</span>
+            <span>{{ auth()->user()->username ?? '—' }}</span>
+        </div>
+        <div class="sidebar-footer-item">
+            <span style="font-size:16px">🔰</span>
+            <span>{{ auth()->user()->isAdmin() ? 'Admin' : auth()->user()->grade_label }}</span>
+        </div>
+    </div>
+</div>
+
 <div class="container-fluid px-3 px-md-4 py-4">
+
+    <button class="sidebar-toggle" onclick="openSidebar()">☰</button>
+
+    @if(session('success'))
+        <div class="alert alert-success mb-3">{{ session('success') }}</div>
+    @endif
+    @if($errors->any())
+        <div class="alert alert-danger mb-3">{{ $errors->first() }}</div>
+    @endif
 
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <h1 class="h3 mb-0">
-            Tableau des anomalies
+            Suivi des tâches
             @if(!auth()->user()->isAdmin() && auth()->user()->mairie)
                 — {{ auth()->user()->mairie->nom }}
             @endif
@@ -17,17 +88,31 @@
         @endif
     </div>
 
-    @if(session('success'))
-        <div class="alert alert-success mb-3">{{ session('success') }}</div>
-    @endif
-    @if($errors->any())
-        <div class="alert alert-danger mb-3">{{ $errors->first() }}</div>
-    @endif
+    {{-- Barre de recherche centrée --}}
+    <form method="GET" action="{{ route('dashboard') }}" class="mb-3" style="max-width:560px;margin-left:auto;margin-right:auto;">
+        <div class="search-input-group">
+            <span class="search-icon">🔍</span>
+            <input type="text"
+                   name="q"
+                   class="search-input"
+                   placeholder="Recherche : référence, utilisateur, description…"
+                   value="{{ request('q') }}"
+                   autocomplete="off">
+            @if(request('q'))
+                <a href="{{ route('dashboard') }}" class="search-clear" title="Effacer">✕</a>
+            @endif
+        </div>
+        {{-- conserver les autres filtres actifs lors d'une recherche --}}
+        @foreach(['statut','service','mairie','date_debut','date_fin'] as $f)
+            @if(request($f))<input type="hidden" name="{{ $f }}" value="{{ request($f) }}">@endif
+        @endforeach
+    </form>
 
     {{-- Filtres --}}
     <form method="GET" action="{{ route('dashboard') }}" class="card shadow-sm mb-3">
+        @if(request('q'))<input type="hidden" name="q" value="{{ request('q') }}">@endif
         <div class="card-body py-3">
-            <div class="row g-2 align-items-end">
+            <div class="row g-2 align-items-end justify-content-center">
                 <div class="col-6 col-md-2">
                     <label class="form-label mb-1" style="font-size:12px;">Statut</label>
                     <select name="statut" class="form-select form-select-sm">
@@ -66,10 +151,6 @@
                 <div class="col-6 col-md-2">
                     <label class="form-label mb-1" style="font-size:12px;">Au</label>
                     <input type="date" name="date_fin" value="{{ request('date_fin') }}" class="form-control form-control-sm">
-                </div>
-                <div class="col-6 col-md-2">
-                    <label class="form-label mb-1" style="font-size:12px;">Recherche</label>
-                    <input type="text" name="q" value="{{ request('q') }}" class="form-control form-control-sm" placeholder="Réf, utilisateur…">
                 </div>
                 <div class="col-6 col-md-1 d-flex gap-1">
                     <button type="submit" class="btn btn-sm btn-dark w-100">Filtrer</button>
@@ -155,4 +236,20 @@
     </div>
 
 </div>
+
+<script>
+function openSidebar() {
+    document.getElementById('sidebar').classList.add('open');
+    document.getElementById('sidebarOverlay').classList.add('show');
+    document.body.style.overflow = 'hidden';
+}
+function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebarOverlay').classList.remove('show');
+    document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeSidebar();
+});
+</script>
 @endsection

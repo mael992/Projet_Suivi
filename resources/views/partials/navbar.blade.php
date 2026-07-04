@@ -16,7 +16,7 @@
 
         {{-- LOGO --}}
         <a href="{{ route('home') }}" class="logo">
-            <img src="{{ asset('images/logo-mairie.jpg') }}" alt="MGDS" style="border-radius:6px;">
+            <img src="{{ asset('images/logo-mgds.png') }}" alt="MGDS" style="border-radius:6px;">
         </a>
 
         {{-- LIENS CENTRE (desktop) --}}
@@ -54,7 +54,7 @@
                         <div class="nav-sep"></div>
                         <a href="{{ route('admin.messages.index') }}" class="btn-nav-users">Messages</a>
                         <div class="nav-sep"></div>
-                        <a href="{{ route('admin.logs.index') }}" class="btn-nav-users">Logs</a>
+                        <a href="{{ route('admin.logs.index') }}" class="btn-nav-users">{{ __('mgds.nav_administration') }}</a>
                         <div class="nav-sep"></div>
                     @endif
                     <form method="POST" action="{{ route('logout') }}">
@@ -111,7 +111,7 @@
 <div class="nav-mobile-menu" id="navMobileMenu" role="dialog">
 
     <div class="nav-mobile-header">
-        <img src="{{ asset('images/logo-mairie.jpg') }}" alt="MGDS" style="height:34px;border-radius:6px;">
+        <img src="{{ asset('images/logo-mgds.png') }}" alt="MGDS" style="height:34px;border-radius:6px;">
         <button onclick="closeNavMenu()" class="nav-mobile-close">✕</button>
     </div>
 
@@ -151,7 +151,7 @@
                     <span class="nav-mobile-icon">✉️</span>Messages
                 </a>
                 <a href="{{ route('admin.logs.index') }}" onclick="closeNavMenu()">
-                    <span class="nav-mobile-icon">📋</span>Logs
+                    <span class="nav-mobile-icon">🛡️</span>{{ __('mgds.nav_administration') }}
                 </a>
             @endif
         @endauth
