@@ -22,9 +22,9 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           cat >> ~/.ssh/config << EOF
-          Host ssh.planex26.com
-            HostName ssh.planex26.com
-            User roro
+          Host deploy
+            HostName ${{ secrets.SSH_HOST }}
+            User ${{ secrets.SSH_USER }}
             IdentityFile ~/.ssh/deploy_key
             StrictHostKeyChecking no
             ProxyCommand cloudflared access ssh --hostname %h
@@ -32,8 +32,8 @@ jobs:
 
       - name: 🚀 Deploy
         run: |
-          ssh ssh.planex26.com "
-            cd /var/www/mgds &&
+          ssh deploy "
+            cd ${{ secrets.DEPLOY_PATH }} &&
             git fetch origin main &&
             git reset --hard origin/main &&
             composer install --no-dev --optimize-autoloader &&

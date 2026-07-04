@@ -12,17 +12,26 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // ── Compte administrateur (nous) ─────────────────────────
-        User::firstOrCreate(
-            ['username' => 'admin'],
+        // ── Compte administrateur ────────────────────────────────
+        // Identifiants fournis via .env (jamais en dur : le dépôt est public).
+        // Si ADMIN_PASSWORD n'est pas défini, un mot de passe aléatoire est
+        // généré et affiché une seule fois dans la console.
+        $password = env('ADMIN_PASSWORD') ?: \Illuminate\Support\Str::random(20);
+
+        $admin = User::firstOrCreate(
+            ['username' => env('ADMIN_USERNAME', 'admin')],
             [
                 'prenom'   => 'Admin',
                 'nom'      => 'MGDS',
-                'email'    => 'maelroinac8@gmail.com',
-                'password' => Hash::make('Admin@MGDS2026'),
+                'email'    => env('ADMIN_EMAIL'),
+                'password' => Hash::make($password),
                 'role'     => 'admin',
             ]
         );
+
+        if ($admin->wasRecentlyCreated && ! env('ADMIN_PASSWORD')) {
+            $this->command?->warn("Mot de passe admin généré (à noter maintenant) : {$password}");
+        }
 
         // ── Mairie de démonstration (local uniquement) ───────────
         if (app()->environment('local')) {
@@ -41,7 +50,7 @@ class DatabaseSeeder extends Seeder
                 [
                     'prenom'    => 'Romain',
                     'nom'       => 'Allien',
-                    'email'     => 'roro.informatique26@gmail.com',
+                    'email'     => null,
                     'password'  => Hash::make('password'),
                     'role'      => 'user',
                     'mairie_id' => $mairie->id,
