@@ -11,6 +11,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // Le trafic arrive via le proxy Cloudflare / tunnel cloudflared
+        $middleware->trustProxies(at: '*');
+
         $middleware->alias([
             'admin'   => \App\Http\Middleware\AdminMiddleware::class,
             'gestion' => \App\Http\Middleware\GestionMairieMiddleware::class,
