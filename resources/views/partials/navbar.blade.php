@@ -27,7 +27,8 @@
             <li><a href="{{ route('contact') }}">{{ __('mgds.nav_contact') }}</a></li>
 
             @if($isLoggedIn)
-                <li><a href="{{ route('dashboard') }}" style="font-weight:600;">{{ __('mgds.nav_dashboard') }}</a></li>
+                <li><a href="{{ route('apps') }}" style="font-weight:600;">{{ __('mgds.nav_apps') }}</a></li>
+                <li><a href="{{ route('dashboard') }}">{{ __('mgds.nav_dashboard') }}</a></li>
             @endif
         </ul>
 
@@ -132,8 +133,14 @@
 
         @auth
             <div class="nav-mobile-divider"></div>
-            <a href="{{ route('dashboard') }}" onclick="closeNavMenu()" class="nav-mobile-special">
+            <a href="{{ route('apps') }}" onclick="closeNavMenu()" class="nav-mobile-special">
+                <span class="nav-mobile-icon">🧩</span>{{ __('mgds.nav_apps') }}
+            </a>
+            <a href="{{ route('dashboard') }}" onclick="closeNavMenu()">
                 <span class="nav-mobile-icon">📋</span>{{ __('mgds.nav_dashboard') }}
+            </a>
+            <a href="{{ route('marche.plan') }}" onclick="closeNavMenu()">
+                <span class="nav-mobile-icon">🛍️</span>Marché
             </a>
             @if($peutGerer)
                 <a href="{{ route('gestion.utilisateurs.index') }}" onclick="closeNavMenu()">

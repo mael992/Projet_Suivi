@@ -6,6 +6,7 @@ return [
     'nav_infos'     => 'Info',
     'nav_news'      => 'News',
     'nav_contact'   => 'Contact',
+    'nav_apps'      => 'Applications',
     'nav_dashboard' => 'Task tracking',
     'nav_gestion'   => 'Town hall management',
     'nav_users'     => 'User management',

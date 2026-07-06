@@ -13,6 +13,13 @@
     </div>
     <div class="sidebar-divider"></div>
     <nav class="sidebar-nav">
+        <a href="{{ route('apps') }}" class="sidebar-link">
+            <span class="sidebar-icon" style="font-size:16px">🧩</span> Applications
+        </a>
+        <a href="{{ route('marche.plan') }}" class="sidebar-link">
+            <span class="sidebar-icon" style="font-size:16px">🛍️</span> Marché
+        </a>
+        <div class="sidebar-divider"></div>
         <a href="{{ route('dashboard') }}" class="sidebar-link active">
             <span class="sidebar-icon" style="font-size:16px">📋</span> Suivi des tâches
         </a>

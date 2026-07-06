@@ -7,6 +7,9 @@ use App\Http\Controllers\Gestion\AvancementController;
 use App\Http\Controllers\Gestion\ContactFicheController;
 use App\Http\Controllers\Gestion\UserController as GestionUserController;
 use App\Http\Controllers\LanguageController;
+use App\Http\Controllers\Marche\CommercantController;
+use App\Http\Controllers\Marche\PlanController;
+use App\Http\Controllers\Marche\RegistreController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TacheController;
@@ -26,10 +29,38 @@ Route::get('/contact',    [PageController::class, 'contact'])->name('contact');
 // ── ESPACE CONNECTÉ ──────────────────────────────────────────
 Route::middleware('auth')->group(function () {
 
-    // Tableau des anomalies (tâches) de la mairie
+    // Hub : gestionnaire des applications de MGDS
+    Route::get('/apps', fn () => view('apps'))->name('apps');
+
+    // Suivi des tâches de la mairie
     Route::get('/dashboard', [TacheController::class, 'index'])->name('dashboard');
     Route::resource('taches', TacheController::class)->except('index')
         ->parameters(['taches' => 'tache']);
+
+    // Application Marché 🛍
+    Route::prefix('marche')->name('marche.')->group(function () {
+        Route::get('/', fn () => redirect()->route('marche.plan'));
+
+        // 🗺️ Plan 2D daté
+        Route::get('/plan', [PlanController::class, 'index'])->name('plan');
+        Route::post('/plans', [PlanController::class, 'storePlan'])->name('plans.store');
+        Route::put('/plans/{plan}', [PlanController::class, 'updatePlan'])->name('plans.update');
+        Route::delete('/plans/{plan}', [PlanController::class, 'destroyPlan'])->name('plans.destroy');
+        Route::post('/plans/{plan}/axes', [PlanController::class, 'storeAxe'])->name('axes.store');
+        Route::delete('/axes/{axe}', [PlanController::class, 'destroyAxe'])->name('axes.destroy');
+        Route::post('/axes/{axe}/emplacements', [PlanController::class, 'storeEmplacement'])->name('emplacements.store');
+        Route::put('/emplacements/{emplacement}', [PlanController::class, 'updateEmplacement'])->name('emplacements.update');
+        Route::delete('/emplacements/{emplacement}', [PlanController::class, 'destroyEmplacement'])->name('emplacements.destroy');
+
+        // 🏦 Registre des commerçants
+        Route::get('/registre', [RegistreController::class, 'index'])->name('registre');
+
+        // 👥 Commerçants
+        Route::get('/commercants', [CommercantController::class, 'index'])->name('commercants');
+        Route::post('/commercants', [CommercantController::class, 'store'])->name('commercants.store');
+        Route::put('/commercants/{commercant}', [CommercantController::class, 'update'])->name('commercants.update');
+        Route::delete('/commercants/{commercant}', [CommercantController::class, 'destroy'])->name('commercants.destroy');
+    });
 
     // Profil
     Route::get('/profile',    [ProfileController::class, 'edit'])->name('profile.edit');

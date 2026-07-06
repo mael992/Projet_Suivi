@@ -34,7 +34,7 @@ class AuthenticatedSessionController extends Controller
 
         ActivityLogger::auth('LOGIN', 'Connexion réussie', auth()->user()->username . ' (id:' . auth()->id() . ')');
 
-        return redirect()->intended(route('dashboard'));
+        return redirect()->intended(route('apps'));
     }
 
     /**

@@ -39,7 +39,7 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertRedirect(route('apps', absolute: false));
     }
 
     public function test_users_can_not_authenticate_without_mairie(): void
@@ -80,7 +80,7 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertRedirect(route('apps', absolute: false));
     }
 
     public function test_users_can_not_authenticate_when_abonnement_expired(): void
