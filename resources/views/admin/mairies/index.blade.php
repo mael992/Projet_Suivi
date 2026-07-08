@@ -3,8 +3,10 @@
 @section('content')
 <div class="container-fluid px-3 px-md-4 py-4">
 
+    @include('admin.partials.onglets')
+
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-        <h1 class="h3 mb-0">Gestionnaire des accès mairie</h1>
+        <h2 class="h5 mb-0">Gestion des accès mairie</h2>
         <a href="{{ route('mairies.create') }}" class="btn btn-primary">+ Ajouter une mairie</a>
     </div>
 

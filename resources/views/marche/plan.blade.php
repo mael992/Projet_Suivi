@@ -22,95 +22,66 @@
         <div class="alert alert-danger mb-3">{{ $errors->first() }}</div>
     @endif
 
-    {{-- ── Choix / création du plan (daté, modifiable) ── --}}
+    {{-- ── 1. Choisir son marché ── --}}
     <div class="card shadow-sm mb-4">
         <div class="card-body py-3">
-            <div class="row g-3 align-items-end">
-                <div class="col-12 col-md-5">
-                    <label class="form-label mb-1" style="font-size:12px;">Plan (par date)</label>
-                    <form method="GET" action="{{ route('marche.plan') }}">
-                        @if($mairieParam)<input type="hidden" name="mairie" value="{{ $mairieParam }}">@endif
-                        <select name="plan" class="form-select form-select-sm" onchange="this.form.submit()">
-                            @forelse($plans as $p)
-                                <option value="{{ $p->id }}" @selected($plan && $plan->id === $p->id)>
-                                    {{ $p->date->format('d/m/Y') }} — {{ $p->nom }}
-                                </option>
-                            @empty
-                                <option value="">Aucun plan — créez-en un ci-contre</option>
-                            @endforelse
-                        </select>
-                    </form>
-                </div>
+            <label class="form-label mb-1" style="font-size:12px;">Choisissez votre marché</label>
+            <form method="GET" action="{{ route('marche.plan') }}">
+                @if($mairieParam)<input type="hidden" name="mairie" value="{{ $mairieParam }}">@endif
+                <select name="plan" class="form-select" onchange="this.form.submit()">
+                    @forelse($plans as $p)
+                        <option value="{{ $p->id }}" @selected($plan && $plan->id === $p->id)>
+                            {{ $p->date->format('d/m/Y') }} — {{ $p->nom }}
+                        </option>
+                    @empty
+                        <option value="">Aucun marché — créez-en un ci-dessous</option>
+                    @endforelse
+                </select>
+            </form>
 
-                @if($peutEditer)
-                <div class="col-12 col-md-7">
-                    <form method="POST" action="{{ route('marche.plans.store') }}" class="row g-2 align-items-end">
-                        @csrf
-                        @if($mairieParam)<input type="hidden" name="mairie" value="{{ $mairieParam }}">@endif
-                        <div class="col-5">
-                            <label class="form-label mb-1" style="font-size:12px;">Nouveau plan</label>
-                            <input type="text" name="nom" class="form-control form-control-sm" placeholder="Marché hebdomadaire" required>
-                        </div>
-                        <div class="col-4">
-                            <label class="form-label mb-1" style="font-size:12px;">Date</label>
-                            <input type="date" name="date" class="form-control form-control-sm" required>
-                        </div>
-                        <div class="col-3">
-                            <button class="btn btn-sm btn-primary w-100">+ Créer</button>
-                        </div>
-                    </form>
-                </div>
+            {{-- ── 2. Les actions, repliées derrière des boutons ── --}}
+            @if($peutEditer)
+            <div class="d-flex gap-2 flex-wrap mt-3">
+                <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#formCreerMarche">
+                    + Créer un marché
+                </button>
+                @if($plan)
+                <button class="btn btn-sm btn-dark" type="button" data-bs-toggle="collapse" data-bs-target="#formAjouterRues">
+                    + Ajouter des rues
+                </button>
+                <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#formModifierMarche">
+                    Modifier les informations du marché
+                </button>
                 @endif
             </div>
 
-            @if($plan && $peutEditer)
-                <hr class="my-3">
-                <div class="row g-2 align-items-end">
-                    <div class="col-12 col-md-8">
-                        <form method="POST" action="{{ route('marche.plans.update', $plan) }}" class="row g-2 align-items-end">
-                            @csrf @method('PUT')
-                            @if($mairieParam)<input type="hidden" name="mairie" value="{{ $mairieParam }}">@endif
-                            <div class="col-5">
-                                <label class="form-label mb-1" style="font-size:12px;">Modifier le nom</label>
-                                <input type="text" name="nom" value="{{ $plan->nom }}" class="form-control form-control-sm" required>
-                            </div>
-                            <div class="col-4">
-                                <label class="form-label mb-1" style="font-size:12px;">Modifier la date</label>
-                                <input type="date" name="date" value="{{ $plan->date->format('Y-m-d') }}" class="form-control form-control-sm" required>
-                            </div>
-                            <div class="col-3">
-                                <button class="btn btn-sm btn-outline-primary w-100">Enregistrer</button>
-                            </div>
-                        </form>
+            {{-- + Créer un marché --}}
+            <div class="collapse mt-3" id="formCreerMarche">
+                <form method="POST" action="{{ route('marche.plans.store') }}" class="row g-2 align-items-end border rounded p-2 bg-light">
+                    @csrf
+                    @if($mairieParam)<input type="hidden" name="mairie" value="{{ $mairieParam }}">@endif
+                    <div class="col-5">
+                        <label class="form-label mb-1" style="font-size:12px;">Nom du marché</label>
+                        <input type="text" name="nom" class="form-control form-control-sm" placeholder="Marché hebdomadaire" required>
                     </div>
-                    <div class="col-12 col-md-4 text-md-end">
-                        <form method="POST" action="{{ route('marche.plans.destroy', $plan) }}"
-                              onsubmit="return confirm('⚠️ Supprimer ce plan et tous ses placements ?')">
-                            @csrf @method('DELETE')
-                            @if($mairieParam)<input type="hidden" name="mairie" value="{{ $mairieParam }}">@endif
-                            <button class="btn btn-sm btn-outline-danger">🗑 Supprimer ce plan</button>
-                        </form>
+                    <div class="col-4">
+                        <label class="form-label mb-1" style="font-size:12px;">Date</label>
+                        <input type="date" name="date" class="form-control form-control-sm" required>
                     </div>
-                </div>
-            @endif
-        </div>
-    </div>
+                    <div class="col-3">
+                        <button class="btn btn-sm btn-primary w-100">Créer</button>
+                    </div>
+                </form>
+            </div>
 
-    @if(!$plan)
-        <div class="text-center text-muted py-5">
-            🗺️ Créez votre premier plan daté pour commencer à placer les exposants.
-        </div>
-    @else
-
-        {{-- ── Ajouter un axe ── --}}
-        @if($peutEditer)
-        <form method="POST" action="{{ route('marche.axes.store', $plan) }}" class="card shadow-sm mb-4">
-            @csrf
-            @if($mairieParam)<input type="hidden" name="mairie" value="{{ $mairieParam }}">@endif
-            <div class="card-body py-3">
-                <div class="row g-2 align-items-end">
+            @if($plan)
+            {{-- + Ajouter des rues --}}
+            <div class="collapse mt-3" id="formAjouterRues">
+                <form method="POST" action="{{ route('marche.axes.store', $plan) }}" class="row g-2 align-items-end border rounded p-2 bg-light">
+                    @csrf
+                    @if($mairieParam)<input type="hidden" name="mairie" value="{{ $mairieParam }}">@endif
                     <div class="col-12 col-md-6">
-                        <label class="form-label mb-1" style="font-size:12px;">Nouvel axe (trottoir, allée, place…)</label>
+                        <label class="form-label mb-1" style="font-size:12px;">Rue / trottoir / allée</label>
                         <input type="text" name="nom" class="form-control form-control-sm" placeholder="Trottoir gauche — rue de la Mairie" required>
                     </div>
                     <div class="col-6 col-md-3">
@@ -118,12 +89,47 @@
                         <input type="number" name="longueur" step="0.5" min="1" class="form-control form-control-sm" placeholder="20" required>
                     </div>
                     <div class="col-6 col-md-3">
-                        <button class="btn btn-sm btn-dark w-100">+ Ajouter l'axe</button>
+                        <button class="btn btn-sm btn-dark w-100">Ajouter</button>
                     </div>
+                </form>
+            </div>
+
+            {{-- Modifier les informations du marché --}}
+            <div class="collapse mt-3" id="formModifierMarche">
+                <div class="border rounded p-2 bg-light">
+                    <form method="POST" action="{{ route('marche.plans.update', $plan) }}" class="row g-2 align-items-end">
+                        @csrf @method('PUT')
+                        @if($mairieParam)<input type="hidden" name="mairie" value="{{ $mairieParam }}">@endif
+                        <div class="col-5">
+                            <label class="form-label mb-1" style="font-size:12px;">Nom</label>
+                            <input type="text" name="nom" value="{{ $plan->nom }}" class="form-control form-control-sm" required>
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label mb-1" style="font-size:12px;">Date</label>
+                            <input type="date" name="date" value="{{ $plan->date->format('Y-m-d') }}" class="form-control form-control-sm" required>
+                        </div>
+                        <div class="col-3">
+                            <button class="btn btn-sm btn-outline-primary w-100">Enregistrer</button>
+                        </div>
+                    </form>
+                    <form method="POST" action="{{ route('marche.plans.destroy', $plan) }}" class="mt-2 text-end"
+                          onsubmit="return confirm('⚠️ Supprimer ce marché et tous ses placements ?')">
+                        @csrf @method('DELETE')
+                        @if($mairieParam)<input type="hidden" name="mairie" value="{{ $mairieParam }}">@endif
+                        <button class="btn btn-sm btn-outline-danger">🗑 Supprimer ce marché</button>
+                    </form>
                 </div>
             </div>
-        </form>
-        @endif
+            @endif
+            @endif
+        </div>
+    </div>
+
+    @if(!$plan)
+        <div class="text-center text-muted py-5">
+            🗺️ Créez votre premier marché (bouton « + Créer un marché ») pour commencer à placer les exposants.
+        </div>
+    @else
 
         {{-- ── Les axes du plan (vue 2D) ── --}}
         @forelse($plan->axes as $axe)

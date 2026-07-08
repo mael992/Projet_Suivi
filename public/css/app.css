@@ -1693,3 +1693,22 @@ a { color: var(--brand); }
 .sidebar-cta:hover {
     background: var(--gold-dark) !important;
 }
+
+/* ── Navbar collante : le menu suit le défilement ── */
+.navbar {
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+}
+
+/* ── Page active dans la navigation ── */
+.nav-links-desktop a.nav-actif {
+    color: var(--gold) !important;
+    font-weight: 600;
+}
+.nav-mobile-links a.nav-actif {
+    background: rgba(176, 141, 74, .18);
+    color: var(--gold) !important;
+    font-weight: 600;
+    border-left: 3px solid var(--gold);
+}

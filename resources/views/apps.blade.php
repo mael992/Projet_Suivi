@@ -75,42 +75,39 @@
                     </a>
                     <div class="mt-auto d-flex gap-2 flex-wrap">
                         <a href="{{ route('marche.plan') }}" class="badge text-decoration-none" style="background:var(--brand);">🗺️ Plan</a>
-                        <a href="{{ route('marche.registre') }}" class="badge text-decoration-none" style="background:var(--gold);">🏦 Registre</a>
                         <a href="{{ route('marche.commercants') }}" class="badge bg-dark text-decoration-none">👥 Commerçants</a>
+                        <a href="{{ route('marche.registre') }}" class="badge text-decoration-none" style="background:var(--gold);">🏦 Registre</a>
                     </div>
                 </div>
             </div>
         </div>
 
+        {{-- ⚙️ Paramètres Administration (admins uniquement) --}}
+        @if($user->isAdmin())
+        <div class="col-12 col-md-6 app-tile" data-app="parametres administration admin utilisateurs acces mairies logs messages support">
+            <div class="card shadow-sm h-100">
+                <div class="card-body d-flex flex-column">
+                    <a href="{{ route('users.index') }}" class="text-decoration-none text-reset d-flex align-items-center gap-3 mb-3">
+                        <span style="font-size:44px;line-height:1;">⚙️</span>
+                        <span>
+                            <span class="h5 d-block mb-1" style="color:var(--brand);">Paramètres Administration</span>
+                            <span class="text-muted" style="font-size:13px;">Utilisateurs, accès mairies, logs, support</span>
+                        </span>
+                    </a>
+                    <div class="mt-auto d-flex gap-2 flex-wrap">
+                        <a href="{{ route('users.index') }}" class="badge text-decoration-none" style="background:var(--brand);">Gestion des utilisateurs</a>
+                        <a href="{{ route('mairies.index') }}" class="badge text-decoration-none" style="background:var(--gold);">Accès mairie</a>
+                        <a href="{{ route('admin.logs.index') }}" class="badge bg-dark text-decoration-none">Logs</a>
+                        <a href="{{ route('admin.messages.index') }}" class="badge bg-secondary text-decoration-none">Support</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
+
     </div>
 
     <div id="appsNoResult" class="text-center text-muted py-5 d-none">Aucune application ne correspond à la recherche.</div>
-</div>
-
-{{-- ── Fenêtre de présentation (fermable avec la croix) ── --}}
-<div id="mgdsWelcome" style="display:none;position:fixed;inset:0;background:rgba(15,32,58,.55);z-index:1050;align-items:center;justify-content:center;">
-    <div style="background:#fff;border-radius:14px;max-width:520px;width:92%;padding:28px 32px;position:relative;box-shadow:0 12px 48px rgba(0,0,0,.35);">
-        <button type="button" onclick="fermerWelcome()"
-                style="position:absolute;top:10px;right:14px;border:none;background:none;font-size:22px;color:#888;" title="Fermer">✕</button>
-
-        <div class="text-center mb-3">
-            <img src="{{ asset('images/logo-mgds.png') }}" alt="MGDS" style="height:80px;">
-        </div>
-
-        <h2 class="text-center mb-3" style="font-size:1.25rem;">
-            <strong>M</strong><em>airie</em> - <strong>G</strong><em>estion</em> <strong>D</strong><em>es</em> <strong>S</strong><em>ervices</em>
-        </h2>
-
-        <p style="font-size:14px;">MGDS accompagne les Mairies dans le suivi quotidien des tâches de leurs services :</p>
-        <ul style="font-size:14px;line-height:1.8;">
-            <li>création et affectation des travaux</li>
-            <li>photos avant/après</li>
-            <li>clôtures automatiques</li>
-            <li>annuaire des services</li>
-            <li>suivi de la charge de travail</li>
-        </ul>
-        <p class="text-muted mb-0" style="font-size:13px;">Le tout dans un espace sécurisé propre à chaque service.</p>
-    </div>
 </div>
 
 <script>
@@ -137,15 +134,5 @@ function filtrerApps() {
     });
     document.getElementById('appsNoResult').classList.toggle('d-none', visibles > 0);
 }
-
-/* ── Fenêtre de présentation ── */
-function fermerWelcome() {
-    document.getElementById('mgdsWelcome').style.display = 'none';
-    localStorage.setItem('mgdsWelcomeFerme', '1');
-}
-if (!localStorage.getItem('mgdsWelcomeFerme')) {
-    document.getElementById('mgdsWelcome').style.display = 'flex';
-}
-document.addEventListener('keydown', e => { if (e.key === 'Escape') fermerWelcome(); });
 </script>
 @endsection

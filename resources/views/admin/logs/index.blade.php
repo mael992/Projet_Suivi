@@ -5,23 +5,7 @@
 @section('content')
 <div class="container-fluid px-3 px-md-4 py-4">
 
-    <h1 class="h3 mb-3">🛡️ Administration</h1>
-
-    {{-- Onglets : partie réservée aux vrais admins (nous) / gestion des utilisateurs (sous-admins) --}}
-    <ul class="nav nav-tabs mb-3">
-        <li class="nav-item">
-            <a class="nav-link active" href="{{ route('admin.logs.index') }}">Logs d'activité</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" href="{{ route('users.index') }}">Gestion des utilisateurs</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" href="{{ route('mairies.index') }}">Accès mairies</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" href="{{ route('admin.messages.index') }}">Messages</a>
-        </li>
-    </ul>
+    @include('admin.partials.onglets')
 
     <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
         <div>

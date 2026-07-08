@@ -7,15 +7,38 @@
     <div style="position:absolute;inset:0;background:linear-gradient(180deg, rgba(15,32,58,.55) 0%, rgba(15,32,58,.25) 45%, rgba(15,32,58,.55) 100%);"></div>
 </div>
 
-<div style="min-height:calc(100vh - 110px);display:flex;align-items:center;justify-content:center;">
-    <div class="container text-center py-4">
-        <div class="mx-auto" style="max-width:640px;background:rgba(255,255,255,.92);border-radius:14px;padding:32px 36px;box-shadow:0 8px 32px rgba(0,0,0,.25);">
-            <img src="{{ asset('images/logo-mgds.png') }}" alt="MGDS" style="height:110px;" class="mb-3">
-            <h1 class="h4 mb-3">{{ __('mgds.welcome_title') }}</h1>
-            <p class="text-muted mb-0" style="font-size:15px;line-height:1.7;">
-                {{ __('mgds.welcome_presentation') }}
-            </p>
+<div style="min-height:calc(100vh - 110px);"></div>
+
+{{-- ── Fenêtre de présentation : réapparaît à chaque passage sur l'accueil ── --}}
+<div id="mgdsWelcome" style="display:flex;position:fixed;inset:0;background:rgba(15,32,58,.45);z-index:1050;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:14px;max-width:520px;width:92%;padding:28px 32px;position:relative;box-shadow:0 12px 48px rgba(0,0,0,.35);">
+        <button type="button" onclick="fermerWelcome()"
+                style="position:absolute;top:10px;right:14px;border:none;background:none;font-size:22px;color:#888;" title="Fermer">✕</button>
+
+        <div class="text-center mb-3">
+            <img src="{{ asset('images/logo-mgds.png') }}" alt="MGDS" style="height:80px;">
         </div>
+
+        <h2 class="text-center mb-3" style="font-size:1.25rem;">
+            <strong>M</strong><em>airie</em> - <strong>G</strong><em>estion</em> <strong>D</strong><em>es</em> <strong>S</strong><em>ervices</em>
+        </h2>
+
+        <p style="font-size:14px;">MGDS accompagne les Mairies dans le suivi quotidien des tâches de leurs services :</p>
+        <ul style="font-size:14px;line-height:1.8;">
+            <li>création et affectation des travaux</li>
+            <li>photos avant/après</li>
+            <li>clôtures automatiques</li>
+            <li>annuaire des services</li>
+            <li>suivi de la charge de travail</li>
+        </ul>
+        <p class="text-muted mb-0" style="font-size:13px;">Le tout dans un espace sécurisé propre à chaque service.</p>
     </div>
 </div>
+
+<script>
+function fermerWelcome() {
+    document.getElementById('mgdsWelcome').style.display = 'none';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') fermerWelcome(); });
+</script>
 @endsection

@@ -43,13 +43,7 @@
         @if(auth()->user()->isAdmin())
             <div class="sidebar-divider"></div>
             <a href="{{ route('users.index') }}" class="sidebar-link">
-                <span class="sidebar-icon" style="font-size:16px">👥</span> Gestion des utilisateurs
-            </a>
-            <a href="{{ route('mairies.index') }}" class="sidebar-link">
-                <span class="sidebar-icon" style="font-size:16px">🏛️</span> Mairies
-            </a>
-            <a href="{{ route('admin.logs.index') }}" class="sidebar-link">
-                <span class="sidebar-icon" style="font-size:16px">🛡️</span> Administration
+                <span class="sidebar-icon" style="font-size:16px">⚙️</span> Paramètres Administration
             </a>
         @endif
         @if(auth()->user()->peutGererTaches())

@@ -7,8 +7,9 @@
 
     $isLoggedIn = auth()->check();
     $user       = auth()->user();
-    $peutGerer  = $isLoggedIn && ! $user->isAdmin() && $user->peutGererMairie();
-    $isAdmin    = $isLoggedIn && $user->isAdmin();
+
+    // Surlignage de la page active (desktop + menu mobile)
+    $actif = fn (string ...$routes) => request()->routeIs(...$routes) ? 'nav-actif' : '';
 @endphp
 
 <nav class="navbar">
@@ -16,19 +17,18 @@
 
         {{-- LOGO --}}
         <a href="{{ route('home') }}" class="logo">
-            <img src="{{ asset('images/logo-mgds.png') }}" alt="MGDS" style="border-radius:6px;">
+            <img src="{{ asset('images/logo-mgds.png') }}" alt="MGDS">
         </a>
 
         {{-- LIENS CENTRE (desktop) --}}
         <ul class="nav-links-desktop">
-            <li><a href="{{ route('home') }}">{{ __('mgds.nav_home') }}</a></li>
-            <li><a href="{{ route('infos') }}">{{ __('mgds.nav_infos') }}</a></li>
-            <li><a href="{{ route('nouveautes') }}">{{ __('mgds.nav_news') }}</a></li>
-            <li><a href="{{ route('contact') }}">{{ __('mgds.nav_contact') }}</a></li>
+            <li><a href="{{ route('home') }}" class="{{ $actif('home') }}">{{ __('mgds.nav_home') }}</a></li>
+            <li><a href="{{ route('infos') }}" class="{{ $actif('infos') }}">{{ __('mgds.nav_infos') }}</a></li>
+            <li><a href="{{ route('nouveautes') }}" class="{{ $actif('nouveautes') }}">{{ __('mgds.nav_news') }}</a></li>
+            <li><a href="{{ route('contact') }}" class="{{ $actif('contact') }}">{{ __('mgds.nav_contact') }}</a></li>
 
             @if($isLoggedIn)
-                <li><a href="{{ route('apps') }}" style="font-weight:600;">{{ __('mgds.nav_apps') }}</a></li>
-                <li><a href="{{ route('dashboard') }}">{{ __('mgds.nav_dashboard') }}</a></li>
+                <li><a href="{{ route('apps') }}" style="font-weight:600;" class="{{ $actif('apps') }}">{{ __('mgds.nav_apps') }}</a></li>
             @endif
         </ul>
 
@@ -37,27 +37,11 @@
 
             @auth
                 <div class="nav-desktop-auth">
-                    <span class="user">
+                    <a href="{{ route('profile.edit') }}" class="user text-decoration-none" title="Mon compte">
                         <span class="user-dot"></span>
                         {{ $user->username }}
-                    </span>
+                    </a>
                     <div class="nav-sep"></div>
-                    @if($peutGerer)
-                        <a href="{{ route('gestion.utilisateurs.index') }}" class="btn-nav-users">
-                            {{ __('mgds.nav_gestion') }}
-                        </a>
-                        <div class="nav-sep"></div>
-                    @endif
-                    @if($isAdmin)
-                        <a href="{{ route('users.index') }}" class="btn-nav-users">{{ __('mgds.nav_users') }}</a>
-                        <div class="nav-sep"></div>
-                        <a href="{{ route('mairies.index') }}" class="btn-nav-users">{{ __('mgds.nav_mairies') }}</a>
-                        <div class="nav-sep"></div>
-                        <a href="{{ route('admin.messages.index') }}" class="btn-nav-users">Messages</a>
-                        <div class="nav-sep"></div>
-                        <a href="{{ route('admin.logs.index') }}" class="btn-nav-users">{{ __('mgds.nav_administration') }}</a>
-                        <div class="nav-sep"></div>
-                    @endif
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
                         <button type="submit" class="btn-logout">{{ __('mgds.nav_logout') }}</button>
@@ -112,7 +96,7 @@
 <div class="nav-mobile-menu" id="navMobileMenu" role="dialog">
 
     <div class="nav-mobile-header">
-        <img src="{{ asset('images/logo-mgds.png') }}" alt="MGDS" style="height:34px;border-radius:6px;">
+        <img src="{{ asset('images/logo-mgds.png') }}" alt="MGDS" style="height:34px;">
         <button onclick="closeNavMenu()" class="nav-mobile-close">✕</button>
     </div>
 
@@ -120,47 +104,25 @@
         <div class="nav-mobile-user">
             <span class="user-dot"></span>
             <span class="nav-mobile-username">{{ $user->username }}</span>
-            <span class="nav-mobile-role">{{ $isAdmin ? 'Admin' : $user->grade_label }}</span>
+            <span class="nav-mobile-role">{{ $user->isAdmin() ? 'Admin' : $user->grade_label }}</span>
         </div>
         <div class="nav-mobile-divider"></div>
     @endauth
 
     <nav class="nav-mobile-links">
-        <a href="{{ route('home') }}"       onclick="closeNavMenu()"><span class="nav-mobile-icon">🏠</span>{{ __('mgds.nav_home') }}</a>
-        <a href="{{ route('infos') }}"      onclick="closeNavMenu()"><span class="nav-mobile-icon">ℹ️</span>{{ __('mgds.nav_infos') }}</a>
-        <a href="{{ route('nouveautes') }}" onclick="closeNavMenu()"><span class="nav-mobile-icon">🆕</span>{{ __('mgds.nav_news') }}</a>
-        <a href="{{ route('contact') }}"    onclick="closeNavMenu()"><span class="nav-mobile-icon">✉️</span>{{ __('mgds.nav_contact') }}</a>
+        <a href="{{ route('home') }}"       onclick="closeNavMenu()" class="{{ $actif('home') }}"><span class="nav-mobile-icon">🏠</span>{{ __('mgds.nav_home') }}</a>
+        <a href="{{ route('infos') }}"      onclick="closeNavMenu()" class="{{ $actif('infos') }}"><span class="nav-mobile-icon">ℹ️</span>{{ __('mgds.nav_infos') }}</a>
+        <a href="{{ route('nouveautes') }}" onclick="closeNavMenu()" class="{{ $actif('nouveautes') }}"><span class="nav-mobile-icon">🆕</span>{{ __('mgds.nav_news') }}</a>
+        <a href="{{ route('contact') }}"    onclick="closeNavMenu()" class="{{ $actif('contact') }}"><span class="nav-mobile-icon">✉️</span>{{ __('mgds.nav_contact') }}</a>
 
         @auth
             <div class="nav-mobile-divider"></div>
-            <a href="{{ route('apps') }}" onclick="closeNavMenu()" class="nav-mobile-special">
+            <a href="{{ route('apps') }}" onclick="closeNavMenu()" class="nav-mobile-special {{ $actif('apps') }}">
                 <span class="nav-mobile-icon">🧩</span>{{ __('mgds.nav_apps') }}
             </a>
-            <a href="{{ route('dashboard') }}" onclick="closeNavMenu()">
-                <span class="nav-mobile-icon">📋</span>{{ __('mgds.nav_dashboard') }}
+            <a href="{{ route('profile.edit') }}" onclick="closeNavMenu()" class="{{ $actif('profile.edit') }}">
+                <span class="nav-mobile-icon">👤</span>Mon compte
             </a>
-            <a href="{{ route('marche.plan') }}" onclick="closeNavMenu()">
-                <span class="nav-mobile-icon">🛍️</span>Marché
-            </a>
-            @if($peutGerer)
-                <a href="{{ route('gestion.utilisateurs.index') }}" onclick="closeNavMenu()">
-                    <span class="nav-mobile-icon">🏛️</span>{{ __('mgds.nav_gestion') }}
-                </a>
-            @endif
-            @if($isAdmin)
-                <a href="{{ route('users.index') }}" onclick="closeNavMenu()">
-                    <span class="nav-mobile-icon">👥</span>{{ __('mgds.nav_users') }}
-                </a>
-                <a href="{{ route('mairies.index') }}" onclick="closeNavMenu()">
-                    <span class="nav-mobile-icon">🏛️</span>{{ __('mgds.nav_mairies') }}
-                </a>
-                <a href="{{ route('admin.messages.index') }}" onclick="closeNavMenu()">
-                    <span class="nav-mobile-icon">✉️</span>Messages
-                </a>
-                <a href="{{ route('admin.logs.index') }}" onclick="closeNavMenu()">
-                    <span class="nav-mobile-icon">🛡️</span>{{ __('mgds.nav_administration') }}
-                </a>
-            @endif
         @endauth
     </nav>
 

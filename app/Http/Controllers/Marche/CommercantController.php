@@ -27,6 +27,16 @@ class CommercantController extends Controller
         return view('marche.commercants.index', compact('mairie', 'commercants', 'mairies'));
     }
 
+    public function create(Request $request)
+    {
+        $mairie = $this->mairieCourante($request);
+        $this->verifierEdition();
+
+        $mairies = $request->user()->isAdmin() ? Mairie::orderBy('nom')->get(['id', 'nom']) : collect();
+
+        return view('marche.commercants.create', compact('mairie', 'mairies'));
+    }
+
     public function store(Request $request)
     {
         $mairie = $this->mairieCourante($request);

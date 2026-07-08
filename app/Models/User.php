@@ -72,10 +72,14 @@ class User extends Authenticatable
             || in_array($this->grade, Referentiel::GRADES_CREATION_TACHE, true);
     }
 
-    /** Responsable ou Sous-Responsable : accès à la Gestion de la Mairie */
+    /** Maire, Responsable ou Sous-Responsable : accès à la Gestion de la Mairie */
     public function peutGererMairie(): bool
     {
-        return in_array($this->grade, [Referentiel::GRADE_RESPONSABLE, Referentiel::GRADE_SOUS_RESP], true);
+        return in_array($this->grade, [
+            Referentiel::GRADE_MAIRE,
+            Referentiel::GRADE_RESPONSABLE,
+            Referentiel::GRADE_SOUS_RESP,
+        ], true);
     }
 
     /** Cabinet du maire / DGS / Maire : voient toutes les tâches de la mairie */

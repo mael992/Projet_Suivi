@@ -17,7 +17,15 @@
 <body>
 
 <h1>Fiche Contact — {{ $mairie->nom }}</h1>
-<div class="sub">Générée le {{ now()->format('d/m/Y à H:i') }} — MGDS</div>
+<div class="sub">
+    Générée le {{ now()->format('d/m/Y à H:i') }} — MGDS —
+    <strong>🔒 Document privé & confidentiel</strong>
+</div>
+
+@php
+    $standardsParService = $standards->groupBy('service');
+    $contactsParService  = $contacts->groupBy('service');
+@endphp
 
 <table>
     <thead>
@@ -28,24 +36,36 @@
         </tr>
     </thead>
     <tbody>
-        @foreach($standards as $standard)
-            <tr class="std">
-                <td>{{ $standard->service_label }} — Standard</td>
-                <td>{{ $standard->telephone_complet }}</td>
-                <td>—</td>
-            </tr>
-        @endforeach
+        @foreach(\App\Support\Referentiel::SERVICES as $num => $label)
+            @php $lignes = $standardsParService->get($num, collect()); @endphp
 
-        @foreach($contacts as $contact)
-            <tr>
-                <td>
-                    {{ $contact->service_label }}<br>
-                    <strong>{{ $contact->prenom }} {{ $contact->nom }}</strong>
-                    <span class="grade">({{ $contact->grade_label }})</span>
-                </td>
-                <td>{{ $contact->telephone_complet }}</td>
-                <td>{{ $contact->email ?? '—' }}</td>
-            </tr>
+            @if($lignes->isEmpty())
+                <tr class="std">
+                    <td>{{ $label }} — Standard</td>
+                    <td>—</td>
+                    <td>—</td>
+                </tr>
+            @else
+                @foreach($lignes as $standard)
+                    <tr class="std">
+                        <td>{{ $label }} — Standard</td>
+                        <td>{{ $standard->telephone_complet }}</td>
+                        <td>—</td>
+                    </tr>
+                @endforeach
+            @endif
+
+            @foreach($contactsParService->get($num, collect()) as $contact)
+                <tr>
+                    <td>
+                        {{ $label }}<br>
+                        <strong>{{ $contact->prenom }} {{ $contact->nom }}</strong>
+                        <span class="grade">({{ $contact->grade_label }})</span>
+                    </td>
+                    <td>{{ $contact->telephone_complet }}</td>
+                    <td>{{ $contact->email ?? '—' }}</td>
+                </tr>
+            @endforeach
         @endforeach
     </tbody>
 </table>

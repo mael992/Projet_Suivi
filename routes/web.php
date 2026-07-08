@@ -57,6 +57,7 @@ Route::middleware('auth')->group(function () {
 
         // 👥 Commerçants
         Route::get('/commercants', [CommercantController::class, 'index'])->name('commercants');
+        Route::get('/commercants/create', [CommercantController::class, 'create'])->name('commercants.create');
         Route::post('/commercants', [CommercantController::class, 'store'])->name('commercants.store');
         Route::put('/commercants/{commercant}', [CommercantController::class, 'update'])->name('commercants.update');
         Route::delete('/commercants/{commercant}', [CommercantController::class, 'destroy'])->name('commercants.destroy');

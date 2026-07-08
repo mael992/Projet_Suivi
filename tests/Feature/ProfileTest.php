@@ -21,16 +21,15 @@ class ProfileTest extends TestCase
         $response->assertOk();
     }
 
-    public function test_profile_information_can_be_updated(): void
+    public function test_email_can_be_updated_with_current_password(): void
     {
         $user = User::factory()->create();
 
         $response = $this
             ->actingAs($user)
             ->patch('/profile', [
-                'prenom' => 'Test',
-                'nom' => 'User',
-                'email' => 'test@example.com',
+                'email'            => 'test@example.com',
+                'current_password' => 'password',
             ]);
 
         $response
@@ -39,10 +38,23 @@ class ProfileTest extends TestCase
 
         $user->refresh();
 
-        $this->assertSame('Test', $user->prenom);
-        $this->assertSame('User', $user->nom);
         $this->assertSame('test@example.com', $user->email);
         $this->assertNull($user->email_verified_at);
+    }
+
+    public function test_email_cannot_be_updated_with_wrong_password(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this
+            ->actingAs($user)
+            ->patch('/profile', [
+                'email'            => 'test@example.com',
+                'current_password' => 'wrong-password',
+            ]);
+
+        $response->assertSessionHasErrors('current_password');
+        $this->assertNotSame('test@example.com', $user->fresh()->email);
     }
 
     public function test_email_verification_status_is_unchanged_when_the_email_address_is_unchanged(): void
@@ -52,9 +64,8 @@ class ProfileTest extends TestCase
         $response = $this
             ->actingAs($user)
             ->patch('/profile', [
-                'prenom' => 'Test',
-                'nom' => 'User',
-                'email' => $user->email,
+                'email'            => $user->email,
+                'current_password' => 'password',
             ]);
 
         $response

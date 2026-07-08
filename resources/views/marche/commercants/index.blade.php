@@ -21,52 +21,19 @@
         <div class="alert alert-danger mb-3">{{ $errors->first() }}</div>
     @endif
 
-    {{-- ── Ajouter un commerçant ── --}}
-    @if($peutEditer)
-    <form method="POST" action="{{ route('marche.commercants.store') }}" class="card shadow-sm mb-4">
-        @csrf
-        @if($mairieParam)<input type="hidden" name="mairie" value="{{ $mairieParam }}">@endif
-        <div class="card-body py-3">
-            <div class="row g-2 align-items-end">
-                <div class="col-6 col-md-2">
-                    <label class="form-label mb-1" style="font-size:12px;">Nom *</label>
-                    <input type="text" name="nom" value="{{ old('nom') }}" class="form-control form-control-sm" required>
-                </div>
-                <div class="col-6 col-md-2">
-                    <label class="form-label mb-1" style="font-size:12px;">Prénom</label>
-                    <input type="text" name="prenom" value="{{ old('prenom') }}" class="form-control form-control-sm">
-                </div>
-                <div class="col-6 col-md-2">
-                    <label class="form-label mb-1" style="font-size:12px;">Activité *</label>
-                    <input type="text" name="activite" value="{{ old('activite') }}" class="form-control form-control-sm" placeholder="Fleuriste, vêtements…" required>
-                </div>
-                <div class="col-3 col-md-1">
-                    <label class="form-label mb-1" style="font-size:12px;">Indicatif</label>
-                    <select name="telephone_indicatif" class="form-select form-select-sm">
-                        @foreach(Referentiel::INDICATIFS as $ind)
-                            <option value="{{ $ind }}">{{ $ind }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-3 col-md-2">
-                    <label class="form-label mb-1" style="font-size:12px;">Téléphone</label>
-                    <input type="text" name="telephone" value="{{ old('telephone') }}" class="form-control form-control-sm">
-                </div>
-                <div class="col-3 col-md-1">
-                    <label class="form-label mb-1" style="font-size:12px;">Stand (m) *</label>
-                    <input type="number" name="longueur_defaut" value="{{ old('longueur_defaut', 3) }}" step="0.5" min="0.5" class="form-control form-control-sm" required>
-                </div>
-                <div class="col-3 col-md-2">
-                    <button class="btn btn-sm btn-primary w-100">+ Ajouter</button>
-                </div>
-                <div class="col-12 col-md-4">
-                    <label class="form-label mb-1" style="font-size:12px;">Email</label>
-                    <input type="email" name="email" value="{{ old('email') }}" class="form-control form-control-sm">
-                </div>
+    {{-- ── Recherche + bouton d'ajout ── --}}
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div style="max-width:400px;flex:1;">
+            <div class="search-input-group">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="commercantSearch" class="search-input"
+                       placeholder="Recherche : nom, prénom ou activité…" autocomplete="off">
             </div>
         </div>
-    </form>
-    @endif
+        @if($peutEditer)
+            <a href="{{ route('marche.commercants.create', request()->only('mairie')) }}" class="btn btn-primary">+ Ajouter</a>
+        @endif
+    </div>
 
     {{-- ── Liste des commerçants ── --}}
     <div class="card shadow-sm">
@@ -80,9 +47,9 @@
                         <th class="text-end">Action</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="commercantsBody">
                 @forelse($commercants as $c)
-                    <tr>
+                    <tr data-search="{{ strtolower(\Illuminate\Support\Str::ascii($c->nom . ' ' . ($c->prenom ?? '') . ' ' . $c->activite)) }}">
                         @if($peutEditer)
                         <form method="POST" action="{{ route('marche.commercants.update', $c) }}">
                             @csrf @method('PUT')
@@ -129,8 +96,26 @@
                 @endforelse
                 </tbody>
             </table>
+            <div id="noResults" class="text-center text-muted py-4 d-none">Aucun résultat.</div>
         </div>
     </div>
 
 </div>
+
+<script>
+document.getElementById('commercantSearch').addEventListener('input', function () {
+    const q     = this.value.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+    const rows  = document.querySelectorAll('#commercantsBody tr');
+    let visible = 0;
+
+    rows.forEach(row => {
+        const data = row.dataset.search ?? '';
+        const show = !q || data.includes(q);
+        row.style.display = show ? '' : 'none';
+        if (show) visible++;
+    });
+
+    document.getElementById('noResults').classList.toggle('d-none', visible > 0);
+});
+</script>
 @endsection

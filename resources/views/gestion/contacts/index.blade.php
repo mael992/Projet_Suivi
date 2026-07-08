@@ -3,9 +3,17 @@
 @php use App\Support\Referentiel; @endphp
 
 @section('content')
+@php
+    $standardsParService = $standards->groupBy('service');
+    $contactsParService  = $contacts->groupBy('service');
+@endphp
+
 <div class="container-fluid px-3 px-md-4 py-4">
 
-    <h1 class="h3 mb-3">Gestion de la Mairie — {{ $mairie->nom }}</h1>
+    <h1 class="h3 mb-1">Gestion de la Mairie — {{ $mairie->nom }}</h1>
+    <p class="mb-3">
+        <span class="badge bg-dark">🔒 Fiche contact — privé & confidentiel</span>
+    </p>
 
     @include('gestion.partials.onglets')
 
@@ -25,15 +33,10 @@
                        placeholder="Recherche : prénom, nom ou service…" autocomplete="off">
             </div>
         </div>
-        <div class="d-flex gap-2">
-            <a href="{{ route('gestion.contacts.pdf') }}" class="btn btn-outline-dark">⬇ Télécharger en PDF</a>
-            <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#formStandard">
-                + Ajouter un numéro de standard
-            </button>
-        </div>
+        <a href="{{ route('gestion.contacts.pdf') }}" class="btn btn-outline-dark">⬇ Télécharger en PDF</a>
     </div>
 
-    {{-- Formulaire numéro de standard --}}
+    {{-- Formulaire numéro de standard (ouvert via les boutons ➕ des lignes) --}}
     <div class="collapse mb-3 {{ $errors->any() ? 'show' : '' }}" id="formStandard">
         <form method="POST" action="{{ route('gestion.contacts.standards.store') }}" class="card shadow-sm">
             @csrf
@@ -41,7 +44,7 @@
                 <div class="row g-2 align-items-end">
                     <div class="col-md-5">
                         <label class="form-label mb-1" style="font-size:12px;">Service</label>
-                        <select name="service" class="form-select form-select-sm" required>
+                        <select name="service" id="standardService" class="form-select form-select-sm" required>
                             <option value="">— Sélectionnez —</option>
                             @foreach(Referentiel::SERVICES as $num => $label)
                                 <option value="{{ $num }}" @selected(old('service') == $num)>{{ $label }}</option>
@@ -80,39 +83,54 @@
                     </tr>
                 </thead>
                 <tbody id="contactsBody">
-                {{-- Numéros de standard --}}
-                @foreach($standards as $standard)
-                    <tr data-search="{{ strtolower(\Illuminate\Support\Str::ascii($standard->service_label . ' standard')) }}" class="table-light">
-                        <td class="fw-semibold">{{ $standard->service_label }} <span class="badge bg-dark ms-1" style="font-size:10px;">Standard</span></td>
-                        <td>{{ $standard->telephone_complet }}</td>
-                        <td>—</td>
-                        <td class="text-end">
-                            <form action="{{ route('gestion.contacts.standards.destroy', $standard) }}" method="POST"
-                                  onsubmit="return confirm('Supprimer ce numéro de standard ?')">
-                                @csrf @method('DELETE')
-                                <button class="btn btn-sm btn-outline-danger">🗑</button>
-                            </form>
-                        </td>
-                    </tr>
-                @endforeach
+                {{-- Chaque service a TOUJOURS sa ligne standard, remplie ou non --}}
+                @foreach(Referentiel::SERVICES as $num => $label)
+                    @php
+                        $lignes = $standardsParService->get($num, collect());
+                        $ascii  = strtolower(\Illuminate\Support\Str::ascii($label . ' standard'));
+                    @endphp
 
-                {{-- Annuaire automatique (depuis la gestion des utilisateurs) --}}
-                @forelse($contacts as $contact)
-                    <tr data-search="{{ strtolower(\Illuminate\Support\Str::ascii($contact->prenom . ' ' . $contact->nom . ' ' . $contact->service_label)) }}">
-                        <td style="font-size:13px;">
-                            {{ $contact->service_label }}<br>
-                            <span class="fw-semibold" style="font-size:14px;">{{ $contact->prenom }} {{ $contact->nom }}</span>
-                            <span class="text-muted" style="font-size:12px;">({{ $contact->grade_label }})</span>
-                        </td>
-                        <td>{{ $contact->telephone_complet }}</td>
-                        <td>{{ $contact->email ?? '—' }}</td>
-                        <td></td>
-                    </tr>
-                @empty
-                    @if($standards->isEmpty())
-                        <tr><td colspan="4" class="text-center text-muted py-4">Aucun contact.</td></tr>
+                    @if($lignes->isEmpty())
+                        <tr data-search="{{ $ascii }}" class="table-light">
+                            <td class="fw-semibold">{{ $label }} <span class="badge bg-dark ms-1" style="font-size:10px;">Standard</span></td>
+                            <td class="text-muted">—</td>
+                            <td class="text-muted">—</td>
+                            <td class="text-end">
+                                <button type="button" class="btn btn-sm btn-outline-dark" title="Ajouter le numéro de standard"
+                                        onclick="ouvrirFormStandard({{ $num }})">➕</button>
+                            </td>
+                        </tr>
+                    @else
+                        @foreach($lignes as $standard)
+                            <tr data-search="{{ $ascii }}" class="table-light">
+                                <td class="fw-semibold">{{ $label }} <span class="badge bg-dark ms-1" style="font-size:10px;">Standard</span></td>
+                                <td>{{ $standard->telephone_complet }}</td>
+                                <td class="text-muted">—</td>
+                                <td class="text-end">
+                                    <form action="{{ route('gestion.contacts.standards.destroy', $standard) }}" method="POST"
+                                          onsubmit="return confirm('Supprimer ce numéro de standard ?')" class="d-inline">
+                                        @csrf @method('DELETE')
+                                        <button class="btn btn-sm btn-outline-danger">🗑</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @endforeach
                     @endif
-                @endforelse
+
+                    {{-- Annuaire automatique du service --}}
+                    @foreach($contactsParService->get($num, collect()) as $contact)
+                        <tr data-search="{{ strtolower(\Illuminate\Support\Str::ascii($contact->prenom . ' ' . $contact->nom . ' ' . $label)) }}">
+                            <td style="font-size:13px;">
+                                {{ $label }}<br>
+                                <span class="fw-semibold" style="font-size:14px;">{{ $contact->prenom }} {{ $contact->nom }}</span>
+                                <span class="text-muted" style="font-size:12px;">({{ $contact->grade_label }})</span>
+                            </td>
+                            <td>{{ $contact->telephone_complet }}</td>
+                            <td>{{ $contact->email ?? '—' }}</td>
+                            <td></td>
+                        </tr>
+                    @endforeach
+                @endforeach
                 </tbody>
             </table>
             <div id="noResults" class="text-center text-muted py-4 d-none">Aucun résultat.</div>
@@ -122,6 +140,12 @@
 </div>
 
 <script>
+function ouvrirFormStandard(service) {
+    document.getElementById('standardService').value = service;
+    const collapse = new bootstrap.Collapse(document.getElementById('formStandard'), { show: true });
+    document.getElementById('formStandard').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
 document.getElementById('contactSearch').addEventListener('input', function () {
     const q     = this.value.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
     const rows  = document.querySelectorAll('#contactsBody tr');
