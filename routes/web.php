@@ -48,6 +48,10 @@ Route::middleware('auth')->group(function () {
         Route::delete('/plans/{plan}', [PlanController::class, 'destroyPlan'])->name('plans.destroy');
         Route::post('/plans/{plan}/axes', [PlanController::class, 'storeAxe'])->name('axes.store');
         Route::delete('/axes/{axe}', [PlanController::class, 'destroyAxe'])->name('axes.destroy');
+        Route::post('/plans/{plan}/image', [PlanController::class, 'storeImage'])->name('plans.image');
+        Route::post('/plans/{plan}/stands', [PlanController::class, 'storeStand'])->name('stands.store');
+        Route::put('/stands/{emplacement}', [PlanController::class, 'updateStand'])->name('stands.update');
+        Route::post('/plans/{plan}/positions', [PlanController::class, 'savePositions'])->name('stands.positions');
         Route::post('/axes/{axe}/emplacements', [PlanController::class, 'storeEmplacement'])->name('emplacements.store');
         Route::put('/emplacements/{emplacement}', [PlanController::class, 'updateEmplacement'])->name('emplacements.update');
         Route::delete('/emplacements/{emplacement}', [PlanController::class, 'destroyEmplacement'])->name('emplacements.destroy');

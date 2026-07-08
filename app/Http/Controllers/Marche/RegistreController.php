@@ -26,31 +26,36 @@ class RegistreController extends Controller
         $dateDebut = $request->input('date_debut');
         $dateFin   = $request->input('date_fin');
 
-        // Venues = emplacements sur des plans datés de la mairie
-        $venues = MarcheEmplacement::with(['commercant', 'axe.plan'])
-            ->whereHas('axe.plan', function ($q) use ($mairie, $dateDebut, $dateFin) {
-                $q->where('mairie_id', $mairie->id);
-                if ($dateDebut) {
-                    $q->whereDate('date', '>=', $dateDebut);
-                }
-                if ($dateFin) {
-                    $q->whereDate('date', '<=', $dateFin);
-                }
+        // Venues = emplacements (sur un axe OU posés en 2D) de plans datés de la mairie
+        $condPlan = function ($q) use ($mairie, $dateDebut, $dateFin) {
+            $q->where('mairie_id', $mairie->id);
+            if ($dateDebut) {
+                $q->whereDate('date', '>=', $dateDebut);
+            }
+            if ($dateFin) {
+                $q->whereDate('date', '<=', $dateFin);
+            }
+        };
+
+        $venues = MarcheEmplacement::with(['commercant', 'axe.plan', 'plan'])
+            ->where(function ($q) use ($condPlan) {
+                $q->whereHas('axe.plan', $condPlan)
+                  ->orWhereHas('plan', $condPlan);
             })
             ->when($activite, fn ($q) => $q->whereHas('commercant', fn ($c) => $c->where('activite', $activite)))
             ->get()
-            ->sortByDesc(fn ($v) => $v->axe->plan->date)
+            ->sortByDesc(fn ($v) => $v->planParent()?->date)
             ->values();
 
-        // Statistiques par commerçant sur la période
-        $stats = $venues->groupBy('commercant_id')->map(function ($groupe) {
+        // Statistiques par commerçant sur la période (hors emplacements libres)
+        $stats = $venues->filter(fn ($v) => $v->commercant_id)->groupBy('commercant_id')->map(function ($groupe) {
             $commercant = $groupe->first()->commercant;
 
             return [
                 'commercant'     => $commercant,
                 'nb_venues'      => $groupe->count(),
                 'total_montant'  => round((float) $groupe->sum('montant'), 2),
-                'derniere_venue' => $groupe->map(fn ($v) => $v->axe->plan->date)->max(),
+                'derniere_venue' => $groupe->map(fn ($v) => $v->planParent()?->date)->filter()->max(),
             ];
         })->sortByDesc('total_montant')->values();
 

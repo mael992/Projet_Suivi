@@ -108,11 +108,11 @@
                 <tbody>
                 @forelse($venues as $venue)
                     <tr>
-                        <td>{{ $venue->axe->plan->date->format('d/m/Y') }}</td>
-                        <td class="fw-semibold">{{ $venue->commercant?->full_name ?? '—' }}</td>
+                        <td>{{ $venue->planParent()?->date?->format('d/m/Y') ?? '—' }}</td>
+                        <td class="fw-semibold">{{ $venue->commercant?->full_name ?? ($venue->label ? 'Empl. ' . $venue->label : '—') }}</td>
                         <td>{{ $venue->commercant?->activite ?? '—' }}</td>
-                        <td>{{ $venue->axe->nom }}</td>
-                        <td>{{ $venue->longueur }} m</td>
+                        <td>{{ $venue->axe?->nom ?? ($venue->label ? 'Plan — ' . $venue->label : 'Plan') }}</td>
+                        <td>{{ $venue->longueur ? $venue->longueur . ' m' : '—' }}</td>
                         <td class="text-end">{{ $venue->montant !== null ? number_format($venue->montant, 2, ',', ' ') . ' €' : '—' }}</td>
                     </tr>
                 @empty

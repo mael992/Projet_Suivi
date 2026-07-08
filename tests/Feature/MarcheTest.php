@@ -90,6 +90,48 @@ class MarcheTest extends TestCase
         ]);
     }
 
+    public function test_stand_can_be_placed_on_plan_2d(): void
+    {
+        $plan = MarchePlan::create([
+            'mairie_id' => $this->mairie->id,
+            'nom'       => 'Marché de Noël',
+            'date'      => now()->toDateString(),
+        ]);
+
+        $this->actingAs($this->responsable)
+            ->post("/marche/plans/{$plan->id}/stands", [
+                'label'       => 'B12',
+                'pos_x'       => 42.5,
+                'pos_y'       => 33.2,
+                'couleur'     => '#2f9fd0',
+                'electricite' => 1,
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('marche_emplacements', [
+            'marche_plan_id' => $plan->id,
+            'label'          => 'B12',
+            'electricite'    => 1,
+        ]);
+
+        // Sauvegarde des positions après déplacement
+        $stand = $plan->emplacements()->first();
+
+        $this->actingAs($this->responsable)
+            ->postJson("/marche/plans/{$plan->id}/positions", [
+                'stands' => [[
+                    'id'          => $stand->id,
+                    'pos_x'       => 10,
+                    'pos_y'       => 20,
+                    'largeur_pct' => 8,
+                    'hauteur_pct' => 5,
+                ]],
+            ])
+            ->assertOk();
+
+        $this->assertEquals(10.0, (float) $stand->fresh()->pos_x);
+    }
+
     public function test_employe_cannot_edit_marche(): void
     {
         $employe = User::factory()->create([

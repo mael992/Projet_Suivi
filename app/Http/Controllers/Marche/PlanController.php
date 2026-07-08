@@ -29,7 +29,7 @@ class PlanController extends Controller
             ? $plans->firstWhere('id', $request->integer('plan'))
             : $plans->first();
 
-        $plan?->load(['axes.emplacements.commercant']);
+        $plan?->load(['axes.emplacements.commercant', 'emplacements.commercant']);
 
         $commercants = Commercant::where('mairie_id', $mairie->id)
             ->orderBy('nom')->orderBy('prenom')
@@ -187,13 +187,132 @@ class PlanController extends Controller
         return $this->retourPlan($request, $emplacement->axe->plan, 'Emplacement mis à jour.');
     }
 
+    // ── Emplacements 2D (posés sur le fond de plan) ──────────────
+
+    /** Changer le fond de plan (image de la place) */
+    public function storeImage(Request $request, MarchePlan $plan)
+    {
+        $this->verifierPlan($request, $plan);
+        $this->verifierEdition();
+
+        $request->validate(['image' => 'required|image|max:10240']);
+
+        if ($plan->image) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($plan->image);
+        }
+
+        $plan->update(['image' => $request->file('image')->store('plans', 'public')]);
+
+        return $this->retourPlan($request, $plan, 'Fond de plan mis à jour.');
+    }
+
+    /** Poser un carré (emplacement) sur le fond de plan */
+    public function storeStand(Request $request, MarchePlan $plan)
+    {
+        $this->verifierPlan($request, $plan);
+        $this->verifierEdition();
+
+        $data = $request->validate([
+            'commercant_id' => 'nullable|exists:commercants,id',
+            'label'         => 'nullable|string|max:50',
+            'pos_x'         => 'required|numeric|min:0|max:100',
+            'pos_y'         => 'required|numeric|min:0|max:100',
+            'largeur_pct'   => 'nullable|numeric|min:0.5|max:100',
+            'hauteur_pct'   => 'nullable|numeric|min:0.5|max:100',
+            'couleur'       => 'nullable|string|max:20',
+            'electricite'   => 'nullable|boolean',
+            'montant'       => 'nullable|numeric|min:0',
+        ]);
+
+        if (! empty($data['commercant_id'])) {
+            $commercant = Commercant::findOrFail($data['commercant_id']);
+            abort_if($commercant->mairie_id !== $plan->mairie_id, 403);
+        }
+
+        $emplacement = $plan->emplacements()->create([
+            'commercant_id' => $data['commercant_id'] ?? null,
+            'label'         => $data['label'] ?? null,
+            'pos_x'         => $data['pos_x'],
+            'pos_y'         => $data['pos_y'],
+            'largeur_pct'   => $data['largeur_pct'] ?? 6,
+            'hauteur_pct'   => $data['hauteur_pct'] ?? 4,
+            'couleur'       => $data['couleur'] ?? '#e6a23c',
+            'electricite'   => (bool) ($data['electricite'] ?? false),
+            'montant'       => $data['montant'] ?? null,
+        ]);
+
+        ActivityLogger::log('MARCHE', 'PLACE', 'Emplacement "' . ($emplacement->label ?: $emplacement->commercant?->full_name ?: '#' . $emplacement->id) . "\" posé sur le plan du {$plan->date->format('d/m/Y')}");
+
+        return $this->retourPlan($request, $plan, 'Emplacement posé sur le plan.');
+    }
+
+    /** Modifier les infos d'un carré (commerçant, label, couleur, élec, montant) */
+    public function updateStand(Request $request, MarcheEmplacement $emplacement)
+    {
+        $plan = $emplacement->planParent();
+        $this->verifierPlan($request, $plan);
+        $this->verifierEdition();
+
+        $data = $request->validate([
+            'commercant_id' => 'nullable|exists:commercants,id',
+            'label'         => 'nullable|string|max:50',
+            'couleur'       => 'nullable|string|max:20',
+            'electricite'   => 'nullable|boolean',
+            'montant'       => 'nullable|numeric|min:0',
+        ]);
+
+        if (! empty($data['commercant_id'])) {
+            $commercant = Commercant::findOrFail($data['commercant_id']);
+            abort_if($commercant->mairie_id !== $plan->mairie_id, 403);
+        }
+
+        $emplacement->update([
+            'commercant_id' => $data['commercant_id'] ?? null,
+            'label'         => $data['label'] ?? null,
+            'couleur'       => $data['couleur'] ?? $emplacement->couleur,
+            'electricite'   => (bool) ($data['electricite'] ?? false),
+            'montant'       => $data['montant'] ?? null,
+        ]);
+
+        return $this->retourPlan($request, $plan, 'Emplacement mis à jour.');
+    }
+
+    /** Sauvegarde groupée des positions/tailles après déplacement à la souris */
+    public function savePositions(Request $request, MarchePlan $plan)
+    {
+        $this->verifierPlan($request, $plan);
+        $this->verifierEdition();
+
+        $data = $request->validate([
+            'stands'                 => 'required|array',
+            'stands.*.id'            => 'required|integer',
+            'stands.*.pos_x'         => 'required|numeric|min:0|max:100',
+            'stands.*.pos_y'         => 'required|numeric|min:0|max:100',
+            'stands.*.largeur_pct'   => 'required|numeric|min:0.5|max:100',
+            'stands.*.hauteur_pct'   => 'required|numeric|min:0.5|max:100',
+        ]);
+
+        foreach ($data['stands'] as $s) {
+            $plan->emplacements()->whereKey($s['id'])->update([
+                'pos_x'       => $s['pos_x'],
+                'pos_y'       => $s['pos_y'],
+                'largeur_pct' => $s['largeur_pct'],
+                'hauteur_pct' => $s['hauteur_pct'],
+            ]);
+        }
+
+        ActivityLogger::log('MARCHE', 'UPDATE', "Positions du plan du {$plan->date->format('d/m/Y')} enregistrées (" . count($data['stands']) . ' emplacements)');
+
+        return response()->json(['ok' => true]);
+    }
+
     /** Le commerçant n'est finalement pas venu → on le retire du plan */
     public function destroyEmplacement(Request $request, MarcheEmplacement $emplacement)
     {
-        $this->verifierPlan($request, $emplacement->axe->plan);
+        $this->verifierPlan($request, $emplacement->planParent());
         $this->verifierEdition();
 
-        $plan = $emplacement->axe->plan;
+        $plan = $emplacement->planParent();
         $nom  = $emplacement->commercant?->full_name ?? '—';
         $emplacement->delete();
 
