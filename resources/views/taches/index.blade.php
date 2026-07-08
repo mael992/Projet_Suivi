@@ -21,35 +21,35 @@
         </a>
         <div class="sidebar-divider"></div>
         <a href="{{ route('dashboard') }}" class="sidebar-link active">
-            <span class="sidebar-icon" style="font-size:16px">📋</span> Suivi des tâches
+            <span class="sidebar-icon" style="font-size:16px">📋</span> {{ __('Suivi des tâches') }}
         </a>
         @if(auth()->user()->peutGererTaches())
         <a href="{{ route('taches.create') }}" class="sidebar-link">
-            <span class="sidebar-icon" style="font-size:16px">➕</span> Nouvelle tâche
+            <span class="sidebar-icon" style="font-size:16px">➕</span> {{ __('Nouvelle tâche') }}
         </a>
         @endif
         @if(!auth()->user()->isAdmin() && auth()->user()->peutGererMairie())
             <div class="sidebar-divider"></div>
             <a href="{{ route('gestion.utilisateurs.index') }}" class="sidebar-link">
-                <span class="sidebar-icon" style="font-size:16px">👥</span> Gestion des utilisateurs
+                <span class="sidebar-icon" style="font-size:16px">👥</span> {{ __('Gestion des utilisateurs') }}
             </a>
             <a href="{{ route('gestion.contacts.index') }}" class="sidebar-link">
-                <span class="sidebar-icon" style="font-size:16px">📇</span> Fiche Contact
+                <span class="sidebar-icon" style="font-size:16px">📇</span> {{ __('Fiche Contact') }}
             </a>
             <a href="{{ route('gestion.avancement') }}" class="sidebar-link">
-                <span class="sidebar-icon" style="font-size:16px">📊</span> Avancement des tâches
+                <span class="sidebar-icon" style="font-size:16px">📊</span> {{ __('Avancement des tâches') }}
             </a>
         @endif
         @if(auth()->user()->isAdmin())
             <div class="sidebar-divider"></div>
             <a href="{{ route('users.index') }}" class="sidebar-link">
-                <span class="sidebar-icon" style="font-size:16px">⚙️</span> Paramètres Administration
+                <span class="sidebar-icon" style="font-size:16px">⚙️</span> {{ __('Paramètres Administration') }}
             </a>
         @endif
         @if(auth()->user()->peutGererTaches())
             <div class="sidebar-divider"></div>
             <a href="{{ route('taches.create') }}" class="sidebar-cta">
-                <span style="font-size:16px">💬</span> Ajouter une tâche
+                <span style="font-size:16px">💬</span> {{ __('Ajouter une tâche') }}
             </a>
         @endif
     </nav>
@@ -79,13 +79,13 @@
 
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <h1 class="h3 mb-0">
-            Suivi des tâches
+            {{ __('Suivi des tâches') }}
             @if(!auth()->user()->isAdmin() && auth()->user()->mairie)
                 — {{ auth()->user()->mairie->nom }}
             @endif
         </h1>
         @if(auth()->user()->peutGererTaches())
-            <a href="{{ route('taches.create') }}" class="btn btn-primary">+ Ajouter une tâche</a>
+            <a href="{{ route('taches.create') }}" class="btn btn-primary">{{ __('+ Ajouter une tâche') }}</a>
         @endif
     </div>
 
@@ -115,9 +115,9 @@
         <div class="card-body py-3">
             <div class="row g-2 align-items-end justify-content-center">
                 <div class="col-6 col-md-2">
-                    <label class="form-label mb-1" style="font-size:12px;">Statut</label>
+                    <label class="form-label mb-1" style="font-size:12px;">{{ __('Statut') }}</label>
                     <select name="statut" class="form-select form-select-sm">
-                        <option value="">Tous</option>
+                        <option value="">{{ __('Tous') }}</option>
                         @foreach(Referentiel::STATUTS as $key => $label)
                             <option value="{{ $key }}" @selected(request('statut') === $key)>{{ $label }}</option>
                         @endforeach
@@ -125,9 +125,9 @@
                 </div>
                 @if(auth()->user()->voitTousLesServices())
                 <div class="col-6 col-md-3">
-                    <label class="form-label mb-1" style="font-size:12px;">Équipe / Service</label>
+                    <label class="form-label mb-1" style="font-size:12px;">{{ __('Équipe / Service') }}</label>
                     <select name="service" class="form-select form-select-sm">
-                        <option value="">Tous</option>
+                        <option value="">{{ __('Tous') }}</option>
                         @foreach(Referentiel::SERVICES as $num => $label)
                             <option value="{{ $num }}" @selected(request('service') == $num)>{{ $num }} — {{ $label }}</option>
                         @endforeach
@@ -136,9 +136,9 @@
                 @endif
                 @if(auth()->user()->isAdmin() && $mairies->isNotEmpty())
                 <div class="col-6 col-md-2">
-                    <label class="form-label mb-1" style="font-size:12px;">Mairie</label>
+                    <label class="form-label mb-1" style="font-size:12px;">{{ __('Mairie') }}</label>
                     <select name="mairie" class="form-select form-select-sm">
-                        <option value="">Toutes</option>
+                        <option value="">{{ __('Toutes') }}</option>
                         @foreach($mairies as $m)
                             <option value="{{ $m->id }}" @selected(request('mairie') == $m->id)>{{ $m->nom }}</option>
                         @endforeach
@@ -146,15 +146,15 @@
                 </div>
                 @endif
                 <div class="col-6 col-md-2">
-                    <label class="form-label mb-1" style="font-size:12px;">Du</label>
+                    <label class="form-label mb-1" style="font-size:12px;">{{ __('Du') }}</label>
                     <input type="date" name="date_debut" value="{{ request('date_debut') }}" class="form-control form-control-sm">
                 </div>
                 <div class="col-6 col-md-2">
-                    <label class="form-label mb-1" style="font-size:12px;">Au</label>
+                    <label class="form-label mb-1" style="font-size:12px;">{{ __('Au') }}</label>
                     <input type="date" name="date_fin" value="{{ request('date_fin') }}" class="form-control form-control-sm">
                 </div>
                 <div class="col-6 col-md-1 d-flex gap-1">
-                    <button type="submit" class="btn btn-sm btn-dark w-100">Filtrer</button>
+                    <button type="submit" class="btn btn-sm btn-dark w-100">{{ __('Filtrer') }}</button>
                 </div>
             </div>
         </div>
@@ -166,15 +166,15 @@
                 <thead class="table-dark">
                     <tr>
                         <th>Réf</th>
-                        @if(auth()->user()->isAdmin())<th>Mairie</th>@endif
-                        <th>Date de création</th>
-                        <th>Photo de la tâche à faire</th>
-                        <th>Photo une fois finie</th>
-                        <th>Date et heure de clôture</th>
-                        <th>Équipe</th>
-                        <th>Assignée à</th>
-                        <th>Statut</th>
-                        <th class="text-end">Action</th>
+                        @if(auth()->user()->isAdmin())<th>{{ __('Mairie') }}</th>@endif
+                        <th>{{ __('Date de création') }}</th>
+                        <th>{{ __('Photo de la tâche à faire') }}</th>
+                        <th>{{ __('Photo une fois finie') }}</th>
+                        <th>{{ __('Date et heure de clôture') }}</th>
+                        <th>{{ __('Équipe') }}</th>
+                        <th>{{ __('Assignée à') }}</th>
+                        <th>{{ __('Statut') }}</th>
+                        <th class="text-end">{{ __('Action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -227,7 +227,7 @@
                 @empty
                     <tr>
                         <td colspan="{{ auth()->user()->isAdmin() ? 10 : 9 }}" class="text-center text-muted py-4">
-                            Aucune tâche pour le moment.
+                            {{ __('Aucune tâche pour le moment.') }}
                         </td>
                     </tr>
                 @endforelse

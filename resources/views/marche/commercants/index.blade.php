@@ -27,11 +27,11 @@
             <div class="search-input-group">
                 <span class="search-icon">🔍</span>
                 <input type="text" id="commercantSearch" class="search-input"
-                       placeholder="Recherche : nom, prénom ou activité…" autocomplete="off">
+                       placeholder="{{ __('Recherche : nom, prénom ou activité…') }}" autocomplete="off">
             </div>
         </div>
         @if($peutEditer)
-            <a href="{{ route('marche.commercants.create', request()->only('mairie')) }}" class="btn btn-primary">+ Ajouter</a>
+            <a href="{{ route('marche.commercants.create', request()->only('mairie')) }}" class="btn btn-primary">{{ __('+ Ajouter') }}</a>
         @endif
     </div>
 
@@ -41,10 +41,10 @@
             <table class="table table-hover mb-0 align-middle" style="font-size:14px;">
                 <thead class="table-dark">
                     <tr>
-                        <th>Nom</th><th>Prénom</th><th>Activité</th><th>Téléphone</th><th>Email</th>
+                        <th>{{ __('Nom') }}</th><th>{{ __('Prénom') }}</th><th>{{ __('Activité') }}</th><th>{{ __('Téléphone') }}</th><th>{{ __('Email') }}</th>
                         <th class="text-center">Stand (m)</th>
-                        <th class="text-center">Venues</th>
-                        <th class="text-end">Action</th>
+                        <th class="text-center">{{ __('Venues') }}</th>
+                        <th class="text-end">{{ __('Action') }}</th>
                     </tr>
                 </thead>
                 <tbody id="commercantsBody">
@@ -96,7 +96,7 @@
                 @endforelse
                 </tbody>
             </table>
-            <div id="noResults" class="text-center text-muted py-4 d-none">Aucun résultat.</div>
+            <div id="noResults" class="text-center text-muted py-4 d-none">{{ __('Aucun résultat.') }}</div>
         </div>
     </div>
 

@@ -30,12 +30,12 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">Clôture prévue (date butoir) *</label>
+                    <label class="form-label fw-semibold">{{ __('Clôture prévue (date butoir) *') }}</label>
                     <input type="date" name="date_butoir" value="{{ old('date_butoir', $tache->date_butoir->format('Y-m-d')) }}" class="form-control" required>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">Photo de la tâche à faire</label>
+                    <label class="form-label fw-semibold">{{ __('Photo de la tâche à faire') }}</label>
                     @if($tache->photo_avant)
                         <div class="mb-2">
                             <img src="{{ asset('storage/' . $tache->photo_avant) }}" style="height:80px;border-radius:8px;">
@@ -52,7 +52,7 @@
                 {{-- Côté employé : lecture seule des instructions --}}
                 @if($tache->photo_avant)
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Photo de la tâche à faire</label><br>
+                        <label class="form-label fw-semibold">{{ __('Photo de la tâche à faire') }}</label><br>
                         <img src="{{ asset('storage/' . $tache->photo_avant) }}" style="height:100px;border-radius:8px;">
                     </div>
                 @endif
@@ -65,7 +65,7 @@
             @endunless
 
             <div class="mb-3">
-                <label class="form-label fw-semibold">Statut</label>
+                <label class="form-label fw-semibold">{{ __('Statut') }}</label>
                 <select name="statut" class="form-select" required>
                     @foreach(Referentiel::STATUTS as $key => $label)
                         @php
@@ -80,7 +80,7 @@
 
             <div class="mb-3">
                 <label class="form-label fw-semibold">
-                    Photo de la tâche une fois finie
+                    {{ __('Photo de la tâche une fois finie') }}
                     @if($tache->photoApresObligatoire())
                         <span class="text-danger">* (obligatoire pour clôturer : une photo « à faire » existe)</span>
                     @else
@@ -101,8 +101,8 @@
             </div>
 
             <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-primary">Enregistrer</button>
-                <a href="{{ route('dashboard') }}" class="btn btn-outline-secondary">Annuler</a>
+                <button type="submit" class="btn btn-primary">{{ __('Enregistrer') }}</button>
+                <a href="{{ route('dashboard') }}" class="btn btn-outline-secondary">{{ __('Annuler') }}</a>
             </div>
         </div>
     </form>

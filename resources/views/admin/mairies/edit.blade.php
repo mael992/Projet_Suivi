@@ -29,7 +29,7 @@
                     <input type="email" name="email" value="{{ old('email', $mairie->email) }}" class="form-control" required>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label fw-semibold">Indicatif</label>
+                    <label class="form-label fw-semibold">{{ __('Indicatif') }}</label>
                     <select name="telephone_indicatif" class="form-select">
                         @foreach(Referentiel::INDICATIFS as $ind)
                             <option value="{{ $ind }}" @selected(old('telephone_indicatif', $mairie->telephone_indicatif) === $ind)>{{ $ind }}</option>
@@ -37,7 +37,7 @@
                     </select>
                 </div>
                 <div class="col-md-9">
-                    <label class="form-label fw-semibold">Téléphone</label>
+                    <label class="form-label fw-semibold">{{ __('Téléphone') }}</label>
                     <input type="text" name="telephone" value="{{ old('telephone', $mairie->telephone) }}" class="form-control">
                 </div>
                 <div class="col-12">
@@ -49,7 +49,7 @@
             </div>
 
             <div class="d-flex gap-2 mt-4">
-                <button type="submit" class="btn btn-primary">Enregistrer</button>
+                <button type="submit" class="btn btn-primary">{{ __('Enregistrer') }}</button>
                 <a href="{{ route('mairies.index') }}" class="btn btn-outline-secondary">Retour</a>
             </div>
         </div>

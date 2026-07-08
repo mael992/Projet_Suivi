@@ -25,7 +25,7 @@
     {{-- ── 1. Choisir son marché ── --}}
     <div class="card shadow-sm mb-4">
         <div class="card-body py-3">
-            <label class="form-label mb-1" style="font-size:12px;">Choisissez votre marché</label>
+            <label class="form-label mb-1" style="font-size:12px;">{{ __('Choisissez votre marché') }}</label>
             <form method="GET" action="{{ route('marche.plan') }}">
                 @if($mairieParam)<input type="hidden" name="mairie" value="{{ $mairieParam }}">@endif
                 <select name="plan" class="form-select" onchange="this.form.submit()">
@@ -42,19 +42,19 @@
             @if($peutEditer)
             <div class="d-flex gap-2 flex-wrap mt-3">
                 <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#formCreerMarche">
-                    + Créer un marché
+                    {{ __('+ Créer un marché') }}
                 </button>
                 @if($plan)
                 <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#formModifierMarche">
-                    Modifier les informations du marché
+                    {{ __('Modifier les informations du marché') }}
                 </button>
                 <button class="btn btn-sm btn-outline-dark" type="button" data-bs-toggle="collapse" data-bs-target="#formFondPlan">
-                    🖼 Changer le fond de plan
+                    🖼 {{ __('Changer le fond de plan') }}
                 </button>
                 @endif
             </div>
 
-            {{-- + Créer un marché --}}
+            {{-- {{ __('+ Créer un marché') }} --}}
             <div class="collapse mt-3" id="formCreerMarche">
                 <form method="POST" action="{{ route('marche.plans.store') }}" class="row g-2 align-items-end border rounded p-2 bg-light">
                     @csrf
@@ -64,7 +64,7 @@
                         <input type="text" name="nom" class="form-control form-control-sm" placeholder="Marché hebdomadaire" required>
                     </div>
                     <div class="col-4">
-                        <label class="form-label mb-1" style="font-size:12px;">Date</label>
+                        <label class="form-label mb-1" style="font-size:12px;">{{ __('Date') }}</label>
                         <input type="date" name="date" class="form-control form-control-sm" required>
                     </div>
                     <div class="col-3">
@@ -74,22 +74,22 @@
             </div>
 
             @if($plan)
-            {{-- Modifier les informations du marché --}}
+            {{-- {{ __('Modifier les informations du marché') }} --}}
             <div class="collapse mt-3" id="formModifierMarche">
                 <div class="border rounded p-2 bg-light">
                     <form method="POST" action="{{ route('marche.plans.update', $plan) }}" class="row g-2 align-items-end">
                         @csrf @method('PUT')
                         @if($mairieParam)<input type="hidden" name="mairie" value="{{ $mairieParam }}">@endif
                         <div class="col-5">
-                            <label class="form-label mb-1" style="font-size:12px;">Nom</label>
+                            <label class="form-label mb-1" style="font-size:12px;">{{ __('Nom') }}</label>
                             <input type="text" name="nom" value="{{ $plan->nom }}" class="form-control form-control-sm" required>
                         </div>
                         <div class="col-4">
-                            <label class="form-label mb-1" style="font-size:12px;">Date</label>
+                            <label class="form-label mb-1" style="font-size:12px;">{{ __('Date') }}</label>
                             <input type="date" name="date" value="{{ $plan->date->format('Y-m-d') }}" class="form-control form-control-sm" required>
                         </div>
                         <div class="col-3">
-                            <button class="btn btn-sm btn-outline-primary w-100">Enregistrer</button>
+                            <button class="btn btn-sm btn-outline-primary w-100">{{ __('Enregistrer') }}</button>
                         </div>
                     </form>
                     <form method="POST" action="{{ route('marche.plans.destroy', $plan) }}" class="mt-2 text-end"
@@ -101,7 +101,7 @@
                 </div>
             </div>
 
-            {{-- Changer le fond de plan --}}
+            {{-- {{ __('Changer le fond de plan') }} --}}
             <div class="collapse mt-3" id="formFondPlan">
                 <form method="POST" action="{{ route('marche.plans.image', $plan) }}" enctype="multipart/form-data"
                       class="row g-2 align-items-end border rounded p-2 bg-light">
@@ -123,7 +123,7 @@
 
     @if(!$plan)
         <div class="text-center text-muted py-5">
-            🗺️ Créez votre premier marché (bouton « + Créer un marché ») pour commencer à placer les exposants.
+            🗺️ Créez votre premier marché (bouton « {{ __('+ Créer un marché') }} ») pour commencer à placer les exposants.
         </div>
     @else
 
@@ -133,11 +133,11 @@
                 <span class="fw-semibold">🗺️ {{ $plan->nom }} — {{ $plan->date->format('d/m/Y') }}</span>
                 <div class="d-flex gap-2 flex-wrap">
                     @if($peutEditer)
-                        <button type="button" class="btn btn-sm btn-primary" id="btnPoser" onclick="basculerPose()">➕ Poser un emplacement</button>
-                        <button type="button" class="btn btn-sm btn-outline-dark" id="btnEditer" onclick="basculerEdition()">✋ Déplacer / redimensionner</button>
-                        <button type="button" class="btn btn-sm btn-success d-none" id="btnSauver" onclick="sauverPositions()">💾 Enregistrer les positions</button>
+                        <button type="button" class="btn btn-sm btn-primary" id="btnPoser" onclick="basculerPose()">➕ {{ __('Poser un emplacement') }}</button>
+                        <button type="button" class="btn btn-sm btn-outline-dark" id="btnEditer" onclick="basculerEdition()">✋ {{ __('Déplacer / redimensionner') }}</button>
+                        <button type="button" class="btn btn-sm btn-success d-none" id="btnSauver" onclick="sauverPositions()">💾 {{ __('Enregistrer les positions') }}</button>
                     @endif
-                    <button type="button" class="btn btn-sm btn-outline-secondary d-none" id="btnDezoom" onclick="dezoomer()">🔍 Vue d'ensemble</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary d-none" id="btnDezoom" onclick="dezoomer()">🔍 {{ __("Vue d'ensemble") }}</button>
                 </div>
             </div>
             <div class="card-body p-2">
@@ -159,8 +159,9 @@
                                  data-activite="{{ $emp->commercant?->activite }}"
                                  data-montant="{{ $emp->montant }}"
                                  data-couleur="{{ $emp->couleur }}"
+                                 data-rotation="{{ $emp->rotation }}"
                                  data-elec="{{ $emp->electricite ? 1 : 0 }}"
-                                 style="position:absolute;left:{{ $emp->pos_x }}%;top:{{ $emp->pos_y }}%;width:{{ $emp->largeur_pct }}%;height:{{ $emp->hauteur_pct }}%;background:{{ $emp->couleur }}CC;border:2px solid {{ $emp->couleur }};border-radius:4px;color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.3);">
+                                 style="position:absolute;left:{{ $emp->pos_x }}%;top:{{ $emp->pos_y }}%;width:{{ $emp->largeur_pct }}%;height:{{ $emp->hauteur_pct }}%;transform:rotate({{ $emp->rotation }}deg);background:{{ $emp->couleur }}CC;border:2px solid {{ $emp->couleur }};border-radius:4px;color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.3);touch-action:manipulation;">
                                 <span class="stand-txt" style="pointer-events:none;text-shadow:0 1px 2px rgba(0,0,0,.6);">
                                     @if($emp->electricite)⚡@endif{{ $emp->label ?: ($emp->commercant?->nom ?? '?') }}
                                 </span>
@@ -186,7 +187,7 @@
                             @csrf @method('DELETE')
                             @if($mairieParam)<input type="hidden" name="mairie" value="{{ $mairieParam }}">@endif
                             <input type="hidden" name="plan" value="{{ $plan->id }}">
-                            <button class="btn btn-sm btn-outline-danger">🗑 Retirer (pas venu)</button>
+                            <button class="btn btn-sm btn-outline-danger">🗑 {{ __('Retirer (pas venu)') }}</button>
                         </form>
                     </div>
                     @endif
@@ -195,7 +196,7 @@
                 @if($peutEditer)
                 {{-- Formulaire pose / modification d'un emplacement --}}
                 <div id="formStand" class="d-none border rounded p-3 mt-2 bg-light">
-                    <div class="fw-semibold mb-2" id="formStandTitre">Nouvel emplacement</div>
+                    <div class="fw-semibold mb-2" id="formStandTitre">{{ __('Nouvel emplacement') }}</div>
                     <form method="POST" id="formStandForm">
                         @csrf
                         <span id="formStandMethod"></span>
@@ -217,7 +218,7 @@
                                 </select>
                             </div>
                             <div class="col-4 col-md-2">
-                                <label class="form-label mb-1" style="font-size:12px;">Couleur</label>
+                                <label class="form-label mb-1" style="font-size:12px;">{{ __('Couleur') }}</label>
                                 <select name="couleur" id="fs_couleur" class="form-select form-select-sm">
                                     <option value="#e6a23c">🟧 Orange</option>
                                     <option value="#2f9fd0">🟦 Bleu</option>
@@ -227,6 +228,10 @@
                                 </select>
                             </div>
                             <div class="col-4 col-md-1">
+                                <label class="form-label mb-1" style="font-size:12px;">{{ __('Rotation (°)') }}</label>
+                                <input type="number" name="rotation" id="fs_rotation" step="5" min="-360" max="360" value="0" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-4 col-md-1">
                                 <label class="form-label mb-1" style="font-size:12px;">⚡ Élec</label>
                                 <select name="electricite" id="fs_elec" class="form-select form-select-sm">
                                     <option value="0">Non</option>
@@ -234,7 +239,7 @@
                                 </select>
                             </div>
                             <div class="col-4 col-md-2">
-                                <label class="form-label mb-1" style="font-size:12px;">Montant (€)</label>
+                                <label class="form-label mb-1" style="font-size:12px;">{{ __('Montant (€)') }}</label>
                                 <input type="number" name="montant" id="fs_montant" step="0.01" min="0" class="form-control form-control-sm">
                             </div>
                             <div class="col-12 col-md-1 d-flex gap-1">
@@ -242,7 +247,7 @@
                             </div>
                         </div>
                     </form>
-                    <button type="button" class="btn btn-sm btn-link text-muted px-0 mt-1" onclick="fermerFormStand()">Annuler</button>
+                    <button type="button" class="btn btn-sm btn-link text-muted px-0 mt-1" onclick="fermerFormStand()">{{ __('Annuler') }}</button>
                 </div>
                 @endif
             </div>
@@ -308,6 +313,8 @@ function basculerPose() {
 function basculerEdition() {
     modeEdition = !modeEdition; modePose = false;
     document.querySelectorAll('.stand .poignee').forEach(p => p.classList.toggle('d-none', !modeEdition));
+    // bloque le scroll tactile sur les carrés pendant le glisser-déposer
+    document.querySelectorAll('.stand').forEach(s => s.style.touchAction = modeEdition ? 'none' : 'manipulation');
     majBoutons();
 }
 function majBoutons() {
@@ -317,25 +324,34 @@ function majBoutons() {
     dezoomer();
 }
 
-/* ── Clic sur le plan : poser un emplacement ── */
+/* ── Clic sur le plan : poser un emplacement (ou dézoomer) ── */
+const TAILLE_DEFAUT = { w: 6, h: 4 };
+
 monde.addEventListener('click', e => {
     if (e.target.closest('.stand')) return;
-    if (!modePose) return;
-    const rect = monde.getBoundingClientRect();
+    if (!modePose) {
+        if (standActif) dezoomer();   // toucher le fond quand on est zoomé → vue d'ensemble
+        return;
+    }
+    const rect  = monde.getBoundingClientRect();
     const scale = rect.width / monde.offsetWidth;
-    const x = ((e.clientX - rect.left) / scale) / monde.offsetWidth * 100;
-    const y = ((e.clientY - rect.top) / scale) / monde.offsetHeight * 100;
-    ouvrirFormStand(null, x, y);
+    // le carré est CENTRÉ sur le point touché
+    const x = ((e.clientX - rect.left) / scale) / monde.offsetWidth * 100 - TAILLE_DEFAUT.w / 2;
+    const y = ((e.clientY - rect.top) / scale) / monde.offsetHeight * 100 - TAILLE_DEFAUT.h / 2;
+    ouvrirFormStand(null, Math.max(0, Math.min(x, 100 - TAILLE_DEFAUT.w)), Math.max(0, Math.min(y, 100 - TAILLE_DEFAUT.h)));
 });
 
-/* ── Clic sur un carré ── */
+/* ── Clic sur un carré : zoom / re-clic : dézoom ── */
 document.querySelectorAll('.stand').forEach(stand => {
     stand.addEventListener('click', e => {
-        if (modeEdition) return;
+        if (modeEdition || modePose) return;
         e.stopPropagation();
+        if (standActif === stand) { dezoomer(); return; }
         zoomerSur(stand);
     });
 });
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') dezoomer(); });
 
 /* ── Formulaire pose / édition ── */
 function ouvrirFormStand(stand, x, y) {
@@ -345,12 +361,13 @@ function ouvrirFormStand(stand, x, y) {
     const f = document.getElementById('formStandForm');
     document.getElementById('formStandMethod').innerHTML = stand ? '<input type="hidden" name="_method" value="PUT">' : '';
     f.action = stand ? (URL_STAND + stand.dataset.id) : URL_POSER;
-    document.getElementById('formStandTitre').textContent = stand ? 'Modifier l\'emplacement' : 'Nouvel emplacement';
+    document.getElementById('formStandTitre').textContent = stand ? 'Modifier l\'emplacement' : '{{ __('Nouvel emplacement') }}';
     document.getElementById('fs_x').value = x !== undefined ? x.toFixed(3) : '';
     document.getElementById('fs_y').value = y !== undefined ? y.toFixed(3) : '';
     document.getElementById('fs_label').value = stand ? (stand.dataset.label || '') : '';
     document.getElementById('fs_commercant').value = stand ? (stand.dataset.commercantId || '') : '';
     document.getElementById('fs_couleur').value = stand ? (stand.dataset.couleur || '#e6a23c') : '#e6a23c';
+    document.getElementById('fs_rotation').value = stand ? (stand.dataset.rotation || 0) : 0;
     document.getElementById('fs_elec').value = stand ? stand.dataset.elec : '0';
     document.getElementById('fs_montant').value = stand ? (stand.dataset.montant || '') : '';
     form.scrollIntoView({ behavior: 'smooth', block: 'center' });

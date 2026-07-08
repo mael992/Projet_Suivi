@@ -18,7 +18,7 @@
                 <div class="col-md-6"><strong>Équipe :</strong> {{ $tache->service_label }}</div>
                 <div class="col-md-6"><strong>Créée le :</strong> {{ $tache->created_at->format('d/m/Y H:i') }}</div>
                 <div class="col-md-6"><strong>Créée par :</strong> {{ $tache->createur?->username ?? '—' }}</div>
-                <div class="col-md-6"><strong>Assignée à :</strong> {{ $tache->assigne?->username ?? '—' }}</div>
+                <div class="col-md-6"><strong>{{ __('Assignée à') }} :</strong> {{ $tache->assigne?->username ?? '—' }}</div>
                 <div class="col-md-6">
                     <strong>Statut :</strong>
                     @php $couleurs = ['ouvert' => 'secondary', 'en_cours' => 'warning', 'fait' => 'success']; @endphp
@@ -33,7 +33,7 @@
     <div class="row g-3 mb-3">
         <div class="col-md-6">
             <div class="card shadow-sm h-100">
-                <div class="card-header py-2" style="font-size:13px;font-weight:600;">Photo de la tâche à faire</div>
+                <div class="card-header py-2" style="font-size:13px;font-weight:600;">{{ __('Photo de la tâche à faire') }}</div>
                 <div class="card-body text-center">
                     @if($tache->photo_avant)
                         <a href="{{ asset('storage/' . $tache->photo_avant) }}" target="_blank">
@@ -47,7 +47,7 @@
         </div>
         <div class="col-md-6">
             <div class="card shadow-sm h-100">
-                <div class="card-header py-2" style="font-size:13px;font-weight:600;">Photo de la tâche une fois finie</div>
+                <div class="card-header py-2" style="font-size:13px;font-weight:600;">{{ __('Photo de la tâche une fois finie') }}</div>
                 <div class="card-body text-center">
                     @if($tache->photo_apres)
                         <a href="{{ asset('storage/' . $tache->photo_apres) }}" target="_blank">

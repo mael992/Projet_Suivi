@@ -29,6 +29,7 @@ return new class extends Migration
             $table->decimal('largeur_pct', 6, 3)->nullable();
             $table->decimal('hauteur_pct', 6, 3)->nullable();
             $table->string('couleur', 20)->default('#e6a23c');    // orange / bleu comme sur les plans papier
+            $table->decimal('rotation', 6, 2)->default(0);        // orientation du carré (degrés)
             $table->boolean('electricite')->default(false);       // ⚡
         });
     }
@@ -37,7 +38,7 @@ return new class extends Migration
     {
         Schema::table('marche_emplacements', function (Blueprint $table) {
             $table->dropConstrainedForeignId('marche_plan_id');
-            $table->dropColumn(['label', 'pos_x', 'pos_y', 'largeur_pct', 'hauteur_pct', 'couleur', 'electricite']);
+            $table->dropColumn(['label', 'pos_x', 'pos_y', 'largeur_pct', 'hauteur_pct', 'couleur', 'rotation', 'electricite']);
         });
 
         Schema::table('marche_plans', function (Blueprint $table) {

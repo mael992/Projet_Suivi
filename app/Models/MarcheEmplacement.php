@@ -21,6 +21,7 @@ class MarcheEmplacement extends Model
         'largeur_pct',
         'hauteur_pct',
         'couleur',
+        'rotation',
         'electricite',
     ];
 
@@ -34,6 +35,7 @@ class MarcheEmplacement extends Model
             'pos_y'       => 'float',
             'largeur_pct' => 'float',
             'hauteur_pct' => 'float',
+            'rotation'    => 'float',
             'electricite' => 'boolean',
         ];
     }

@@ -1712,3 +1712,22 @@ a { color: var(--brand); }
     font-weight: 600;
     border-left: 3px solid var(--gold);
 }
+
+/* ═══════════ RESPONSIVE MOBILE MGDS ═══════════ */
+@media (max-width: 768px) {
+    h1.h3 { font-size: 1.15rem; }
+    .container-fluid.px-3 { padding-left: 10px !important; padding-right: 10px !important; }
+    .card-body { padding: 12px; }
+    .table { font-size: 12px; }
+    .table td, .table th { padding: 6px 8px; white-space: nowrap; }
+    .btn-group-sm > .btn, .btn-sm { padding: 4px 8px; font-size: 12px; }
+    .nav-tabs .nav-link { padding: 6px 10px; font-size: 13px; }
+    .badge { font-size: 10px; }
+    /* les groupes de boutons d actions passent a la ligne proprement */
+    .btn-group { flex-wrap: wrap; }
+}
+@media (max-width: 480px) {
+    .nav-tabs { flex-wrap: nowrap; overflow-x: auto; }
+    .nav-tabs .nav-link { white-space: nowrap; }
+    .guest-card-body { padding: 20px 18px 24px; }
+}

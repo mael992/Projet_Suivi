@@ -9,7 +9,7 @@
 
     <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
         <div>
-            <h2 class="fw-bold mb-0" style="font-size:1.3rem;">📋 Logs d'activité</h2>
+            <h2 class="fw-bold mb-0" style="font-size:1.3rem;">📋 {{ __("Logs d'activité") }}</h2>
             <p class="text-muted small mb-0">
                 Conservation : 6 mois (conformité CNIL/RGPD) — Sauvegarde automatique toutes les 48h
             </p>
@@ -73,7 +73,7 @@
                         <div class="col-12 col-sm-4">
                             <label class="form-label small fw-semibold mb-1">Catégorie</label>
                             <select name="cat" class="form-select form-select-sm">
-                                <option value="">Toutes</option>
+                                <option value="">{{ __('Toutes') }}</option>
                                 @foreach(['AUTH','USER','TACHE','MAIRIE','CONTACT','SYSTEM'] as $cat)
                                     <option value="{{ $cat }}" {{ $filterCat === $cat ? 'selected' : '' }}>{{ $cat }}</option>
                                 @endforeach
@@ -85,7 +85,7 @@
                                    placeholder="Nom, IP, action..." value="{{ $filterText }}">
                         </div>
                         <div class="col-12 col-sm-2">
-                            <button type="submit" class="btn btn-dark btn-sm w-100">Filtrer</button>
+                            <button type="submit" class="btn btn-dark btn-sm w-100">{{ __('Filtrer') }}</button>
                         </div>
                     </div>
                 </div>

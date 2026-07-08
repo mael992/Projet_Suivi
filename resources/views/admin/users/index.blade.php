@@ -6,8 +6,8 @@
     @include('admin.partials.onglets')
 
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-        <h2 class="h5 mb-0">Gestion des utilisateurs (toutes mairies)</h2>
-        <a href="{{ route('users.create') }}" class="btn btn-primary">+ Ajouter</a>
+        <h2 class="h5 mb-0">{{ __('Gestion des utilisateurs (toutes mairies)') }}</h2>
+        <a href="{{ route('users.create') }}" class="btn btn-primary">{{ __('+ Ajouter') }}</a>
     </div>
 
     @if(session('success'))
@@ -33,11 +33,11 @@
                     <tr>
                         <th>Réf</th>
                         <th>Utilisateur</th>
-                        <th>Mairie</th>
-                        <th>Équipe</th>
-                        <th>Statut</th>
-                        <th>Email</th>
-                        <th class="text-end">Action</th>
+                        <th>{{ __('Mairie') }}</th>
+                        <th>{{ __('Équipe') }}</th>
+                        <th>{{ __('Statut') }}</th>
+                        <th>{{ __('Email') }}</th>
+                        <th class="text-end">{{ __('Action') }}</th>
                     </tr>
                 </thead>
                 <tbody id="usersBody">
@@ -78,11 +78,11 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="7" class="text-center text-muted py-4">Aucun utilisateur.</td></tr>
+                    <tr><td colspan="7" class="text-center text-muted py-4">{{ __('Aucun utilisateur.') }}</td></tr>
                 @endforelse
                 </tbody>
             </table>
-            <div id="noResults" class="text-center text-muted py-4 d-none">Aucun résultat.</div>
+            <div id="noResults" class="text-center text-muted py-4 d-none">{{ __('Aucun résultat.') }}</div>
         </div>
     </div>
 

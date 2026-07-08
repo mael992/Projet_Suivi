@@ -3,7 +3,7 @@
 @section('content')
 <div class="container-fluid px-3 px-md-4 py-4">
 
-    <h1 class="h3 mb-3">Gestion de la Mairie — {{ $mairie->nom }}</h1>
+    <h1 class="h3 mb-3">{{ __('Gestion de la Mairie') }} — {{ $mairie->nom }}</h1>
 
     @include('gestion.partials.onglets')
 
@@ -20,11 +20,11 @@
                     <input type="date" name="date_fin" value="{{ request('date_fin') }}" class="form-control form-control-sm">
                 </div>
                 <div class="col-6 col-md-2">
-                    <button type="submit" class="btn btn-sm btn-dark w-100">Filtrer</button>
+                    <button type="submit" class="btn btn-sm btn-dark w-100">{{ __('Filtrer') }}</button>
                 </div>
                 @if(request('date_debut') || request('date_fin'))
                 <div class="col-6 col-md-2">
-                    <a href="{{ route('gestion.avancement') }}" class="btn btn-sm btn-outline-secondary w-100">Réinitialiser</a>
+                    <a href="{{ route('gestion.avancement') }}" class="btn btn-sm btn-outline-secondary w-100">{{ __('Réinitialiser') }}</a>
                 </div>
                 @endif
             </div>

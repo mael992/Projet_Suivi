@@ -6,7 +6,7 @@
     @include('admin.partials.onglets')
 
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-        <h2 class="h5 mb-0">Gestion des accès mairie</h2>
+        <h2 class="h5 mb-0">{{ __('Gestion des accès mairie') }}</h2>
         <a href="{{ route('mairies.create') }}" class="btn btn-primary">+ Ajouter une mairie</a>
     </div>
 
@@ -24,11 +24,11 @@
                     <tr>
                         <th>Nom de la mairie</th>
                         <th>Adresse email</th>
-                        <th>Téléphone</th>
+                        <th>{{ __('Téléphone') }}</th>
                         <th>Fin d'abonnement</th>
                         <th class="text-center">Utilisateurs</th>
                         <th class="text-center">Observateurs</th>
-                        <th class="text-end">Action</th>
+                        <th class="text-end">{{ __('Action') }}</th>
                     </tr>
                 </thead>
                 <tbody>

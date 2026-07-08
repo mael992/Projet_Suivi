@@ -3,7 +3,7 @@
 @section('content')
 <div class="container-fluid px-3 px-md-4 py-4">
 
-    <h1 class="h3 mb-3">Gestion de la Mairie — {{ $mairie->nom }}</h1>
+    <h1 class="h3 mb-3">{{ __('Gestion de la Mairie') }} — {{ $mairie->nom }}</h1>
 
     @include('gestion.partials.onglets')
 
@@ -20,10 +20,10 @@
             <div class="search-input-group">
                 <span class="search-icon">🔍</span>
                 <input type="text" id="userSearch" class="search-input"
-                       placeholder="Recherche service ou nom prénom…" autocomplete="off">
+                       placeholder="{{ __('Recherche service ou nom prénom…') }}" autocomplete="off">
             </div>
         </div>
-        <a href="{{ route('gestion.utilisateurs.create') }}" class="btn btn-primary">+ Ajouter</a>
+        <a href="{{ route('gestion.utilisateurs.create') }}" class="btn btn-primary">{{ __('+ Ajouter') }}</a>
     </div>
 
     <div class="card shadow-sm">
@@ -32,10 +32,10 @@
                 <thead class="table-dark">
                     <tr>
                         <th>Réf</th>
-                        <th>Service</th>
+                        <th>{{ __('Service') }}</th>
                         <th>Utilisateur</th>
-                        <th>Statut</th>
-                        <th class="text-end">Action</th>
+                        <th>{{ __('Statut') }}</th>
+                        <th class="text-end">{{ __('Action') }}</th>
                     </tr>
                 </thead>
                 <tbody id="usersBody">
@@ -70,11 +70,11 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="5" class="text-center text-muted py-4">Aucun utilisateur.</td></tr>
+                    <tr><td colspan="5" class="text-center text-muted py-4">{{ __('Aucun utilisateur.') }}</td></tr>
                 @endforelse
                 </tbody>
             </table>
-            <div id="noResults" class="text-center text-muted py-4 d-none">Aucun résultat.</div>
+            <div id="noResults" class="text-center text-muted py-4 d-none">{{ __('Aucun résultat.') }}</div>
         </div>
     </div>
 

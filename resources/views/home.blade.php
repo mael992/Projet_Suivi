@@ -23,15 +23,15 @@
             <strong>M</strong><em>airie</em> - <strong>G</strong><em>estion</em> <strong>D</strong><em>es</em> <strong>S</strong><em>ervices</em>
         </h2>
 
-        <p style="font-size:14px;">MGDS accompagne les Mairies dans le suivi quotidien des tâches de leurs services :</p>
+        <p style="font-size:14px;">{{ __('MGDS accompagne les Mairies dans le suivi quotidien des tâches de leurs services :') }}</p>
         <ul style="font-size:14px;line-height:1.8;">
-            <li>création et affectation des travaux</li>
-            <li>photos avant/après</li>
-            <li>clôtures automatiques</li>
-            <li>annuaire des services</li>
-            <li>suivi de la charge de travail</li>
+            <li>{{ __('création et affectation des travaux') }}</li>
+            <li>{{ __('photos avant/après') }}</li>
+            <li>{{ __('clôtures automatiques') }}</li>
+            <li>{{ __('annuaire des services') }}</li>
+            <li>{{ __('suivi de la charge de travail') }}</li>
         </ul>
-        <p class="text-muted mb-0" style="font-size:13px;">Le tout dans un espace sécurisé propre à chaque service.</p>
+        <p class="text-muted mb-0" style="font-size:13px;">{{ __('Le tout dans un espace sécurisé propre à chaque service.') }}</p>
     </div>
 </div>
 

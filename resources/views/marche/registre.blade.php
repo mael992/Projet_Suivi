@@ -17,28 +17,28 @@
         <div class="card-body py-3">
             <div class="row g-2 align-items-end">
                 <div class="col-6 col-md-3">
-                    <label class="form-label mb-1" style="font-size:12px;">Activité</label>
+                    <label class="form-label mb-1" style="font-size:12px;">{{ __('Activité') }}</label>
                     <select name="activite" class="form-select form-select-sm">
-                        <option value="">Toutes</option>
+                        <option value="">{{ __('Toutes') }}</option>
                         @foreach($activites as $a)
                             <option value="{{ $a }}" @selected(request('activite') === $a)>{{ $a }}</option>
                         @endforeach
                     </select>
                 </div>
                 <div class="col-6 col-md-3">
-                    <label class="form-label mb-1" style="font-size:12px;">Du</label>
+                    <label class="form-label mb-1" style="font-size:12px;">{{ __('Du') }}</label>
                     <input type="date" name="date_debut" value="{{ request('date_debut') }}" class="form-control form-control-sm">
                 </div>
                 <div class="col-6 col-md-3">
-                    <label class="form-label mb-1" style="font-size:12px;">Au</label>
+                    <label class="form-label mb-1" style="font-size:12px;">{{ __('Au') }}</label>
                     <input type="date" name="date_fin" value="{{ request('date_fin') }}" class="form-control form-control-sm">
                 </div>
                 <div class="col-3 col-md-1">
-                    <button class="btn btn-sm btn-dark w-100">Filtrer</button>
+                    <button class="btn btn-sm btn-dark w-100">{{ __('Filtrer') }}</button>
                 </div>
                 @if(request('activite') || request('date_debut') || request('date_fin'))
                 <div class="col-3 col-md-2">
-                    <a href="{{ route('marche.registre', request()->only('mairie')) }}" class="btn btn-sm btn-outline-secondary w-100">Réinitialiser</a>
+                    <a href="{{ route('marche.registre', request()->only('mairie')) }}" class="btn btn-sm btn-outline-secondary w-100">{{ __('Réinitialiser') }}</a>
                 </div>
                 @endif
             </div>
@@ -66,15 +66,15 @@
 
     {{-- ── Statistiques par commerçant ── --}}
     <div class="card shadow-sm mb-4">
-        <div class="card-header fw-semibold">🏦 Par commerçant (sur la période filtrée)</div>
+        <div class="card-header fw-semibold">🏦 {{ __('Par commerçant (sur la période filtrée)') }}</div>
         <div class="table-responsive">
             <table class="table table-hover mb-0 align-middle" style="font-size:14px;">
                 <thead class="table-dark">
                     <tr>
-                        <th>Nom</th><th>Prénom</th><th>Activité</th>
-                        <th class="text-center">Venues</th>
-                        <th class="text-center">Dernière venue</th>
-                        <th class="text-end">Rapporté à la mairie</th>
+                        <th>{{ __('Nom') }}</th><th>{{ __('Prénom') }}</th><th>{{ __('Activité') }}</th>
+                        <th class="text-center">{{ __('Venues') }}</th>
+                        <th class="text-center">{{ __('Dernière venue') }}</th>
+                        <th class="text-end">{{ __('Rapporté à la mairie') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -88,7 +88,7 @@
                         <td class="text-end fw-semibold">{{ number_format($ligne['total_montant'], 2, ',', ' ') }} €</td>
                     </tr>
                 @empty
-                    <tr><td colspan="6" class="text-center text-muted py-4">Aucune venue sur cette période.</td></tr>
+                    <tr><td colspan="6" class="text-center text-muted py-4">{{ __('Aucune venue sur cette période.') }}</td></tr>
                 @endforelse
                 </tbody>
             </table>
@@ -97,12 +97,12 @@
 
     {{-- ── Historique détaillé des venues ── --}}
     <div class="card shadow-sm">
-        <div class="card-header fw-semibold">🗓 Historique des venues</div>
+        <div class="card-header fw-semibold">🗓 {{ __('Historique des venues') }}</div>
         <div class="table-responsive">
             <table class="table table-hover mb-0 align-middle" style="font-size:13px;">
                 <thead class="table-light">
                     <tr>
-                        <th>Date</th><th>Commerçant</th><th>Activité</th><th>Axe</th><th>Longueur</th><th class="text-end">Montant</th>
+                        <th>{{ __('Date') }}</th><th>Commerçant</th><th>{{ __('Activité') }}</th><th>Axe</th><th>Longueur</th><th class="text-end">{{ __('Montant') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -116,7 +116,7 @@
                         <td class="text-end">{{ $venue->montant !== null ? number_format($venue->montant, 2, ',', ' ') . ' €' : '—' }}</td>
                     </tr>
                 @empty
-                    <tr><td colspan="6" class="text-center text-muted py-4">Aucune venue enregistrée.</td></tr>
+                    <tr><td colspan="6" class="text-center text-muted py-4">{{ __('Aucune venue enregistrée.') }}</td></tr>
                 @endforelse
                 </tbody>
             </table>

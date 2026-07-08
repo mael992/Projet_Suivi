@@ -10,7 +10,7 @@
 
 <div class="container-fluid px-3 px-md-4 py-4">
 
-    <h1 class="h3 mb-1">Gestion de la Mairie — {{ $mairie->nom }}</h1>
+    <h1 class="h3 mb-1">{{ __('Gestion de la Mairie') }} — {{ $mairie->nom }}</h1>
     <p class="mb-3">
         <span class="badge bg-dark">🔒 Fiche contact — privé & confidentiel</span>
     </p>
@@ -30,10 +30,10 @@
             <div class="search-input-group">
                 <span class="search-icon">🔍</span>
                 <input type="text" id="contactSearch" class="search-input"
-                       placeholder="Recherche : prénom, nom ou service…" autocomplete="off">
+                       placeholder="{{ __('Recherche : prénom, nom ou service…') }}" autocomplete="off">
             </div>
         </div>
-        <a href="{{ route('gestion.contacts.pdf') }}" class="btn btn-outline-dark">⬇ Télécharger en PDF</a>
+        <a href="{{ route('gestion.contacts.pdf') }}" class="btn btn-outline-dark">⬇ {{ __('Télécharger en PDF') }}</a>
     </div>
 
     {{-- Formulaire numéro de standard (ouvert via les boutons ➕ des lignes) --}}
@@ -43,7 +43,7 @@
             <div class="card-body py-3">
                 <div class="row g-2 align-items-end">
                     <div class="col-md-5">
-                        <label class="form-label mb-1" style="font-size:12px;">Service</label>
+                        <label class="form-label mb-1" style="font-size:12px;">{{ __('Service') }}</label>
                         <select name="service" id="standardService" class="form-select form-select-sm" required>
                             <option value="">— Sélectionnez —</option>
                             @foreach(Referentiel::SERVICES as $num => $label)
@@ -52,7 +52,7 @@
                         </select>
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label mb-1" style="font-size:12px;">Indicatif</label>
+                        <label class="form-label mb-1" style="font-size:12px;">{{ __('Indicatif') }}</label>
                         <select name="telephone_indicatif" class="form-select form-select-sm">
                             @foreach(Referentiel::INDICATIFS as $ind)
                                 <option value="{{ $ind }}" @selected(old('telephone_indicatif', '+33') === $ind)>{{ $ind }}</option>
@@ -60,7 +60,7 @@
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label mb-1" style="font-size:12px;">Numéro de téléphone</label>
+                        <label class="form-label mb-1" style="font-size:12px;">{{ __('Numéro de téléphone') }}</label>
                         <input type="text" name="telephone" value="{{ old('telephone') }}" class="form-control form-control-sm" required>
                     </div>
                     <div class="col-md-2">
@@ -76,9 +76,9 @@
             <table class="table table-hover mb-0 align-middle">
                 <thead class="table-dark">
                     <tr>
-                        <th>Service</th>
-                        <th>Téléphone</th>
-                        <th>Adresse mail</th>
+                        <th>{{ __('Service') }}</th>
+                        <th>{{ __('Téléphone') }}</th>
+                        <th>{{ __('Adresse mail') }}</th>
                         <th class="text-end"></th>
                     </tr>
                 </thead>
@@ -133,7 +133,7 @@
                 @endforeach
                 </tbody>
             </table>
-            <div id="noResults" class="text-center text-muted py-4 d-none">Aucun résultat.</div>
+            <div id="noResults" class="text-center text-muted py-4 d-none">{{ __('Aucun résultat.') }}</div>
         </div>
     </div>
 

@@ -37,7 +37,7 @@
 
             @auth
                 <div class="nav-desktop-auth">
-                    <a href="{{ route('profile.edit') }}" class="user text-decoration-none" title="Mon compte">
+                    <a href="{{ route('profile.edit') }}" class="user text-decoration-none" title="{{ __('Mon compte') }}">
                         <span class="user-dot"></span>
                         {{ $user->username }}
                     </a>
@@ -121,7 +121,7 @@
                 <span class="nav-mobile-icon">🧩</span>{{ __('mgds.nav_apps') }}
             </a>
             <a href="{{ route('profile.edit') }}" onclick="closeNavMenu()" class="{{ $actif('profile.edit') }}">
-                <span class="nav-mobile-icon">👤</span>Mon compte
+                <span class="nav-mobile-icon">👤</span>{{ __('Mon compte') }}
             </a>
         @endauth
     </nav>

@@ -220,6 +220,7 @@ class PlanController extends Controller
             'largeur_pct'   => 'nullable|numeric|min:0.5|max:100',
             'hauteur_pct'   => 'nullable|numeric|min:0.5|max:100',
             'couleur'       => 'nullable|string|max:20',
+            'rotation'      => 'nullable|numeric|min:-360|max:360',
             'electricite'   => 'nullable|boolean',
             'montant'       => 'nullable|numeric|min:0',
         ]);
@@ -237,6 +238,7 @@ class PlanController extends Controller
             'largeur_pct'   => $data['largeur_pct'] ?? 6,
             'hauteur_pct'   => $data['hauteur_pct'] ?? 4,
             'couleur'       => $data['couleur'] ?? '#e6a23c',
+            'rotation'      => (float) ($data['rotation'] ?? 0),
             'electricite'   => (bool) ($data['electricite'] ?? false),
             'montant'       => $data['montant'] ?? null,
         ]);
@@ -257,6 +259,7 @@ class PlanController extends Controller
             'commercant_id' => 'nullable|exists:commercants,id',
             'label'         => 'nullable|string|max:50',
             'couleur'       => 'nullable|string|max:20',
+            'rotation'      => 'nullable|numeric|min:-360|max:360',
             'electricite'   => 'nullable|boolean',
             'montant'       => 'nullable|numeric|min:0',
         ]);
@@ -270,6 +273,7 @@ class PlanController extends Controller
             'commercant_id' => $data['commercant_id'] ?? null,
             'label'         => $data['label'] ?? null,
             'couleur'       => $data['couleur'] ?? $emplacement->couleur,
+            'rotation'      => (float) ($data['rotation'] ?? 0),
             'electricite'   => (bool) ($data['electricite'] ?? false),
             'montant'       => $data['montant'] ?? null,
         ]);
