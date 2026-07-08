@@ -117,7 +117,7 @@
 
         @auth
             <div class="nav-mobile-divider"></div>
-            <a href="{{ route('apps') }}" onclick="closeNavMenu()" class="nav-mobile-special {{ $actif('apps') }}">
+            <a href="{{ route('apps') }}" onclick="closeNavMenu()" class="{{ $actif('apps') }}" style="font-weight:600;">
                 <span class="nav-mobile-icon">🧩</span>{{ __('mgds.nav_apps') }}
             </a>
             <a href="{{ route('profile.edit') }}" onclick="closeNavMenu()" class="{{ $actif('profile.edit') }}">
