@@ -40,7 +40,11 @@
                     <a href="{{ route('profile.edit') }}" class="user text-decoration-none" title="{{ __('Mon compte') }}">
                         <span class="user-dot"></span>
                         {{ $user->username }}
-                        <span class="user-gear" aria-hidden="true">⚙</span>
+                        <span class="user-gear" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+                                <path d="M19.14 12.94a7.07 7.07 0 0 0 .06-.94 7.07 7.07 0 0 0-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.61-.22l-2.39.96a7.3 7.3 0 0 0-1.63-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54c-.59.24-1.13.56-1.63.94l-2.39-.96a.5.5 0 0 0-.61.22L2.63 8.84a.5.5 0 0 0 .12.64l2.03 1.58a7.07 7.07 0 0 0 0 1.88l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.13.23.4.32.61.22l2.39-.96c.5.38 1.04.7 1.63.94l.36 2.54c.04.24.25.42.5.42h3.84c.25 0 .46-.18.5-.42l.36-2.54a7.3 7.3 0 0 0 1.63-.94l2.39.96c.21.1.48.01.61-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58ZM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7Z"/>
+                            </svg>
+                        </span>
                     </a>
                     <div class="nav-sep"></div>
                     <form method="POST" action="{{ route('logout') }}">
@@ -104,7 +108,13 @@
     @auth
         <div class="nav-mobile-user">
             <span class="user-dot"></span>
-            <span class="nav-mobile-username">{{ $user->username }} <a href="{{ route('profile.edit') }}" class="user-gear text-decoration-none" title="{{ __('Mon compte') }}">⚙</a></span>
+            <span class="nav-mobile-username">{{ $user->username }}
+                <a href="{{ route('profile.edit') }}" class="user-gear" title="{{ __('Mon compte') }}">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+                        <path d="M19.14 12.94a7.07 7.07 0 0 0 .06-.94 7.07 7.07 0 0 0-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.61-.22l-2.39.96a7.3 7.3 0 0 0-1.63-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54c-.59.24-1.13.56-1.63.94l-2.39-.96a.5.5 0 0 0-.61.22L2.63 8.84a.5.5 0 0 0 .12.64l2.03 1.58a7.07 7.07 0 0 0 0 1.88l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.13.23.4.32.61.22l2.39-.96c.5.38 1.04.7 1.63.94l.36 2.54c.04.24.25.42.5.42h3.84c.25 0 .46-.18.5-.42l.36-2.54a7.3 7.3 0 0 0 1.63-.94l2.39.96c.21.1.48.01.61-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58ZM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7Z"/>
+                    </svg>
+                </a>
+            </span>
             <span class="nav-mobile-role">{{ $user->isAdmin() ? 'Admin' : $user->grade_label }}</span>
         </div>
         <div class="nav-mobile-divider"></div>
