@@ -12,6 +12,7 @@ class Standard extends Model
         'service',
         'telephone_indicatif',
         'telephone',
+        'email',
     ];
 
     protected function casts(): array

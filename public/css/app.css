@@ -146,6 +146,23 @@ img {
     flex-shrink: 0;
 }
 
+/* Petite roue qui tourne à côté du pseudo (accès Mon compte) */
+.user-gear {
+    display: inline-block;
+    font-size: 15px;
+    line-height: 1;
+    color: var(--gold);
+    animation: gearSpin 6s linear infinite;
+    flex-shrink: 0;
+}
+.user:hover .user-gear,
+.user-gear:hover {
+    animation-duration: 1.5s;
+}
+@keyframes gearSpin {
+    to { transform: rotate(360deg); }
+}
+
 .btn-nav-users {
     font-size: 13px;
     padding: 5px 12px;

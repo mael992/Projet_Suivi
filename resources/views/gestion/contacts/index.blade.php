@@ -10,12 +10,11 @@
 
 <div class="container-fluid px-3 px-md-4 py-4">
 
-    <h1 class="h3 mb-1">{{ __('Gestion de la Mairie') }} — {{ $mairie->nom }}</h1>
+    <a href="{{ route('apps') }}" class="text-decoration-none d-inline-block mb-2" style="font-size:14px;">← {{ __('mgds.nav_apps') }}</a>
+    <h1 class="h3 mb-1">📇 {{ __('Fiche Contact') }} — {{ $mairie->nom }}</h1>
     <p class="mb-3">
         <span class="badge bg-dark">🔒 Fiche contact — privé & confidentiel</span>
     </p>
-
-    @include('gestion.partials.onglets')
 
     @if(session('success'))
         <div class="alert alert-success mb-3">{{ session('success') }}</div>
@@ -63,6 +62,10 @@
                         <label class="form-label mb-1" style="font-size:12px;">{{ __('Numéro de téléphone') }}</label>
                         <input type="text" name="telephone" value="{{ old('telephone') }}" class="form-control form-control-sm" required>
                     </div>
+                    <div class="col-md-4">
+                        <label class="form-label mb-1" style="font-size:12px;">{{ __('Adresse mail') }} <span class="text-muted">({{ __('facultatif') }})</span></label>
+                        <input type="email" name="email" value="{{ old('email') }}" class="form-control form-control-sm" placeholder="service@mairie.fr">
+                    </div>
                     <div class="col-md-2">
                         <button type="submit" class="btn btn-sm btn-dark w-100">Ajouter</button>
                     </div>
@@ -105,12 +108,43 @@
                             <tr data-search="{{ $ascii }}" class="table-light">
                                 <td class="fw-semibold">{{ $label }} <span class="badge bg-dark ms-1" style="font-size:10px;">Standard</span></td>
                                 <td>{{ $standard->telephone_complet }}</td>
-                                <td class="text-muted">—</td>
+                                <td>{{ $standard->email ?? '—' }}</td>
                                 <td class="text-end">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" title="{{ __('Modifier') }}"
+                                            onclick="document.getElementById('editStandard{{ $standard->id }}').classList.toggle('d-none')">✏️</button>
                                     <form action="{{ route('gestion.contacts.standards.destroy', $standard) }}" method="POST"
                                           onsubmit="return confirm('Supprimer ce numéro de standard ?')" class="d-inline">
                                         @csrf @method('DELETE')
                                         <button class="btn btn-sm btn-outline-danger">🗑</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {{-- Ligne d'édition du standard (cachée par défaut) --}}
+                            <tr id="editStandard{{ $standard->id }}" class="d-none" data-search="{{ $ascii }}">
+                                <td colspan="4" class="bg-light">
+                                    <form action="{{ route('gestion.contacts.standards.update', $standard) }}" method="POST" class="row g-2 align-items-end">
+                                        @csrf @method('PUT')
+                                        <div class="col-md-2">
+                                            <label class="form-label mb-1" style="font-size:12px;">{{ __('Indicatif') }}</label>
+                                            <select name="telephone_indicatif" class="form-select form-select-sm">
+                                                @foreach(Referentiel::INDICATIFS as $ind)
+                                                    <option value="{{ $ind }}" @selected($standard->telephone_indicatif === $ind)>{{ $ind }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label mb-1" style="font-size:12px;">{{ __('Numéro de téléphone') }}</label>
+                                            <input type="text" name="telephone" value="{{ $standard->telephone }}" class="form-control form-control-sm" required>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label mb-1" style="font-size:12px;">{{ __('Adresse mail') }}</label>
+                                            <input type="email" name="email" value="{{ $standard->email }}" class="form-control form-control-sm" placeholder="service@mairie.fr">
+                                        </div>
+                                        <div class="col-md-3 d-flex gap-1">
+                                            <button type="submit" class="btn btn-sm btn-dark">{{ __('Enregistrer') }}</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                    onclick="document.getElementById('editStandard{{ $standard->id }}').classList.add('d-none')">{{ __('Annuler') }}</button>
+                                        </div>
                                     </form>
                                 </td>
                             </tr>

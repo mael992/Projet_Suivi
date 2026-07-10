@@ -43,17 +43,40 @@ class ContactFicheController extends Controller
             'service'             => 'required|integer|in:' . implode(',', array_keys(Referentiel::SERVICES)),
             'telephone_indicatif' => 'nullable|string|max:8',
             'telephone'           => 'required|string|max:20',
+            'email'               => 'nullable|email|max:255',
         ]);
 
         $mairie->standards()->create([
             'service'             => (int) $data['service'],
             'telephone_indicatif' => $data['telephone_indicatif'] ?: '+33',
             'telephone'           => $data['telephone'],
+            'email'               => $data['email'] ?? null,
         ]);
 
         ActivityLogger::log('CONTACT', 'CREATE', "Numéro de standard ajouté ({$mairie->nom}, service " . Referentiel::serviceLabel((int) $data['service']) . ')');
 
         return redirect()->route('gestion.contacts.index')->with('success', 'Numéro de standard ajouté.');
+    }
+
+    public function updateStandard(Request $request, Standard $standard)
+    {
+        abort_if($standard->mairie_id !== auth()->user()->mairie_id, 403);
+
+        $data = $request->validate([
+            'telephone_indicatif' => 'nullable|string|max:8',
+            'telephone'           => 'required|string|max:20',
+            'email'               => 'nullable|email|max:255',
+        ]);
+
+        $standard->update([
+            'telephone_indicatif' => $data['telephone_indicatif'] ?: '+33',
+            'telephone'           => $data['telephone'],
+            'email'               => $data['email'] ?? null,
+        ]);
+
+        ActivityLogger::log('CONTACT', 'UPDATE', 'Numéro de standard modifié (service ' . $standard->service_label . ')');
+
+        return redirect()->route('gestion.contacts.index')->with('success', 'Numéro de standard modifié.');
     }
 
     public function destroyStandard(Standard $standard)

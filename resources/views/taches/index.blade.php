@@ -33,9 +33,6 @@
             <a href="{{ route('gestion.utilisateurs.index') }}" class="sidebar-link">
                 <span class="sidebar-icon" style="font-size:16px">👥</span> {{ __('Gestion des utilisateurs') }}
             </a>
-            <a href="{{ route('gestion.contacts.index') }}" class="sidebar-link">
-                <span class="sidebar-icon" style="font-size:16px">📇</span> {{ __('Fiche Contact') }}
-            </a>
             <a href="{{ route('gestion.avancement') }}" class="sidebar-link">
                 <span class="sidebar-icon" style="font-size:16px">📊</span> {{ __('Avancement des tâches') }}
             </a>

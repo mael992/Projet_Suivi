@@ -85,6 +85,7 @@ Route::middleware(['auth', 'gestion'])->prefix('gestion')->name('gestion.')->gro
     Route::get('/contacts',                    [ContactFicheController::class, 'index'])->name('contacts.index');
     Route::get('/contacts/pdf',                [ContactFicheController::class, 'pdf'])->name('contacts.pdf');
     Route::post('/contacts/standards',         [ContactFicheController::class, 'storeStandard'])->name('contacts.standards.store');
+    Route::put('/contacts/standards/{standard}',    [ContactFicheController::class, 'updateStandard'])->name('contacts.standards.update');
     Route::delete('/contacts/standards/{standard}', [ContactFicheController::class, 'destroyStandard'])->name('contacts.standards.destroy');
 
     // Onglet 3 : avancement des tâches de travail

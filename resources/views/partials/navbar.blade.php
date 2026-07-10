@@ -40,6 +40,7 @@
                     <a href="{{ route('profile.edit') }}" class="user text-decoration-none" title="{{ __('Mon compte') }}">
                         <span class="user-dot"></span>
                         {{ $user->username }}
+                        <span class="user-gear" aria-hidden="true">⚙</span>
                     </a>
                     <div class="nav-sep"></div>
                     <form method="POST" action="{{ route('logout') }}">
@@ -103,7 +104,7 @@
     @auth
         <div class="nav-mobile-user">
             <span class="user-dot"></span>
-            <span class="nav-mobile-username">{{ $user->username }}</span>
+            <span class="nav-mobile-username">{{ $user->username }} <a href="{{ route('profile.edit') }}" class="user-gear text-decoration-none" title="{{ __('Mon compte') }}">⚙</a></span>
             <span class="nav-mobile-role">{{ $user->isAdmin() ? 'Admin' : $user->grade_label }}</span>
         </div>
         <div class="nav-mobile-divider"></div>

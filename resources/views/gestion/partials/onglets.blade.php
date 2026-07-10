@@ -5,10 +5,6 @@
            href="{{ route('gestion.utilisateurs.index') }}">{{ __('Gestion des utilisateurs') }}</a>
     </li>
     <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('gestion.contacts.*') ? 'active' : '' }}"
-           href="{{ route('gestion.contacts.index') }}">{{ __('Fiche Contact') }}</a>
-    </li>
-    <li class="nav-item">
         <a class="nav-link {{ request()->routeIs('gestion.avancement') ? 'active' : '' }}"
            href="{{ route('gestion.avancement') }}">{{ __('Avancement des tâches') }}</a>
     </li>
