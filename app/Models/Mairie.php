@@ -12,6 +12,7 @@ class Mairie extends Model
         'telephone_indicatif',
         'telephone',
         'date_fin_abonnement',
+        'vue_aerienne',
     ];
 
     protected function casts(): array
@@ -39,6 +40,19 @@ class Mairie extends Model
     public function standards()
     {
         return $this->hasMany(Standard::class);
+    }
+
+    public function zonesMarche()
+    {
+        return $this->hasMany(MarcheZone::class);
+    }
+
+    /** Image de la vue aérienne (sinon plan de démonstration neutre) */
+    public function vueAerienneUrl(): string
+    {
+        return $this->vue_aerienne
+            ? asset('storage/' . $this->vue_aerienne)
+            : asset('images/fond-plan-exemple.png');
     }
 
     /** Abonnement expiré → connexion refusée pour les utilisateurs de cette mairie */

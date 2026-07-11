@@ -10,6 +10,7 @@ use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\Marche\CommercantController;
 use App\Http\Controllers\Marche\PlanController;
 use App\Http\Controllers\Marche\RegistreController;
+use App\Http\Controllers\Marche\ZoneController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TacheController;
@@ -48,7 +49,17 @@ Route::middleware('auth')->group(function () {
 
     // Application Marché 🛍
     Route::prefix('marche')->name('marche.')->group(function () {
-        Route::get('/', fn () => redirect()->route('marche.plan'));
+        Route::get('/', fn () => redirect()->route('marche.ville'));
+
+        // 🏙️ Vue aérienne de la ville + zones de marché
+        Route::get('/ville', [ZoneController::class, 'ville'])->name('ville');
+        Route::post('/ville/image', [ZoneController::class, 'storeImage'])->name('ville.image');
+        Route::post('/zones', [ZoneController::class, 'store'])->name('zones.store');
+        Route::post('/zones/positions', [ZoneController::class, 'positions'])->name('zones.positions');
+        Route::get('/zones/{zone}', [ZoneController::class, 'show'])->name('zones.show');
+        Route::put('/zones/{zone}', [ZoneController::class, 'update'])->name('zones.update');
+        Route::delete('/zones/{zone}', [ZoneController::class, 'destroy'])->name('zones.destroy');
+        Route::post('/zones/{zone}/config', [ZoneController::class, 'saveConfig'])->name('zones.config');
 
         // 🗺️ Plan 2D daté
         Route::get('/plan', [PlanController::class, 'index'])->name('plan');
