@@ -26,24 +26,6 @@
     <form method="POST" action="{{ route('login') }}" novalidate>
         @csrf
 
-        {{-- Mairie (obligatoire sauf pour les administrateurs) --}}
-        <div class="mb-3">
-            <label for="mairie_id" class="form-label fw-semibold" style="font-size:13px;">
-                {{ __('mgds.auth_mairie') }}
-            </label>
-            <select
-                id="mairie_id"
-                name="mairie_id"
-                class="form-select @error('mairie_id') is-invalid @enderror">
-                <option value="">{{ __('mgds.auth_mairie_placeholder') }}</option>
-                @foreach($mairies as $mairie)
-                    <option value="{{ $mairie->id }}" @selected(old('mairie_id') == $mairie->id)>
-                        {{ $mairie->nom }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
-
         {{-- Identifiant --}}
         <div class="mb-3">
             <label for="username" class="form-label fw-semibold" style="font-size:13px;">

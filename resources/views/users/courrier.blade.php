@@ -52,7 +52,7 @@
     Passé ce délai, contactez votre responsable ou un administrateur.
 </div>
 
-<p>Connectez-vous en sélectionnant votre mairie sur la page de connexion.</p>
+<p>Connectez-vous avec votre identifiant et votre mot de passe sur la page de connexion.</p>
 
 <div class="footer">© {{ date('Y') }} MGDS — Document confidentiel, à remettre en main propre.</div>
 

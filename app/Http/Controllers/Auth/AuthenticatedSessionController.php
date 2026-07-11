@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
-use App\Models\Mairie;
 use App\Services\ActivityLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,9 +17,7 @@ class AuthenticatedSessionController extends Controller
      */
     public function create(): View
     {
-        $mairies = Mairie::orderBy('nom')->get(['id', 'nom']);
-
-        return view('auth.login', compact('mairies'));
+        return view('auth.login');
     }
 
     /**

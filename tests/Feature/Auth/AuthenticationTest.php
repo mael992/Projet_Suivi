@@ -27,47 +27,18 @@ class AuthenticationTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function test_users_can_authenticate_with_username_and_mairie(): void
+    public function test_users_can_authenticate_with_username_only(): void
     {
         $mairie = $this->mairie();
         $user   = User::factory()->create(['mairie_id' => $mairie->id]);
 
         $response = $this->post('/login', [
-            'mairie_id' => $mairie->id,
             'username'  => $user->username,
             'password'  => 'password',
         ]);
 
         $this->assertAuthenticated();
         $response->assertRedirect(route('apps', absolute: false));
-    }
-
-    public function test_users_can_not_authenticate_without_mairie(): void
-    {
-        $mairie = $this->mairie();
-        $user   = User::factory()->create(['mairie_id' => $mairie->id]);
-
-        $this->post('/login', [
-            'username' => $user->username,
-            'password' => 'password',
-        ]);
-
-        $this->assertGuest();
-    }
-
-    public function test_users_can_not_authenticate_with_wrong_mairie(): void
-    {
-        $mairie = $this->mairie();
-        $autre  = $this->mairie(['nom' => 'Autre Mairie', 'email' => 'autre@mairie.fr']);
-        $user   = User::factory()->create(['mairie_id' => $mairie->id]);
-
-        $this->post('/login', [
-            'mairie_id' => $autre->id,
-            'username'  => $user->username,
-            'password'  => 'password',
-        ]);
-
-        $this->assertGuest();
     }
 
     public function test_admins_can_authenticate_without_mairie(): void
@@ -89,7 +60,6 @@ class AuthenticationTest extends TestCase
         $user   = User::factory()->create(['mairie_id' => $mairie->id]);
 
         $this->post('/login', [
-            'mairie_id' => $mairie->id,
             'username'  => $user->username,
             'password'  => 'password',
         ]);
@@ -103,7 +73,6 @@ class AuthenticationTest extends TestCase
         $user   = User::factory()->create(['mairie_id' => $mairie->id]);
 
         $this->post('/login', [
-            'mairie_id' => $mairie->id,
             'username'  => $user->username,
             'password'  => 'wrong-password',
         ]);
