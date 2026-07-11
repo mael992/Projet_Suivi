@@ -32,6 +32,15 @@ Route::middleware('auth')->group(function () {
     // Hub : gestionnaire des applications de MGDS
     Route::get('/apps', fn () => view('apps'))->name('apps');
 
+    // Application Fiche Contact (accès par droits : lecture / modification)
+    Route::prefix('gestion')->name('gestion.')->group(function () {
+        Route::get('/contacts',                    [ContactFicheController::class, 'index'])->name('contacts.index');
+        Route::get('/contacts/pdf',                [ContactFicheController::class, 'pdf'])->name('contacts.pdf');
+        Route::post('/contacts/standards',         [ContactFicheController::class, 'storeStandard'])->name('contacts.standards.store');
+        Route::put('/contacts/standards/{standard}',    [ContactFicheController::class, 'updateStandard'])->name('contacts.standards.update');
+        Route::delete('/contacts/standards/{standard}', [ContactFicheController::class, 'destroyStandard'])->name('contacts.standards.destroy');
+    });
+
     // Suivi des tâches de la mairie
     Route::get('/dashboard', [TacheController::class, 'index'])->name('dashboard');
     Route::resource('taches', TacheController::class)->except('index')
@@ -81,14 +90,7 @@ Route::middleware(['auth', 'gestion'])->prefix('gestion')->name('gestion.')->gro
         ->parameters(['utilisateurs' => 'user']);
     Route::get('/utilisateurs/{user}/courrier', [GestionUserController::class, 'courrier'])->name('utilisateurs.courrier');
 
-    // Onglet 2 : fiche contact
-    Route::get('/contacts',                    [ContactFicheController::class, 'index'])->name('contacts.index');
-    Route::get('/contacts/pdf',                [ContactFicheController::class, 'pdf'])->name('contacts.pdf');
-    Route::post('/contacts/standards',         [ContactFicheController::class, 'storeStandard'])->name('contacts.standards.store');
-    Route::put('/contacts/standards/{standard}',    [ContactFicheController::class, 'updateStandard'])->name('contacts.standards.update');
-    Route::delete('/contacts/standards/{standard}', [ContactFicheController::class, 'destroyStandard'])->name('contacts.standards.destroy');
-
-    // Onglet 3 : avancement des tâches de travail
+    // Avancement des tâches de travail
     Route::get('/avancement', [AvancementController::class, 'index'])->name('avancement');
 });
 

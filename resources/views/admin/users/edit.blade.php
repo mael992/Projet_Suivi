@@ -78,6 +78,11 @@
                     <label class="form-label fw-semibold">{{ __('Adresse mail') }}</label>
                     <input type="email" name="email" value="{{ old('email', $user->email) }}" class="form-control">
                 </div>
+                <div class="col-12 champ-mairie">
+                    <div class="row g-3">
+                        @include('gestion.utilisateurs.partials.droits')
+                    </div>
+                </div>
                 <div class="col-12">
                     <label class="form-label fw-semibold">{{ __('Nouveau mot de passe') }}</label>
                     <input type="text" name="password" class="form-control" minlength="8" placeholder="Laisser vide pour ne pas changer">

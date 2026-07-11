@@ -29,27 +29,54 @@ class Referentiel
     public const SERVICES_VUE_GLOBALE = [1, 2];
 
     // ── Grades (statuts utilisateur) ─────────────────────────────
-    public const GRADE_MAIRE           = 1;
-    public const GRADE_RESPONSABLE     = 2;
-    public const GRADE_SOUS_RESP       = 3;
-    public const GRADE_SECRETAIRE      = 4;
-    public const GRADE_EMPLOYE         = 5;
+    public const GRADE_MAIRE        = 1;
+    public const GRADE_DIR_CABINET  = 2;
+    public const GRADE_DGS          = 3;
+    public const GRADE_EMPLOYE      = 4;
 
     public const GRADES = [
         self::GRADE_MAIRE       => 'M. / Mme le Maire',
-        self::GRADE_RESPONSABLE => 'Responsable',
-        self::GRADE_SOUS_RESP   => 'Sous-Responsable',
-        self::GRADE_SECRETAIRE  => 'Secrétaire',
+        self::GRADE_DIR_CABINET => 'Directeur de Cabinet',
+        self::GRADE_DGS         => 'Directrice Générale des Services',
         self::GRADE_EMPLOYE     => 'Employé',
     ];
 
     // Grades autorisés à créer / modifier / supprimer des tâches
     public const GRADES_CREATION_TACHE = [
         self::GRADE_MAIRE,
-        self::GRADE_RESPONSABLE,
-        self::GRADE_SOUS_RESP,
-        self::GRADE_SECRETAIRE,
+        self::GRADE_DIR_CABINET,
+        self::GRADE_DGS,
     ];
+
+    // ── Droits d'application (du plus fort au plus faible) ───────
+    // Système hiérarchique : posséder un droit donne automatiquement
+    // tous les droits situés à sa droite dans cette liste.
+    public const DROITS = [
+        'gestion_utilisateurs'  => 'Gestion des utilisateurs',
+        'contacts_modification' => 'Fiche Contact — modification',
+        'contacts_lecture'      => 'Fiche Contact — lecture',
+        'marche_gestion'        => 'Marché — gestion',
+        'taches_gestion'        => 'Tableau des suivis — gestion',
+        'taches_lecture'        => 'Tableau des suivis — lecture',
+    ];
+
+    /** Position du droit dans la hiérarchie (0 = le plus fort). */
+    public static function rangDroit(?string $droit): int
+    {
+        $rang = array_search($droit, array_keys(self::DROITS), true);
+
+        return $rang === false ? PHP_INT_MAX : $rang;
+    }
+
+    /** Droit par défaut selon le grade (modifiable ensuite par utilisateur). */
+    public static function droitDefaut(?int $grade): string
+    {
+        return match ($grade) {
+            self::GRADE_MAIRE                        => 'gestion_utilisateurs',
+            self::GRADE_DIR_CABINET, self::GRADE_DGS => 'contacts_modification',
+            default                                  => 'taches_lecture',
+        };
+    }
 
     // ── Statuts des tâches ───────────────────────────────────────
     public const STATUT_OUVERT   = 'ouvert';

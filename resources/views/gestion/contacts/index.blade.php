@@ -6,6 +6,7 @@
 @php
     $standardsParService = $standards->groupBy('service');
     $contactsParService  = $contacts->groupBy('service');
+    $peutModifier        = auth()->user()->aDroit('contacts_modification');
 @endphp
 
 <div class="container-fluid px-3 px-md-4 py-4">
@@ -36,6 +37,7 @@
     </div>
 
     {{-- Formulaire numéro de standard (ouvert via les boutons ➕ des lignes) --}}
+    @if($peutModifier)
     <div class="collapse mb-3 {{ $errors->any() ? 'show' : '' }}" id="formStandard">
         <form method="POST" action="{{ route('gestion.contacts.standards.store') }}" class="card shadow-sm">
             @csrf
@@ -73,6 +75,7 @@
             </div>
         </form>
     </div>
+    @endif
 
     <div class="card shadow-sm">
         <div class="table-responsive">
@@ -99,8 +102,10 @@
                             <td class="text-muted">—</td>
                             <td class="text-muted">—</td>
                             <td class="text-end">
+                                @if($peutModifier)
                                 <button type="button" class="btn btn-sm btn-outline-dark" title="Ajouter le numéro de standard"
                                         onclick="ouvrirFormStandard({{ $num }})">➕</button>
+                                @endif
                             </td>
                         </tr>
                     @else
@@ -110,6 +115,7 @@
                                 <td>{{ $standard->telephone_complet }}</td>
                                 <td>{{ $standard->email ?? '—' }}</td>
                                 <td class="text-end">
+                                    @if($peutModifier)
                                     <button type="button" class="btn btn-sm btn-outline-primary" title="{{ __('Modifier') }}"
                                             onclick="document.getElementById('editStandard{{ $standard->id }}').classList.toggle('d-none')">✏️</button>
                                     <form action="{{ route('gestion.contacts.standards.destroy', $standard) }}" method="POST"
@@ -117,6 +123,7 @@
                                         @csrf @method('DELETE')
                                         <button class="btn btn-sm btn-outline-danger">🗑</button>
                                     </form>
+                                    @endif
                                 </td>
                             </tr>
                             {{-- Ligne d'édition du standard (cachée par défaut) --}}
@@ -157,7 +164,7 @@
                             <td style="font-size:13px;">
                                 {{ $label }}<br>
                                 <span class="fw-semibold" style="font-size:14px;">{{ $contact->prenom }} {{ $contact->nom }}</span>
-                                <span class="text-muted" style="font-size:12px;">({{ $contact->grade_label }})</span>
+                                <span class="text-muted" style="font-size:12px;">({{ $contact->fonction ?: $contact->grade_label }})</span>
                             </td>
                             <td>{{ $contact->telephone_complet }}</td>
                             <td>{{ $contact->email ?? '—' }}</td>

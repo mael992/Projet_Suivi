@@ -32,6 +32,6 @@ trait ResolveMairie
 
     protected function verifierEdition(): void
     {
-        abort_unless(auth()->user()->peutGererTaches(), 403);
+        abort_unless(auth()->user()->aDroit('marche_gestion'), 403);
     }
 }

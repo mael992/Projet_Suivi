@@ -50,7 +50,7 @@
                             @endif
                         </td>
                         <td>
-                            @php $gradeColors = [1 => 'danger', 2 => 'primary', 3 => 'info', 4 => 'warning', 5 => 'secondary']; @endphp
+                            @php $gradeColors = [1 => 'danger', 2 => 'primary', 3 => 'info', 4 => 'secondary']; @endphp
                             <span class="badge bg-{{ $gradeColors[$user->grade] ?? 'secondary' }}">{{ $user->grade_label }}</span>
                         </td>
                         <td class="text-end">

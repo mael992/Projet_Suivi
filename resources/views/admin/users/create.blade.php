@@ -75,6 +75,11 @@
                     <label class="form-label fw-semibold">{{ __('Adresse mail') }}</label>
                     <input type="email" name="email" value="{{ old('email') }}" class="form-control">
                 </div>
+                <div class="col-12 champ-mairie">
+                    <div class="row g-3">
+                        @include('gestion.utilisateurs.partials.droits')
+                    </div>
+                </div>
                 <div class="col-12">
                     <label class="form-label fw-semibold">{{ __('Mot de passe') }} *</label>
                     <input type="text" name="password" value="{{ old('password') }}" class="form-control" required minlength="8">

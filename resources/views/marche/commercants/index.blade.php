@@ -4,7 +4,7 @@
 
 @section('content')
 @php
-    $peutEditer  = auth()->user()->peutGererTaches();
+    $peutEditer  = auth()->user()->aDroit('marche_gestion');
     $mairieParam = request('mairie');
 @endphp
 

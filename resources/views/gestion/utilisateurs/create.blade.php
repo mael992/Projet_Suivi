@@ -63,6 +63,8 @@
                     <label class="form-label fw-semibold">{{ __('Adresse mail') }}</label>
                     <input type="email" name="email" value="{{ old('email') }}" class="form-control">
                 </div>
+                @include('gestion.utilisateurs.partials.droits')
+
                 <div class="col-12">
                     <label class="form-label fw-semibold">Mot de passe provisoire *</label>
                     <input type="text" name="password" value="{{ old('password') }}" class="form-control" required minlength="8">

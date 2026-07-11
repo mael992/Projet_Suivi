@@ -55,7 +55,7 @@ class DatabaseSeeder extends Seeder
                     'role'      => 'user',
                     'mairie_id' => $mairie->id,
                     'service'   => 12, // Service Technique / CTM
-                    'grade'     => Referentiel::GRADE_RESPONSABLE,
+                    'grade'     => Referentiel::GRADE_DIR_CABINET,
                     'reference' => '12-0',
                     'telephone_indicatif' => '+33',
                     'telephone' => '7 69 47 25 74',

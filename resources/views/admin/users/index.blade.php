@@ -56,7 +56,7 @@
                             @if($user->isAdmin())
                                 <span class="badge bg-danger">Admin</span>
                             @else
-                                @php $gradeColors = [1 => 'danger', 2 => 'primary', 3 => 'info', 4 => 'warning', 5 => 'secondary']; @endphp
+                                @php $gradeColors = [1 => 'danger', 2 => 'primary', 3 => 'info', 4 => 'secondary']; @endphp
                                 <span class="badge bg-{{ $gradeColors[$user->grade] ?? 'secondary' }}">{{ $user->grade_label }}</span>
                             @endif
                         </td>

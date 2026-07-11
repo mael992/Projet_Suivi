@@ -31,7 +31,7 @@ class MgdsPagesTest extends TestCase
         return User::factory()->create([
             'mairie_id' => $this->mairie->id,
             'service'   => 12,
-            'grade'     => Referentiel::GRADE_RESPONSABLE,
+            'grade'     => Referentiel::GRADE_DIR_CABINET,
         ]);
     }
 
@@ -51,20 +51,36 @@ class MgdsPagesTest extends TestCase
             ->assertOk();
     }
 
-    public function test_gestion_pages_are_displayed_for_responsable(): void
+    public function test_gestion_pages_are_displayed_for_maire(): void
     {
-        $responsable = $this->responsable();
+        $maire = User::factory()->create([
+            'mairie_id' => $this->mairie->id,
+            'service'   => 1,
+            'grade'     => Referentiel::GRADE_MAIRE,
+        ]);
 
-        $this->actingAs($responsable)->get('/gestion/utilisateurs')->assertOk();
-        $this->actingAs($responsable)->get('/gestion/utilisateurs/create')->assertOk();
-        $this->actingAs($responsable)->get('/gestion/contacts')->assertOk();
-        $this->actingAs($responsable)->get('/gestion/avancement')->assertOk();
+        $this->actingAs($maire)->get('/gestion/utilisateurs')->assertOk();
+        $this->actingAs($maire)->get('/gestion/utilisateurs/create')->assertOk();
+        $this->actingAs($maire)->get('/gestion/contacts')->assertOk();
+        $this->actingAs($maire)->get('/gestion/avancement')->assertOk();
+    }
+
+    public function test_directeur_cabinet_accede_contacts_mais_pas_gestion_utilisateurs(): void
+    {
+        $dirCab = $this->responsable();
+
+        $this->actingAs($dirCab)->get('/gestion/contacts')->assertOk();
+        $this->actingAs($dirCab)->get('/gestion/utilisateurs')->assertForbidden();
     }
 
     public function test_gestion_is_forbidden_for_employe(): void
     {
         $this->actingAs($this->employe())
             ->get('/gestion/utilisateurs')
+            ->assertForbidden();
+
+        $this->actingAs($this->employe())
+            ->get('/gestion/contacts')
             ->assertForbidden();
     }
 

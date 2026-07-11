@@ -18,6 +18,8 @@ class ContactFicheController extends Controller
 {
     public function index()
     {
+        abort_unless(auth()->user()->aDroit('contacts_lecture'), 403);
+
         [$mairie, $contacts, $standards] = $this->donnees();
 
         return view('gestion.contacts.index', compact('mairie', 'contacts', 'standards'));
@@ -26,6 +28,8 @@ class ContactFicheController extends Controller
     /** Téléchargement de la fiche contact en PDF. */
     public function pdf()
     {
+        abort_unless(auth()->user()->aDroit('contacts_lecture'), 403);
+
         [$mairie, $contacts, $standards] = $this->donnees();
 
         $pdf = Pdf::loadView('pdf.contacts', compact('mairie', 'contacts', 'standards'))
@@ -36,6 +40,8 @@ class ContactFicheController extends Controller
 
     public function storeStandard(Request $request)
     {
+        abort_unless(auth()->user()->aDroit('contacts_modification'), 403);
+
         $mairie = auth()->user()->mairie;
         abort_unless($mairie !== null, 403);
 
@@ -60,6 +66,7 @@ class ContactFicheController extends Controller
 
     public function updateStandard(Request $request, Standard $standard)
     {
+        abort_unless(auth()->user()->aDroit('contacts_modification'), 403);
         abort_if($standard->mairie_id !== auth()->user()->mairie_id, 403);
 
         $data = $request->validate([
@@ -81,6 +88,7 @@ class ContactFicheController extends Controller
 
     public function destroyStandard(Standard $standard)
     {
+        abort_unless(auth()->user()->aDroit('contacts_modification'), 403);
         abort_if($standard->mairie_id !== auth()->user()->mairie_id, 403);
 
         $standard->delete();

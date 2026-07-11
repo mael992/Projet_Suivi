@@ -75,7 +75,7 @@ class TacheNotifier
     {
         return User::where('mairie_id', $tache->mairie_id)
             ->where('service', $tache->service)
-            ->whereIn('grade', [Referentiel::GRADE_RESPONSABLE, Referentiel::GRADE_SOUS_RESP])
+            ->whereIn('grade', [Referentiel::GRADE_DIR_CABINET, Referentiel::GRADE_DGS])
             ->whereNotNull('email')
             ->get();
     }

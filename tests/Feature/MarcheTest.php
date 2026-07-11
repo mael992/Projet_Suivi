@@ -30,7 +30,7 @@ class MarcheTest extends TestCase
         $this->responsable = User::factory()->create([
             'mairie_id' => $this->mairie->id,
             'service'   => 12,
-            'grade'     => Referentiel::GRADE_RESPONSABLE,
+            'grade'     => Referentiel::GRADE_DIR_CABINET,
         ]);
     }
 

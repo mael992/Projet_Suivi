@@ -37,12 +37,6 @@
                 <span class="sidebar-icon" style="font-size:16px">📊</span> {{ __('Avancement des tâches') }}
             </a>
         @endif
-        @if(auth()->user()->isAdmin())
-            <div class="sidebar-divider"></div>
-            <a href="{{ route('users.index') }}" class="sidebar-link">
-                <span class="sidebar-icon" style="font-size:16px">⚙️</span> {{ __('Paramètres Administration') }}
-            </a>
-        @endif
         @if(auth()->user()->peutGererTaches())
             <div class="sidebar-divider"></div>
             <a href="{{ route('taches.create') }}" class="sidebar-cta">

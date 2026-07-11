@@ -25,6 +25,8 @@ class User extends Authenticatable
         'mairie_id',
         'service',
         'grade',
+        'droit',
+        'fonction',
         'reference',
         'telephone_indicatif',
         'telephone',
@@ -65,21 +67,35 @@ class User extends Authenticatable
         return $this->role === 'admin';
     }
 
-    /** Grades 1 à 4 : peuvent créer / modifier / supprimer des tâches */
-    public function peutGererTaches(): bool
+    /**
+     * Droit d'application le plus fort de l'utilisateur (colonne `droit`,
+     * sinon le droit par défaut de son grade).
+     */
+    public function droitActuel(): string
     {
-        return $this->isAdmin()
-            || in_array($this->grade, Referentiel::GRADES_CREATION_TACHE, true);
+        return $this->droit ?: Referentiel::droitDefaut($this->grade);
     }
 
-    /** Maire, Responsable ou Sous-Responsable : accès à la Gestion de la Mairie */
+    /**
+     * Système hiérarchique : posséder un droit donne tous les droits
+     * plus faibles (situés à sa droite dans Referentiel::DROITS).
+     */
+    public function aDroit(string $droit): bool
+    {
+        return $this->isAdmin()
+            || Referentiel::rangDroit($this->droitActuel()) <= Referentiel::rangDroit($droit);
+    }
+
+    /** Peuvent créer / modifier / supprimer des tâches */
+    public function peutGererTaches(): bool
+    {
+        return $this->aDroit('taches_gestion');
+    }
+
+    /** Accès à la Gestion de la Mairie (utilisateurs, avancement) */
     public function peutGererMairie(): bool
     {
-        return in_array($this->grade, [
-            Referentiel::GRADE_MAIRE,
-            Referentiel::GRADE_RESPONSABLE,
-            Referentiel::GRADE_SOUS_RESP,
-        ], true);
+        return ! $this->isAdmin() && $this->aDroit('gestion_utilisateurs');
     }
 
     /** Cabinet du maire / DGS / Maire : voient toutes les tâches de la mairie */
@@ -90,10 +106,10 @@ class User extends Authenticatable
             || in_array($this->service, Referentiel::SERVICES_VUE_GLOBALE, true);
     }
 
-    /** Responsable / Sous-Responsable : voient toutes les tâches de leur service */
+    /** Directeur de Cabinet / DGS : voient toutes les tâches de leur service */
     public function voitSonService(): bool
     {
-        return in_array($this->grade, [Referentiel::GRADE_RESPONSABLE, Referentiel::GRADE_SOUS_RESP], true);
+        return in_array($this->grade, [Referentiel::GRADE_DIR_CABINET, Referentiel::GRADE_DGS], true);
     }
 
     // ── Attributs pratiques ──────────────────────────────────────
