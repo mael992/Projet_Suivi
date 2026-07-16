@@ -71,9 +71,11 @@ class MarcheZoneTest extends TestCase
                 'marche_type'  => 'hebdomadaire',
                 'longueur_m'   => 60,
                 'largeur_m'    => 25,
-                'disposition'  => 'double',
+                'disposition'  => 'grille',
                 'ecart'        => 1.5,
                 'taille_stand' => 3,
+                'allee'        => 5,
+                'degagement'   => 1.5,
                 'obstacles'    => [
                     ['type' => 'arbre', 'x' => 10, 'y' => 5],
                     ['type' => 'fontaine', 'x' => 30, 'y' => 12],
@@ -83,7 +85,8 @@ class MarcheZoneTest extends TestCase
 
         $zone->refresh();
         $this->assertSame('hebdomadaire', $zone->marche_type);
-        $this->assertSame('double', $zone->config['disposition']);
+        $this->assertSame('grille', $zone->config['disposition']);
+        $this->assertEquals(1.5, $zone->config['degagement']);
         $this->assertCount(2, $zone->config['obstacles']);
     }
 
