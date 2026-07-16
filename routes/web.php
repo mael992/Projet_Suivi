@@ -95,6 +95,14 @@ Route::middleware('auth')->group(function () {
     Route::post('/dialogue/questions/{question}/reponses', [\App\Http\Controllers\DialogueController::class, 'storeReponse'])->name('dialogue.reponses.store');
     Route::delete('/dialogue/questions/{question}', [\App\Http\Controllers\DialogueController::class, 'destroyQuestion'])->name('dialogue.questions.destroy');
 
+    // Pense-bête (Calendrier + Notes)
+    Route::get('/pense-bete', [\App\Http\Controllers\PenseBeteController::class, 'index'])->name('pensebete.index');
+    Route::post('/pense-bete/rappels', [\App\Http\Controllers\PenseBeteController::class, 'storeRappel'])->name('pensebete.rappels.store');
+    Route::delete('/pense-bete/rappels/{rappel}', [\App\Http\Controllers\PenseBeteController::class, 'destroyRappel'])->name('pensebete.rappels.destroy');
+    Route::post('/pense-bete/notes', [\App\Http\Controllers\PenseBeteController::class, 'storeNote'])->name('pensebete.notes.store');
+    Route::put('/pense-bete/notes/{note}', [\App\Http\Controllers\PenseBeteController::class, 'updateNote'])->name('pensebete.notes.update');
+    Route::delete('/pense-bete/notes/{note}', [\App\Http\Controllers\PenseBeteController::class, 'destroyNote'])->name('pensebete.notes.destroy');
+
     // Profil
     Route::get('/profile',    [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile',  [ProfileController::class, 'update'])->name('profile.update');

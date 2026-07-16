@@ -121,6 +121,25 @@
             </div>
         </div>
 
+        {{-- 🗓️ {{ __('Pense-bête') }} (tous les utilisateurs) --}}
+        <div class="col-12 col-md-6 app-tile" data-app="pense bete calendrier notes rappels memo agenda dossiers">
+            <div class="card shadow-sm h-100">
+                <div class="card-body d-flex flex-column">
+                    <a href="{{ route('pensebete.index') }}" class="text-decoration-none text-reset d-flex align-items-center gap-3 mb-3">
+                        <span style="font-size:44px;line-height:1;">🗓️</span>
+                        <span>
+                            <span class="h5 d-block mb-1" style="color:var(--brand);">{{ __('Pense-bête') }}</span>
+                            <span class="text-muted" style="font-size:13px;">{{ __('Calendrier avec rappels par email & notes personnelles classées') }}</span>
+                        </span>
+                    </a>
+                    <div class="mt-auto d-flex gap-2 flex-wrap">
+                        <a href="{{ route('pensebete.index') }}" class="badge text-decoration-none" style="background:var(--brand);">📅 {{ __('Calendrier') }}</a>
+                        <a href="{{ route('pensebete.index', ['onglet' => 'notes']) }}" class="badge text-decoration-none" style="background:var(--gold);">🗒️ {{ __('Notes') }}</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         {{-- ⚙️ {{ __('Paramètres Administration') }} (admins uniquement) --}}
         @if($user->isAdmin())
         <div class="col-12 col-md-6 app-tile" data-app="parametres administration admin utilisateurs acces mairies logs messages support">

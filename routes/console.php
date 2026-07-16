@@ -14,6 +14,9 @@ Schedule::command('tickets:cleanup')->daily();
 // Chaque jour à 00h01 : email « dernier jour » (jour J) + « désabonné » (J+1)
 Schedule::command('mgds:notifier-abonnements')->dailyAt('00:01');
 
+// ── Pense-bête : rappels du calendrier (email le jour J) ────────
+Schedule::command('mgds:envoyer-rappels')->dailyAt('00:05');
+
 // ── Logs d'activité ─────────────────────────────────────────────
 // Sauvegarde toutes les 48h (tous les 2 jours à 02:00)
 Schedule::command('logs:backup')->cron('0 2 */2 * *');
