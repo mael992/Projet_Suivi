@@ -6,10 +6,6 @@
                href="{{ route('marche.ville', request()->only('mairie')) }}">🏙️ {{ __('Ville') }}</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link {{ request()->routeIs('marche.plan') ? 'active' : '' }}"
-               href="{{ route('marche.plan', request()->only('mairie')) }}">🗺️ Plan</a>
-        </li>
-        <li class="nav-item">
             <a class="nav-link {{ request()->routeIs('marche.commercants*') ? 'active' : '' }}"
                href="{{ route('marche.commercants', request()->only('mairie')) }}">👥 Commerçants</a>
         </li>

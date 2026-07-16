@@ -54,6 +54,20 @@ class AuthenticationTest extends TestCase
         $response->assertRedirect(route('apps', absolute: false));
     }
 
+    public function test_users_can_authenticate_on_last_subscription_day(): void
+    {
+        // La date de fin est incluse : le jour J, la connexion fonctionne encore
+        $mairie = $this->mairie(['date_fin_abonnement' => now()->toDateString()]);
+        $user   = User::factory()->create(['mairie_id' => $mairie->id]);
+
+        $this->post('/login', [
+            'username' => $user->username,
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticated();
+    }
+
     public function test_users_can_not_authenticate_when_abonnement_expired(): void
     {
         $mairie = $this->mairie(['date_fin_abonnement' => now()->subDay()->toDateString()]);

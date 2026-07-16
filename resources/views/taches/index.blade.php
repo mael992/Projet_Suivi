@@ -16,7 +16,7 @@
         <a href="{{ route('apps') }}" class="sidebar-link">
             <span class="sidebar-icon" style="font-size:16px">🧩</span> Applications
         </a>
-        <a href="{{ route('marche.plan') }}" class="sidebar-link">
+        <a href="{{ route('marche.ville') }}" class="sidebar-link">
             <span class="sidebar-icon" style="font-size:16px">🛍️</span> Marché
         </a>
         <div class="sidebar-divider"></div>

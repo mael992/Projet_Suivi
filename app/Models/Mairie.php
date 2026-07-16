@@ -55,16 +55,44 @@ class Mairie extends Model
             : asset('images/fond-plan-exemple.png');
     }
 
-    /** Abonnement expiré → connexion refusée pour les utilisateurs de cette mairie */
+    /**
+     * Abonnement expiré → connexion refusée pour les utilisateurs de cette mairie.
+     * La date de fin est INCLUSE : le 14 juillet, un abonnement finissant
+     * le 14 juillet fonctionne encore toute la journée.
+     */
     public function abonnementExpire(): bool
     {
         return $this->date_fin_abonnement !== null
-            && $this->date_fin_abonnement->isPast();
+            && $this->date_fin_abonnement->copy()->endOfDay()->isPast();
     }
 
     /** Adresses e-mail qui reçoivent une copie de toutes les notifications */
     public function emailsObservateurs(): array
     {
         return $this->observateurs()->pluck('email')->all();
+    }
+
+    /**
+     * Destinataires des emails d'abonnement : les personnes qui dirigent
+     * la mairie (Maire, Directeur de Cabinet, DGS) + les observateurs
+     * + l'adresse de la mairie elle-même.
+     */
+    public function emailsDirection(): array
+    {
+        $dirigeants = $this->users()
+            ->whereIn('grade', [
+                \App\Support\Referentiel::GRADE_MAIRE,
+                \App\Support\Referentiel::GRADE_DIR_CABINET,
+                \App\Support\Referentiel::GRADE_DGS,
+            ])
+            ->whereNotNull('email')
+            ->pluck('email')
+            ->all();
+
+        return array_values(array_unique(array_filter(array_merge(
+            $dirigeants,
+            $this->emailsObservateurs(),
+            [$this->email],
+        ))));
     }
 }

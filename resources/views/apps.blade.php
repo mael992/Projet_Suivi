@@ -74,8 +74,7 @@
                         </span>
                     </a>
                     <div class="mt-auto d-flex gap-2 flex-wrap">
-                        <a href="{{ route('marche.ville') }}" class="badge text-decoration-none" style="background:var(--brand-dark);">🏙️ {{ __('Ville') }}</a>
-                        <a href="{{ route('marche.plan') }}" class="badge text-decoration-none" style="background:var(--brand);">🗺️ Plan</a>
+                        <a href="{{ route('marche.ville') }}" class="badge text-decoration-none" style="background:var(--brand);">🏙️ {{ __('Ville') }}</a>
                         <a href="{{ route('marche.commercants') }}" class="badge bg-dark text-decoration-none">👥 Commerçants</a>
                         <a href="{{ route('marche.registre') }}" class="badge text-decoration-none" style="background:var(--gold);">🏦 Registre</a>
                     </div>
