@@ -103,6 +103,24 @@
         </div>
         @endif
 
+        {{-- 💬 {{ __('Boîte de dialogue') }} (tous les utilisateurs) --}}
+        <div class="col-12 col-md-6 app-tile" data-app="boite de dialogue entraide questions reponses aide support mairies faq">
+            <div class="card shadow-sm h-100">
+                <div class="card-body d-flex flex-column">
+                    <a href="{{ route('dialogue.index') }}" class="text-decoration-none text-reset d-flex align-items-center gap-3 mb-3">
+                        <span style="font-size:44px;line-height:1;">💬</span>
+                        <span>
+                            <span class="h5 d-block mb-1" style="color:var(--brand);">{{ __('Boîte de dialogue') }}</span>
+                            <span class="text-muted" style="font-size:13px;">{{ __('Entraide collaborative entre mairies, application par application') }}</span>
+                        </span>
+                    </a>
+                    <div class="mt-auto d-flex gap-2 flex-wrap">
+                        <a href="{{ route('dialogue.index') }}" class="badge text-decoration-none" style="background:var(--brand);">❓ {{ __('Questions & Entraide') }}</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         {{-- ⚙️ {{ __('Paramètres Administration') }} (admins uniquement) --}}
         @if($user->isAdmin())
         <div class="col-12 col-md-6 app-tile" data-app="parametres administration admin utilisateurs acces mairies logs messages support">

@@ -89,6 +89,12 @@ Route::middleware('auth')->group(function () {
         Route::delete('/commercants/{commercant}', [CommercantController::class, 'destroy'])->name('commercants.destroy');
     });
 
+    // Boîte de dialogue (entraide entre mairies)
+    Route::get('/dialogue', [\App\Http\Controllers\DialogueController::class, 'index'])->name('dialogue.index');
+    Route::post('/dialogue/questions', [\App\Http\Controllers\DialogueController::class, 'storeQuestion'])->name('dialogue.questions.store');
+    Route::post('/dialogue/questions/{question}/reponses', [\App\Http\Controllers\DialogueController::class, 'storeReponse'])->name('dialogue.reponses.store');
+    Route::delete('/dialogue/questions/{question}', [\App\Http\Controllers\DialogueController::class, 'destroyQuestion'])->name('dialogue.questions.destroy');
+
     // Profil
     Route::get('/profile',    [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile',  [ProfileController::class, 'update'])->name('profile.update');
