@@ -112,6 +112,7 @@ class MgdsPagesTest extends TestCase
 
         $this->actingAs($responsable)->post('/taches', [
             'service'     => 12,
+            'user_id'     => $responsable->id,
             'date_butoir' => now()->addWeek()->toDateString(),
         ])->assertRedirect(route('dashboard', absolute: false));
 
@@ -125,10 +126,19 @@ class MgdsPagesTest extends TestCase
         // La deuxième tâche du même service prend le numéro suivant
         $this->actingAs($responsable)->post('/taches', [
             'service'     => 12,
+            'user_id'     => $responsable->id,
             'date_butoir' => now()->addWeek()->toDateString(),
         ]);
 
         $this->assertDatabaseHas('taches', ['reference' => '12-1']);
+    }
+
+    public function test_responsable_obligatoire_a_la_creation(): void
+    {
+        $this->actingAs($this->responsable())->post('/taches', [
+            'service'     => 12,
+            'date_butoir' => now()->addWeek()->toDateString(),
+        ])->assertSessionHasErrors('user_id');
     }
 
     public function test_employe_cannot_create_a_tache(): void
@@ -140,45 +150,96 @@ class MgdsPagesTest extends TestCase
             ])->assertForbidden();
     }
 
-    public function test_statut_fait_sets_date_cloture_automatically(): void
+    public function test_workflow_prise_en_charge_puis_cloture(): void
     {
-        $employe = $this->employe();
+        $responsable = $this->responsable();
 
         $tache = Tache::create([
             'mairie_id'   => $this->mairie->id,
             'reference'   => '12-0',
             'service'     => 12,
-            'user_id'     => $employe->id,
+            'user_id'     => $responsable->id,
             'statut'      => 'ouvert',
             'date_butoir' => now()->addWeek()->toDateString(),
         ]);
 
-        $this->actingAs($employe)->put('/taches/' . $tache->id, [
-            'statut' => 'fait',
+        $this->assertTrue($tache->enAttentePriseEnCharge());
+
+        // Prise en charge par le responsable
+        $this->actingAs($responsable)->post("/taches/{$tache->id}/prise-en-charge", [
+            'mode' => 'responsable',
+        ])->assertRedirect();
+
+        $tache->refresh();
+        $this->assertSame('responsable', $tache->prise_en_charge);
+        $this->assertSame('en_cours', $tache->statut);
+
+        // Clôture : commentaire obligatoire
+        $this->actingAs($responsable)->post("/taches/{$tache->id}/cloturer", [
+            'description_cloture' => '   ',
+        ])->assertSessionHasErrors('description_cloture');
+
+        $this->actingAs($responsable)->post("/taches/{$tache->id}/cloturer", [
+            'description_cloture' => 'Travail terminé.',
         ])->assertRedirect(route('dashboard', absolute: false));
 
-        $this->assertNotNull($tache->fresh()->date_cloture);
+        $tache->refresh();
+        $this->assertSame('fait', $tache->statut);
+        $this->assertNotNull($tache->date_cloture);
     }
 
-    public function test_employe_cannot_reopen_a_tache_faite(): void
+    public function test_workflow_substitution_a_un_employe(): void
     {
-        $employe = $this->employe();
+        $responsable = $this->responsable();
+        $employe     = $this->employe();
 
         $tache = Tache::create([
-            'mairie_id'    => $this->mairie->id,
-            'reference'    => '12-0',
-            'service'      => 12,
-            'user_id'      => $employe->id,
-            'statut'       => 'fait',
-            'date_butoir'  => now()->addWeek()->toDateString(),
-            'date_cloture' => now(),
+            'mairie_id'   => $this->mairie->id,
+            'reference'   => '12-0',
+            'service'     => 12,
+            'user_id'     => $responsable->id,
+            'statut'      => 'ouvert',
+            'date_butoir' => now()->addWeek()->toDateString(),
         ]);
 
-        $this->actingAs($employe)->put('/taches/' . $tache->id, [
-            'statut' => 'ouvert',
-        ])->assertSessionHasErrors('statut');
+        $this->actingAs($responsable)->post("/taches/{$tache->id}/prise-en-charge", [
+            'mode'         => 'substitution',
+            'substitut_id' => $employe->id,
+        ])->assertRedirect();
+
+        $tache->refresh();
+        $this->assertSame('substitution', $tache->prise_en_charge);
+        $this->assertSame($employe->id, $tache->substitut_id);
+
+        // Le substitut peut clôturer
+        $this->actingAs($employe)->post("/taches/{$tache->id}/cloturer", [
+            'description_cloture' => 'Fait par le substitut.',
+        ])->assertRedirect(route('dashboard', absolute: false));
 
         $this->assertSame('fait', $tache->fresh()->statut);
+    }
+
+    public function test_seul_le_createur_peut_modifier_ou_supprimer(): void
+    {
+        $createur    = $this->responsable();
+        $responsable = $this->responsable();
+
+        $tache = Tache::create([
+            'mairie_id'   => $this->mairie->id,
+            'reference'   => '12-0',
+            'service'     => 12,
+            'user_id'     => $responsable->id,
+            'created_by'  => $createur->id,
+            'statut'      => 'ouvert',
+            'date_butoir' => now()->addWeek()->toDateString(),
+        ]);
+
+        // Le responsable affecté (non créateur) ne peut ni modifier ni supprimer
+        $this->actingAs($responsable)->get("/taches/{$tache->id}/edit")->assertForbidden();
+        $this->actingAs($responsable)->delete("/taches/{$tache->id}")->assertForbidden();
+
+        // Le créateur, oui
+        $this->actingAs($createur)->get("/taches/{$tache->id}/edit")->assertOk();
     }
 
     public function test_username_generation_handles_duplicates(): void

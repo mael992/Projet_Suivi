@@ -46,6 +46,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [TacheController::class, 'index'])->name('dashboard');
     Route::resource('taches', TacheController::class)->except('index')
         ->parameters(['taches' => 'tache']);
+    Route::post('/taches/{tache}/prise-en-charge', [TacheController::class, 'prendreEnCharge'])->name('taches.prise-en-charge');
+    Route::post('/taches/{tache}/cloturer', [TacheController::class, 'cloturer'])->name('taches.cloturer');
 
     // Application Marché 🛍
     Route::prefix('marche')->name('marche.')->group(function () {

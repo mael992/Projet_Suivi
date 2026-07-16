@@ -15,8 +15,10 @@ class Tache extends Model
         'reference',
         'service',
         'user_id',
+        'substitut_id',
         'created_by',
         'statut',
+        'prise_en_charge',
         'photo_avant',
         'photo_apres',
         'description_instruction',
@@ -41,15 +43,43 @@ class Tache extends Model
         return $this->belongsTo(Mairie::class);
     }
 
-    /** Employé chargé de réaliser la tâche */
+    /** Responsable chargé de la tâche (prend en charge ou substitue) */
     public function assigne()
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    /** Employé de substitution choisi par le responsable */
+    public function substitut()
+    {
+        return $this->belongsTo(User::class, 'substitut_id');
+    }
+
     public function createur()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    // ── Workflow de prise en charge ──────────────────────────────
+
+    /** La tâche attend que son responsable la prenne en charge ou la substitue */
+    public function enAttentePriseEnCharge(): bool
+    {
+        return $this->user_id !== null
+            && $this->prise_en_charge === null
+            && ! $this->estFaite();
+    }
+
+    /** L'utilisateur est-il autorisé à clôturer cette tâche ? */
+    public function peutEtreClotureePar(User $user): bool
+    {
+        if ($this->estFaite() || $this->prise_en_charge === null) {
+            return false;
+        }
+
+        // Le responsable garde toujours l'accès, même après substitution
+        return $user->id === $this->user_id
+            || ($this->prise_en_charge === 'substitution' && $user->id === $this->substitut_id);
     }
 
     // ── Scopes de visibilité ─────────────────────────────────────
@@ -80,6 +110,7 @@ class Tache extends Model
 
         return $query->where(function (Builder $q) use ($user) {
             $q->where('user_id', $user->id)
+              ->orWhere('substitut_id', $user->id)
               ->orWhere('created_by', $user->id);
         });
     }

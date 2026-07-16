@@ -17,13 +17,15 @@ body { font-family: Arial, sans-serif; color: #111; background:#f4f6f9; margin:0
             Bonjour{{ $destinataire ? ' ' . $destinataire->prenom : '' }},
         </h2>
 
-        <p>La tâche <strong>{{ $tache->reference }}</strong> vient d'être affectée à
-        <strong>{{ $tache->assigne?->username }}</strong>.</p>
+        <p><strong>Vous avez une nouvelle tâche sur laquelle vous avez été affecté.</strong></p>
 
         <div class="info">
             <div>🔖 <strong>Référence :</strong> {{ $tache->reference }}</div>
             <div>👥 <strong>Service :</strong> {{ $tache->service_label }}</div>
-            <div>👤 <strong>Assignée à :</strong> {{ $tache->assigne?->username }}</div>
+            <div>👤 <strong>Responsable :</strong> {{ $tache->assigne?->username }}</div>
+            @if($tache->substitut)
+                <div>🔄 <strong>Substituée à :</strong> {{ $tache->substitut->username }}</div>
+            @endif
             <div>📅 <strong>Clôture prévue :</strong> {{ $tache->date_butoir->format('d/m/Y') }}</div>
         </div>
 

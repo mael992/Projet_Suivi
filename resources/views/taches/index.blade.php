@@ -170,7 +170,13 @@
                 </thead>
                 <tbody>
                 @forelse($taches as $tache)
-                    <tr>
+                    @php
+                        $u              = auth()->user();
+                        $estCreateur    = $u->isAdmin() || $tache->created_by === $u->id;
+                        $enAttentePourMoi = $tache->user_id === $u->id && $tache->enAttentePriseEnCharge();
+                        $peutCloturerLigne = $tache->peutEtreClotureePar($u);
+                    @endphp
+                    <tr @if($enAttentePourMoi) class="table-warning" title="{{ __('Nouvelle tâche en attente de votre prise en charge') }}" @endif>
                         <td class="fw-semibold">{{ $tache->reference }}</td>
                         @if(auth()->user()->isAdmin())<td>{{ $tache->mairie?->nom ?? '—' }}</td>@endif
                         <td>{{ $tache->created_at->format('d/m/Y') }}</td>
@@ -194,7 +200,14 @@
                         </td>
                         <td>{{ $tache->date_cloture?->format('d/m/Y H:i') ?? '—' }}</td>
                         <td style="font-size:13px;">{{ $tache->service_label }}</td>
-                        <td>{{ $tache->assigne?->username ?? '—' }}</td>
+                        <td>
+                            {{ $tache->assigne?->username ?? '—' }}
+                            @if($tache->prise_en_charge === 'substitution')
+                                <div class="text-muted" style="font-size:11px;">🔄 {{ $tache->substitut?->username }}</div>
+                            @elseif($tache->enAttentePriseEnCharge())
+                                <div class="text-warning" style="font-size:11px;">⏳ {{ __('en attente') }}</div>
+                            @endif
+                        </td>
                         <td>
                             @php
                                 $couleurs = ['ouvert' => 'secondary', 'en_cours' => 'warning', 'fait' => 'success'];
@@ -204,13 +217,16 @@
                         <td class="text-end">
                             <div class="btn-group btn-group-sm">
                                 <a href="{{ route('taches.show', $tache) }}" class="btn btn-outline-secondary">👁 Voir</a>
-                                <a href="{{ route('taches.edit', $tache) }}" class="btn btn-outline-primary">✏️ Modifier</a>
-                                @if(auth()->user()->peutGererTaches())
-                                <form action="{{ route('taches.destroy', $tache) }}" method="POST"
-                                      onsubmit="return confirm('⚠️ Supprimer la tâche {{ $tache->reference }} ?')">
-                                    @csrf @method('DELETE')
-                                    <button class="btn btn-outline-danger" type="submit">🗑 Supprimer</button>
-                                </form>
+                                @if($peutCloturerLigne)
+                                    <a href="{{ route('taches.show', $tache) }}#cloture" class="btn btn-outline-success">🏁 {{ __('Clôturer') }}</a>
+                                @endif
+                                @if($estCreateur)
+                                    <a href="{{ route('taches.edit', $tache) }}" class="btn btn-outline-primary">✏️ Modifier</a>
+                                    <form action="{{ route('taches.destroy', $tache) }}" method="POST"
+                                          onsubmit="return confirm('⚠️ Supprimer la tâche {{ $tache->reference }} ?')">
+                                        @csrf @method('DELETE')
+                                        <button class="btn btn-outline-danger" type="submit">🗑 Supprimer</button>
+                                    </form>
                                 @endif
                             </div>
                         </td>

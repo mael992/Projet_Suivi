@@ -46,11 +46,11 @@
             </div>
 
             <div class="mb-3">
-                <label class="form-label fw-semibold">Responsabilité (utilisateur chargé de réaliser la tâche)</label>
-                <select name="user_id" id="userSelect" class="form-select">
-                    <option value="">— Personne (le responsable du service affectera) —</option>
+                <label class="form-label fw-semibold">{{ __('Responsable chargé de la tâche') }} *</label>
+                <select name="user_id" id="userSelect" class="form-select" required>
+                    <option value="">— {{ __('Sélectionnez') }} —</option>
                 </select>
-                <small class="text-muted">La liste correspond au service sélectionné.</small>
+                <small class="text-muted">{{ __('Cette personne recevra un email et devra prendre en charge la tâche ou la substituer à un employé.') }}</small>
             </div>
 
             <div class="mb-3">

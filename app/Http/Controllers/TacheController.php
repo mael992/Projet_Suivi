@@ -86,7 +86,7 @@ class TacheController extends Controller
         $data = $request->validate([
             'mairie_id'               => $user->isAdmin() ? 'required|exists:mairies,id' : 'nullable',
             'service'                 => 'required|integer|in:' . implode(',', array_keys(Referentiel::SERVICES)),
-            'user_id'                 => 'nullable|exists:users,id',
+            'user_id'                 => 'required|exists:users,id',
             'date_butoir'             => 'required|date|after_or_equal:today',
             'photo_avant'             => 'nullable|image|max:8192',
             'photo_apres'             => 'nullable|image|max:8192',
@@ -95,17 +95,15 @@ class TacheController extends Controller
 
         $mairieId = $user->isAdmin() ? (int) $data['mairie_id'] : $user->mairie_id;
 
-        // L'employé assigné doit appartenir à la mairie et au service choisis
-        if (!empty($data['user_id'])) {
-            $assigne = User::findOrFail($data['user_id']);
-            if ($assigne->mairie_id !== $mairieId || $assigne->service !== (int) $data['service']) {
-                return back()->withInput()->withErrors(['user_id' => "L'utilisateur sélectionné n'appartient pas à ce service."]);
-            }
+        // Le responsable chargé de la tâche doit appartenir à la mairie et au service choisis
+        $assigne = User::findOrFail($data['user_id']);
+        if ($assigne->mairie_id !== $mairieId || $assigne->service !== (int) $data['service']) {
+            return back()->withInput()->withErrors(['user_id' => "L'utilisateur sélectionné n'appartient pas à ce service."]);
         }
 
         $tache = new Tache([
             'service'                 => (int) $data['service'],
-            'user_id'                 => $data['user_id'] ?? null,
+            'user_id'                 => (int) $data['user_id'],
             'created_by'              => $user->id,
             'statut'                  => Referentiel::STATUT_OUVERT,
             'date_butoir'             => $data['date_butoir'],
@@ -123,8 +121,8 @@ class TacheController extends Controller
 
         $tache->save();
 
-        ActivityLogger::log('TACHE', 'CREATE', "Tâche {$tache->reference} créée (mairie #{$mairieId}, service {$tache->service_label})");
-        TacheNotifier::notifierCreation($tache);
+        ActivityLogger::log('TACHE', 'CREATE', "Tâche {$tache->reference} créée (mairie #{$mairieId}, service {$tache->service_label}, responsable : {$assigne->username})");
+        TacheNotifier::notifierAffectation($tache, $assigne);
 
         return redirect()->route('dashboard')->with('success', "Tâche {$tache->reference} créée.");
     }
@@ -133,12 +131,102 @@ class TacheController extends Controller
     {
         $this->autoriserVue($tache);
 
-        return view('taches.show', compact('tache'));
+        $user = auth()->user();
+
+        // Employés proposés pour la substitution (même mairie, même service)
+        $employes = collect();
+        if ($user->id === $tache->user_id && $tache->enAttentePriseEnCharge()) {
+            $employes = User::where('mairie_id', $tache->mairie_id)
+                ->where('service', $tache->service)
+                ->where('grade', Referentiel::GRADE_EMPLOYE)
+                ->where('id', '!=', $user->id)
+                ->orderBy('nom')->orderBy('prenom')
+                ->get();
+        }
+
+        return view('taches.show', compact('tache', 'employes'));
+    }
+
+    /** Le responsable prend en charge la tâche ou la substitue à un employé. */
+    public function prendreEnCharge(Request $request, Tache $tache)
+    {
+        $user = auth()->user();
+        abort_unless($user->id === $tache->user_id, 403);
+        abort_unless($tache->enAttentePriseEnCharge(), 403);
+
+        $data = $request->validate([
+            'mode'         => 'required|in:responsable,substitution',
+            'substitut_id' => 'required_if:mode,substitution|nullable|exists:users,id',
+        ]);
+
+        if ($data['mode'] === 'substitution') {
+            $substitut = User::findOrFail($data['substitut_id']);
+            if ($substitut->mairie_id !== $tache->mairie_id) {
+                return back()->withErrors(['substitut_id' => "L'employé sélectionné n'appartient pas à cette mairie."]);
+            }
+
+            $tache->update([
+                'prise_en_charge' => 'substitution',
+                'substitut_id'    => $substitut->id,
+                'statut'          => Referentiel::STATUT_EN_COURS,
+            ]);
+
+            ActivityLogger::log('TACHE', 'UPDATE', "Tâche {$tache->reference} substituée à {$substitut->username} par {$user->username}");
+            TacheNotifier::notifierAffectation($tache, $substitut);
+
+            return redirect()->route('taches.show', $tache)
+                ->with('success', "Tâche substituée à {$substitut->username} — un email lui a été envoyé.");
+        }
+
+        $tache->update([
+            'prise_en_charge' => 'responsable',
+            'statut'          => Referentiel::STATUT_EN_COURS,
+        ]);
+
+        ActivityLogger::log('TACHE', 'UPDATE', "Tâche {$tache->reference} prise en charge par {$user->username}");
+
+        return redirect()->route('taches.show', $tache)->with('success', 'Vous avez pris en charge cette tâche.');
+    }
+
+    /** Clôture : commentaire obligatoire (non vide) + photo si exigée. */
+    public function cloturer(Request $request, Tache $tache)
+    {
+        $user = auth()->user();
+        abort_unless($tache->peutEtreClotureePar($user), 403);
+
+        $data = $request->validate([
+            'description_cloture' => 'required|string|max:5000',
+            'photo_apres'         => 'nullable|image|max:8192',
+        ], [
+            'description_cloture.required' => 'Le commentaire de clôture est obligatoire.',
+        ]);
+
+        if ($tache->photo_avant && ! $tache->photo_apres && ! $request->hasFile('photo_apres')) {
+            return back()->withErrors(['photo_apres' => 'La photo de la tâche une fois finie est obligatoire (une photo « à faire » existe).']);
+        }
+
+        if ($request->hasFile('photo_apres')) {
+            if ($tache->photo_apres) {
+                Storage::disk('public')->delete($tache->photo_apres);
+            }
+            $tache->photo_apres = $request->file('photo_apres')->store('taches', 'public');
+        }
+
+        $tache->description_cloture = $data['description_cloture'];
+        $tache->statut              = Referentiel::STATUT_FAIT;
+        $tache->date_cloture        = now();
+        $tache->save();
+
+        ActivityLogger::log('TACHE', 'UPDATE', "Tâche {$tache->reference} clôturée par {$user->username}");
+        TacheNotifier::notifierCloture($tache);
+
+        return redirect()->route('dashboard')->with('success', "Tâche {$tache->reference} clôturée.");
     }
 
     public function edit(Tache $tache)
     {
         $this->autoriserVue($tache);
+        $this->autoriserCreateur($tache);
 
         $user = auth()->user();
 
@@ -152,6 +240,7 @@ class TacheController extends Controller
     public function update(Request $request, Tache $tache)
     {
         $this->autoriserVue($tache);
+        $this->autoriserCreateur($tache);
 
         $user        = auth()->user();
         $gestion     = $user->peutGererTaches();
@@ -243,7 +332,7 @@ class TacheController extends Controller
     public function destroy(Tache $tache)
     {
         $this->autoriserVue($tache);
-        abort_unless(auth()->user()->peutGererTaches(), 403);
+        $this->autoriserCreateur($tache);
 
         foreach (['photo_avant', 'photo_apres'] as $photo) {
             if ($tache->$photo) {
@@ -265,6 +354,13 @@ class TacheController extends Controller
     {
         $visible = Tache::visiblesPar(auth()->user())->whereKey($tache->id)->exists();
         abort_unless($visible, 403);
+    }
+
+    /** Seul le créateur (ou un admin) peut modifier / supprimer une tâche */
+    private function autoriserCreateur(Tache $tache): void
+    {
+        $user = auth()->user();
+        abort_unless($user->isAdmin() || $tache->created_by === $user->id, 403);
     }
 
     /** Utilisateurs groupés par service (pour la liste dépendante du formulaire) */

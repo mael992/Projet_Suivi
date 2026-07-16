@@ -37,6 +37,19 @@ class TacheNotifier
         }
     }
 
+    /**
+     * Une personne (responsable à la création, ou employé de substitution)
+     * vient d'être affectée à la tâche : elle reçoit l'email d'affectation.
+     */
+    public static function notifierAffectation(Tache $tache, User $affecte): void
+    {
+        if ($affecte->email) {
+            static::envoyer($tache, new TacheAssignee($tache, $affecte));
+        } else {
+            static::envoyerAuxObservateursSeuls($tache, new TacheAssignee($tache, null));
+        }
+    }
+
     /** Une tâche existante vient d'être affectée à un employé. */
     public static function notifierAssignation(Tache $tache): void
     {
