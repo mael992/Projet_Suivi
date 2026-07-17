@@ -53,7 +53,7 @@
     const gradeSel   = document.querySelector('select[name=grade]');
 
     // Droit par défaut de chaque statut (même logique que Referentiel::droitDefaut)
-    const DEFAUTS = { 1: 'gestion_utilisateurs', 2: 'contacts_modification', 3: 'contacts_modification', 4: 'taches_lecture' };
+    const DEFAUTS = { 1: 'gestion_utilisateurs', 2: 'contacts_modification', 3: 'contacts_modification', 4: '' };
 
     function appliquerCascade(rang, coche) {
         cases.forEach(c => {

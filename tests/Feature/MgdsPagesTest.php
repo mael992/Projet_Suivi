@@ -219,6 +219,36 @@ class MgdsPagesTest extends TestCase
         $this->assertSame('fait', $tache->fresh()->statut);
     }
 
+    public function test_le_responsable_peut_changer_le_substitut(): void
+    {
+        $responsable = $this->responsable();
+        $employe1    = $this->employe();
+        $employe2    = $this->employe();
+
+        $tache = Tache::create([
+            'mairie_id'       => $this->mairie->id,
+            'reference'       => '12-0',
+            'service'         => 12,
+            'user_id'         => $responsable->id,
+            'substitut_id'    => $employe1->id,
+            'prise_en_charge' => 'substitution',
+            'statut'          => 'en_cours',
+            'date_butoir'     => now()->addWeek()->toDateString(),
+        ]);
+
+        // L'employé substitué ne peut pas changer la substitution
+        $this->actingAs($employe1)->post("/taches/{$tache->id}/substitut", [
+            'substitut_id' => $employe2->id,
+        ])->assertForbidden();
+
+        // Le responsable, oui
+        $this->actingAs($responsable)->post("/taches/{$tache->id}/substitut", [
+            'substitut_id' => $employe2->id,
+        ])->assertRedirect();
+
+        $this->assertSame($employe2->id, $tache->fresh()->substitut_id);
+    }
+
     public function test_seul_le_createur_peut_modifier_ou_supprimer(): void
     {
         $createur    = $this->responsable();

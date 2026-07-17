@@ -91,6 +91,22 @@
                 @if($tache->prise_en_charge === 'substitution')
                     <div class="col-md-6">
                         <strong>🔄 {{ __('Substituée à') }} :</strong> {{ $tache->substitut?->username ?? '—' }}
+                        @if($estResponsable && ! $tache->estFaite())
+                            <button type="button" class="btn btn-sm btn-outline-primary py-0 px-1 ms-1" title="{{ __('Changer la personne substituée') }}"
+                                    onclick="document.getElementById('formChangerSubstitut').classList.toggle('d-none')">✏️</button>
+                            <form id="formChangerSubstitut" method="POST" action="{{ route('taches.substitut', $tache) }}"
+                                  class="d-none d-flex gap-2 mt-2">
+                                @csrf
+                                <select name="substitut_id" class="form-select form-select-sm" required style="max-width:260px;">
+                                    @foreach($employes as $emp)
+                                        <option value="{{ $emp->id }}" @selected($emp->id === $tache->substitut_id)>
+                                            {{ $emp->username }} ({{ $emp->fonction ?: $emp->grade_label }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <button type="submit" class="btn btn-sm btn-dark">{{ __('Changer') }}</button>
+                            </form>
+                        @endif
                     </div>
                 @endif
                 <div class="col-md-6">

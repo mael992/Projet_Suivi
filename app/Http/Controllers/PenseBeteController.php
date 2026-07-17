@@ -45,9 +45,11 @@ class PenseBeteController extends Controller
                 ->get();
         }
 
+        // Tri des notes : par date de création (récent → ancien) ou alphabétique
+        $tri   = $request->input('tri') === 'alpha' ? 'alpha' : 'date';
         $notes = $user->hasMany(Note::class)
             ->orderBy('dossier')
-            ->orderByDesc('updated_at')
+            ->when($tri === 'alpha', fn ($q) => $q->orderBy('titre'), fn ($q) => $q->orderByDesc('created_at'))
             ->get();
 
         return view('pensebete.index', [
@@ -56,6 +58,7 @@ class PenseBeteController extends Controller
             'resultats'     => $resultats,
             'enRecherche'   => $enRecherche,
             'notes'         => $notes,
+            'tri'           => $tri,
             'dossiers'      => $notes->pluck('dossier')->filter()->unique()->sort()->values(),
         ]);
     }

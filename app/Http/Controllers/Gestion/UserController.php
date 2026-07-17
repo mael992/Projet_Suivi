@@ -80,7 +80,9 @@ class UserController extends Controller
 
         ActivityLogger::user('CREATE', "Utilisateur créé : \"{$user->username}\" (mairie : {$mairie->nom}, service : {$user->service_label}, grade : {$user->grade_label})");
 
-        return redirect()->route('gestion.utilisateurs.courrier', $user->id);
+        return redirect()->route('gestion.utilisateurs.index')
+            ->with('success', "Utilisateur « {$user->username} » créé.")
+            ->with('courrier_id', $user->id);
     }
 
     public function edit(User $user)

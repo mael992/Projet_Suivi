@@ -20,14 +20,27 @@
 
             @unless($employeSeul)
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">Responsabilité (utilisateur chargé de réaliser la tâche)</label>
-                    <select name="user_id" class="form-select">
-                        <option value="">— Personne —</option>
+                    <label class="form-label fw-semibold">{{ __('Responsable chargé de la tâche') }} *</label>
+                    <select name="user_id" class="form-select" required>
                         @foreach(($usersService[(string) $tache->service] ?? []) as $u)
                             <option value="{{ $u['id'] }}" @selected(old('user_id', $tache->user_id) == $u['id'])>{{ $u['label'] }}</option>
                         @endforeach
                     </select>
                 </div>
+
+                @if($tache->prise_en_charge === 'substitution')
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">🔄 {{ __('Substituée à') }}</label>
+                        <select name="substitut_id" class="form-select">
+                            @foreach($employesService as $emp)
+                                <option value="{{ $emp->id }}" @selected(old('substitut_id', $tache->substitut_id) == $emp->id)>
+                                    {{ $emp->username }} ({{ $emp->fonction ?: $emp->grade_label }})
+                                </option>
+                            @endforeach
+                        </select>
+                        <small class="text-muted">{{ __('En cas de changement, le nouvel employé reçoit l\'email d\'affectation.') }}</small>
+                    </div>
+                @endif
 
                 <div class="mb-3">
                     <label class="form-label fw-semibold">{{ __('Clôture prévue (date butoir) *') }}</label>

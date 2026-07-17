@@ -50,7 +50,13 @@ class MairieController extends Controller
     {
         $mairie->load('observateurs');
 
-        return view('admin.mairies.edit', compact('mairie'));
+        // Tous les utilisateurs avec email : liste déroulante des observateurs
+        $utilisateurs = \App\Models\User::whereNotNull('email')
+            ->with('mairie:id,nom')
+            ->orderBy('username')
+            ->get(['id', 'username', 'prenom', 'nom', 'email', 'mairie_id']);
+
+        return view('admin.mairies.edit', compact('mairie', 'utilisateurs'));
     }
 
     public function update(Request $request, Mairie $mairie)

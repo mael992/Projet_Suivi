@@ -57,7 +57,6 @@ class Referentiel
         'contacts_lecture'      => 'Fiche Contact — lecture',
         'marche_gestion'        => 'Marché — gestion',
         'taches_gestion'        => 'Tableau des suivis — gestion',
-        'taches_lecture'        => 'Tableau des suivis — lecture',
     ];
 
     /** Position du droit dans la hiérarchie (0 = le plus fort). */
@@ -68,13 +67,17 @@ class Referentiel
         return $rang === false ? PHP_INT_MAX : $rang;
     }
 
-    /** Droit par défaut selon le grade (modifiable ensuite par utilisateur). */
+    /**
+     * Droit par défaut selon le grade (modifiable ensuite par utilisateur).
+     * Un employé n'a aucun droit d'application par défaut : il voit
+     * simplement ses propres tâches (droit de base, non géré ici).
+     */
     public static function droitDefaut(?int $grade): string
     {
         return match ($grade) {
             self::GRADE_MAIRE                        => 'gestion_utilisateurs',
             self::GRADE_DIR_CABINET, self::GRADE_DGS => 'contacts_modification',
-            default                                  => 'taches_lecture',
+            default                                  => '',
         };
     }
 

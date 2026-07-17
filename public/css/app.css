@@ -169,6 +169,15 @@ img {
     to { transform: rotate(360deg); }
 }
 
+/* Flash discret quand une zone vient d'être rafraîchie automatiquement */
+.zone-rafraichie {
+    animation: zoneRafraichie 1.6s ease-out;
+}
+@keyframes zoneRafraichie {
+    0%   { box-shadow: 0 0 0 3px rgba(176, 141, 74, 0.55); }
+    100% { box-shadow: 0 0 0 0 rgba(176, 141, 74, 0); }
+}
+
 .btn-nav-users {
     font-size: 13px;
     padding: 5px 12px;

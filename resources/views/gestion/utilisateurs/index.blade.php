@@ -3,12 +3,18 @@
 @section('content')
 <div class="container-fluid px-3 px-md-4 py-4">
 
-    <h1 class="h3 mb-3">{{ __('Gestion de la Mairie') }} — {{ $mairie->nom }}</h1>
-
-    @include('gestion.partials.onglets')
+    <a href="{{ route('apps') }}" class="text-decoration-none d-inline-block mb-2" style="font-size:14px;">← {{ __('mgds.nav_apps') }}</a>
+    <h1 class="h3 mb-3">👥 {{ __('Gestion des utilisateurs') }} — {{ $mairie->nom }}</h1>
 
     @if(session('success'))
-        <div class="alert alert-success mb-3">{{ session('success') }}</div>
+        <div class="alert alert-success mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span>{{ session('success') }}</span>
+            @if(session('courrier_id'))
+                <a href="{{ route('gestion.utilisateurs.courrier', session('courrier_id')) }}" class="btn btn-sm btn-dark">
+                    📄 {{ __('Télécharger le courrier d\'identifiants') }}
+                </a>
+            @endif
+        </div>
     @endif
     @if($errors->any())
         <div class="alert alert-danger mb-3">{{ $errors->first() }}</div>

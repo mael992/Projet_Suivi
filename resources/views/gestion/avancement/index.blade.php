@@ -3,9 +3,8 @@
 @section('content')
 <div class="container-fluid px-3 px-md-4 py-4">
 
-    <h1 class="h3 mb-3">{{ __('Gestion de la Mairie') }} — {{ $mairie->nom }}</h1>
-
-    @include('gestion.partials.onglets')
+    <a href="{{ route('dashboard') }}" class="text-decoration-none d-inline-block mb-2" style="font-size:14px;">← {{ __('Suivi des tâches') }}</a>
+    <h1 class="h3 mb-3">📊 {{ __('Avancement des tâches') }} — {{ $mairie->nom }}</h1>
 
     {{-- Filtrage par période --}}
     <form method="GET" action="{{ route('gestion.avancement') }}" class="card shadow-sm mb-3">
@@ -31,7 +30,7 @@
         </div>
     </form>
 
-    <div class="card shadow-sm">
+    <div class="card shadow-sm" id="zoneAvancement">
         <div class="table-responsive">
             <table class="table table-hover mb-0 align-middle">
                 <thead class="table-dark">
@@ -62,4 +61,5 @@
     </div>
 
 </div>
+@include('partials.autorefresh', ['selector' => '#zoneAvancement'])
 @endsection

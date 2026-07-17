@@ -79,7 +79,9 @@ class UserController extends Controller
 
         return $estAdmin
             ? redirect()->route('users.index')->with('success', 'Administrateur créé.')
-            : redirect()->route('users.courrier', $user->id);
+            : redirect()->route('users.index')
+                ->with('success', "Utilisateur « {$user->username} » créé.")
+                ->with('courrier_id', $user->id);
     }
 
     public function edit(User $user)

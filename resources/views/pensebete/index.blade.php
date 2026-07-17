@@ -136,7 +136,7 @@
                 </div>
             </div>
         </div>
-        <p class="text-muted mt-2" style="font-size:11px;">
+        <p class="mt-3 mb-0 p-3 rounded" style="font-size:15px;background:#f3ead8;border-left:4px solid var(--gold);">
             💡 {{ __('Cliquez sur un jour pour ajouter un rappel, ou sur un rappel existant pour le supprimer. Un email « Ne pas oublier » vous est envoyé le jour J.') }}
         </p>
 
@@ -151,7 +151,12 @@
     {{-- ════════ ONGLET NOTES ════════ --}}
     <div id="ongletNotes" class="{{ $ongletActif === 'notes' ? '' : 'd-none' }}">
 
-        <div class="d-flex justify-content-end mb-2">
+        <div class="d-flex justify-content-between align-items-center mb-2 gap-2 flex-wrap">
+            {{-- Tri : alphabétique ⇅ ou par date de création (récent → ancien) --}}
+            <a href="{{ route('pensebete.index', ['onglet' => 'notes', 'tri' => $tri === 'alpha' ? 'date' : 'alpha']) }}"
+               class="btn btn-sm btn-outline-secondary" title="{{ __('Changer le tri') }}">
+                ⇅ {{ $tri === 'alpha' ? __('Tri : A → Z') : __('Tri : plus récent → plus ancien') }}
+            </a>
             <button type="button" class="btn btn-sm btn-primary" onclick="ouvrirModalNote()">➕ {{ __('Ajouter une Note') }}</button>
         </div>
 

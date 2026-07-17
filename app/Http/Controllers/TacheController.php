@@ -135,16 +135,38 @@ class TacheController extends Controller
 
         // Employés proposés pour la substitution (même mairie, même service)
         $employes = collect();
-        if ($user->id === $tache->user_id && $tache->enAttentePriseEnCharge()) {
-            $employes = User::where('mairie_id', $tache->mairie_id)
-                ->where('service', $tache->service)
-                ->where('grade', Referentiel::GRADE_EMPLOYE)
-                ->where('id', '!=', $user->id)
-                ->orderBy('nom')->orderBy('prenom')
-                ->get();
+        $estResponsable = $user->id === $tache->user_id;
+        if ($estResponsable && ($tache->enAttentePriseEnCharge() || $tache->prise_en_charge === 'substitution')) {
+            $employes = $this->employesDuService($tache);
         }
 
         return view('taches.show', compact('tache', 'employes'));
+    }
+
+    /** Le responsable change la personne substituée (crayon sur la page Voir). */
+    public function changerSubstitut(Request $request, Tache $tache)
+    {
+        $user = auth()->user();
+        abort_unless($user->id === $tache->user_id, 403);
+        abort_unless($tache->prise_en_charge === 'substitution' && ! $tache->estFaite(), 403);
+
+        $data = $request->validate([
+            'substitut_id' => 'required|exists:users,id',
+        ]);
+
+        $substitut = User::findOrFail($data['substitut_id']);
+        if ($substitut->mairie_id !== $tache->mairie_id) {
+            return back()->withErrors(['substitut_id' => "L'employé sélectionné n'appartient pas à cette mairie."]);
+        }
+
+        if ($substitut->id !== $tache->substitut_id) {
+            $tache->update(['substitut_id' => $substitut->id]);
+            ActivityLogger::log('TACHE', 'UPDATE', "Tâche {$tache->reference} : substitution changée pour {$substitut->username}");
+            TacheNotifier::notifierAffectation($tache, $substitut);
+        }
+
+        return redirect()->route('taches.show', $tache)
+            ->with('success', "Substitution mise à jour : {$substitut->username} a été prévenu par email.");
     }
 
     /** Le responsable prend en charge la tâche ou la substitue à un employé. */
@@ -231,9 +253,10 @@ class TacheController extends Controller
         $user = auth()->user();
 
         return view('taches.edit', [
-            'tache'        => $tache,
-            'usersService' => $this->usersParService($tache->mairie_id),
-            'employeSeul'  => ! $user->peutGererTaches(),
+            'tache'          => $tache,
+            'usersService'   => $this->usersParService($tache->mairie_id),
+            'employesService' => $this->employesDuService($tache),
+            'employeSeul'    => ! $user->peutGererTaches(),
         ]);
     }
 
@@ -254,7 +277,8 @@ class TacheController extends Controller
 
         if ($gestion) {
             $rules += [
-                'user_id'                 => 'nullable|exists:users,id',
+                'user_id'                 => 'required|exists:users,id',
+                'substitut_id'            => 'nullable|exists:users,id',
                 'date_butoir'             => 'required|date',
                 'photo_avant'             => 'nullable|image|max:8192',
                 'description_instruction' => 'nullable|string|max:5000',
@@ -282,6 +306,17 @@ class TacheController extends Controller
                 }
             }
             $nouvelAssigne = ($data['user_id'] ?? null) && (int) $data['user_id'] !== (int) $tache->user_id;
+
+            // Le créateur peut changer la personne substituée (si une substitution est en cours)
+            $nouveauSubstitut = null;
+            if ($tache->prise_en_charge === 'substitution' && ! empty($data['substitut_id'])
+                && (int) $data['substitut_id'] !== (int) $tache->substitut_id) {
+                $nouveauSubstitut = User::findOrFail($data['substitut_id']);
+                if ($nouveauSubstitut->mairie_id !== $tache->mairie_id) {
+                    return back()->withErrors(['substitut_id' => "L'employé sélectionné n'appartient pas à cette mairie."]);
+                }
+                $tache->substitut_id = $nouveauSubstitut->id;
+            }
 
             $tache->user_id                 = $data['user_id'] ?? null;
             $tache->date_butoir             = $data['date_butoir'];
@@ -325,6 +360,9 @@ class TacheController extends Controller
         } elseif ($nouvelAssigne) {
             TacheNotifier::notifierAssignation($tache);
         }
+        if (isset($nouveauSubstitut) && $nouveauSubstitut) {
+            TacheNotifier::notifierAffectation($tache, $nouveauSubstitut);
+        }
 
         return redirect()->route('dashboard')->with('success', "Tâche {$tache->reference} mise à jour.");
     }
@@ -361,6 +399,17 @@ class TacheController extends Controller
     {
         $user = auth()->user();
         abort_unless($user->isAdmin() || $tache->created_by === $user->id, 403);
+    }
+
+    /** Employés du service de la tâche (candidats à la substitution) */
+    private function employesDuService(Tache $tache)
+    {
+        return User::where('mairie_id', $tache->mairie_id)
+            ->where('service', $tache->service)
+            ->where('grade', Referentiel::GRADE_EMPLOYE)
+            ->where('id', '!=', $tache->user_id)
+            ->orderBy('nom')->orderBy('prenom')
+            ->get();
     }
 
     /** Utilisateurs groupés par service (pour la liste dépendante du formulaire) */

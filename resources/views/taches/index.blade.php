@@ -16,9 +16,6 @@
         <a href="{{ route('apps') }}" class="sidebar-link">
             <span class="sidebar-icon" style="font-size:16px">🧩</span> Applications
         </a>
-        <a href="{{ route('marche.ville') }}" class="sidebar-link">
-            <span class="sidebar-icon" style="font-size:16px">🛍️</span> Marché
-        </a>
         <div class="sidebar-divider"></div>
         <a href="{{ route('dashboard') }}" class="sidebar-link active">
             <span class="sidebar-icon" style="font-size:16px">📋</span> {{ __('Suivi des tâches') }}
@@ -30,9 +27,6 @@
         @endif
         @if(!auth()->user()->isAdmin() && auth()->user()->peutGererMairie())
             <div class="sidebar-divider"></div>
-            <a href="{{ route('gestion.utilisateurs.index') }}" class="sidebar-link">
-                <span class="sidebar-icon" style="font-size:16px">👥</span> {{ __('Gestion des utilisateurs') }}
-            </a>
             <a href="{{ route('gestion.avancement') }}" class="sidebar-link">
                 <span class="sidebar-icon" style="font-size:16px">📊</span> {{ __('Avancement des tâches') }}
             </a>
@@ -151,7 +145,7 @@
         </div>
     </form>
 
-    <div class="card shadow-sm">
+    <div class="card shadow-sm" id="zoneTaches">
         <div class="table-responsive">
             <table class="table table-hover mb-0 align-middle">
                 <thead class="table-dark">
@@ -260,4 +254,5 @@ document.addEventListener('keydown', e => {
     if (e.key === 'Escape') closeSidebar();
 });
 </script>
+@include('partials.autorefresh', ['selector' => '#zoneTaches'])
 @endsection

@@ -65,18 +65,53 @@
 
             <form method="POST" action="{{ route('mairies.observateurs.store', $mairie) }}" class="row g-2 align-items-end mb-3">
                 @csrf
+                <input type="hidden" name="nom" id="obsNom">
+                <input type="hidden" name="email" id="obsEmail">
                 <div class="col-md-4">
-                    <label class="form-label mb-1" style="font-size:12px;">Nom (optionnel)</label>
-                    <input type="text" name="nom" value="{{ old('nom') }}" class="form-control form-control-sm">
+                    <label class="form-label mb-1" style="font-size:12px;">🔍 {{ __('Recherche rapide') }}</label>
+                    <input type="text" id="obsRecherche" class="form-control form-control-sm"
+                           placeholder="{{ __('nom, identifiant, mairie…') }}" autocomplete="off">
                 </div>
                 <div class="col-md-5">
-                    <label class="form-label mb-1" style="font-size:12px;">Adresse email *</label>
-                    <input type="email" name="email" value="{{ old('email') }}" class="form-control form-control-sm" required>
+                    <label class="form-label mb-1" style="font-size:12px;">{{ __('Utilisateur') }} *</label>
+                    <select id="obsSelect" class="form-select form-select-sm" required>
+                        <option value="">— {{ __('Sélectionnez un utilisateur') }} —</option>
+                        @foreach($utilisateurs as $u)
+                            <option value="{{ $u->email }}" data-nom="{{ $u->prenom }} {{ $u->nom }}"
+                                    data-recherche="{{ strtolower(Str::ascii($u->username . ' ' . $u->prenom . ' ' . $u->nom . ' ' . $u->email . ' ' . ($u->mairie?->nom ?? ''))) }}">
+                                {{ $u->username }} — {{ $u->email }}{{ $u->mairie ? ' (' . $u->mairie->nom . ')' : '' }}
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
                 <div class="col-md-3">
                     <button type="submit" class="btn btn-sm btn-dark w-100">+ Ajouter un observateur</button>
                 </div>
             </form>
+
+            <script>
+            // Mini-recherche : filtre la liste des utilisateurs en direct
+            document.getElementById('obsRecherche').addEventListener('input', function () {
+                const q = this.value.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+                let premierVisible = null;
+                document.querySelectorAll('#obsSelect option').forEach(o => {
+                    if (!o.value) return;
+                    const visible = !q || (o.dataset.recherche ?? '').includes(q);
+                    o.hidden = !visible;
+                    if (visible && !premierVisible) premierVisible = o;
+                });
+                if (q && premierVisible) document.getElementById('obsSelect').value = premierVisible.value;
+            });
+
+            // Le formulaire envoie l'email + le nom de l'utilisateur choisi
+            document.querySelector('form[action="{{ route('mairies.observateurs.store', $mairie) }}"]').addEventListener('submit', function (e) {
+                const sel = document.getElementById('obsSelect');
+                const opt = sel.options[sel.selectedIndex];
+                if (!sel.value) { e.preventDefault(); sel.focus(); return; }
+                document.getElementById('obsEmail').value = sel.value;
+                document.getElementById('obsNom').value   = opt.dataset.nom ?? '';
+            });
+            </script>
 
             @if($mairie->observateurs->isEmpty())
                 <p class="text-muted mb-0" style="font-size:13px;">Aucun observateur pour le moment.</p>

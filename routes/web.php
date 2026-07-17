@@ -48,6 +48,7 @@ Route::middleware('auth')->group(function () {
         ->parameters(['taches' => 'tache']);
     Route::post('/taches/{tache}/prise-en-charge', [TacheController::class, 'prendreEnCharge'])->name('taches.prise-en-charge');
     Route::post('/taches/{tache}/cloturer', [TacheController::class, 'cloturer'])->name('taches.cloturer');
+    Route::post('/taches/{tache}/substitut', [TacheController::class, 'changerSubstitut'])->name('taches.substitut');
 
     // Application Marché 🛍
     Route::prefix('marche')->name('marche.')->group(function () {

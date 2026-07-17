@@ -11,7 +11,14 @@
     </div>
 
     @if(session('success'))
-        <div class="alert alert-success mb-3">{{ session('success') }}</div>
+        <div class="alert alert-success mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span>{{ session('success') }}</span>
+            @if(session('courrier_id'))
+                <a href="{{ route('users.courrier', session('courrier_id')) }}" class="btn btn-sm btn-dark">
+                    📄 {{ __('Télécharger le courrier d\'identifiants') }}
+                </a>
+            @endif
+        </div>
     @endif
     @if($errors->any())
         <div class="alert alert-danger mb-3">{{ $errors->first() }}</div>

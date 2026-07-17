@@ -45,6 +45,7 @@
         </div>
     </form>
 
+    <div id="zoneRegistre">
     {{-- ── Répartition par activité sur la période ── --}}
     @if($parActivite->isNotEmpty())
     <div class="row g-3 mb-4">
@@ -122,6 +123,8 @@
             </table>
         </div>
     </div>
+    </div>
 
 </div>
+@include('partials.autorefresh', ['selector' => '#zoneRegistre'])
 @endsection
