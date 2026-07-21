@@ -27,6 +27,10 @@ Route::get('/infos',      [PageController::class, 'infos'])->name('infos');
 Route::get('/nouveautes', [PageController::class, 'nouveautes'])->name('nouveautes');
 Route::get('/contact',    [PageController::class, 'contact'])->name('contact');
 
+// Page publique « Contacter votre Mairie » (formulaire → ticket)
+Route::get('/contacter-mairie',  [\App\Http\Controllers\PublicContactController::class, 'create'])->name('contact.mairie');
+Route::post('/contacter-mairie', [\App\Http\Controllers\PublicContactController::class, 'store'])->name('contact.mairie.store');
+
 // ── ESPACE CONNECTÉ ──────────────────────────────────────────
 Route::middleware('auth')->group(function () {
 
@@ -89,6 +93,10 @@ Route::middleware('auth')->group(function () {
         Route::put('/commercants/{commercant}', [CommercantController::class, 'update'])->name('commercants.update');
         Route::delete('/commercants/{commercant}', [CommercantController::class, 'destroy'])->name('commercants.destroy');
     });
+
+    // Centre de Messagerie (messages externes reçus par la mairie)
+    Route::get('/messagerie', [\App\Http\Controllers\MessagerieController::class, 'index'])->name('messagerie.index');
+    Route::post('/messagerie/tickets/{ticket}/repondre', [\App\Http\Controllers\MessagerieController::class, 'repondre'])->name('messagerie.repondre');
 
     // Boîte de dialogue (entraide entre mairies)
     Route::get('/dialogue', [\App\Http\Controllers\DialogueController::class, 'index'])->name('dialogue.index');
