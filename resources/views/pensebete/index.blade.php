@@ -24,10 +24,16 @@
     {{-- ── Onglets ── --}}
     <ul class="nav nav-tabs mb-3">
         <li class="nav-item">
-            <button class="nav-link {{ $ongletActif === 'calendrier' ? 'active' : '' }}" onclick="montrerOnglet('calendrier', this)">📅 {{ __('Calendrier') }}</button>
+            <button class="nav-link {{ $ongletActif === 'calendrier' ? 'active' : '' }}" onclick="montrerOnglet('calendrier', this)">
+                📅 {{ __('Calendrier') }}
+                @if($badgeCalendrier > 0)<span class="bulle-notif ms-1" title="{{ __('Rappels aujourd\'hui') }}">{{ $badgeCalendrier }}</span>@endif
+            </button>
         </li>
         <li class="nav-item">
-            <button class="nav-link {{ $ongletActif === 'notes' ? 'active' : '' }}" onclick="montrerOnglet('notes', this)">🗒️ {{ __('Notes') }}</button>
+            <button class="nav-link {{ $ongletActif === 'notes' ? 'active' : '' }}" onclick="montrerOnglet('notes', this)">
+                🗒️ {{ __('Notes') }}
+                @if($badgeNotes > 0)<span class="bulle-notif ms-1" title="{{ __('Notes à rappeler aujourd\'hui') }}">{{ $badgeNotes }}</span>@endif
+            </button>
         </li>
     </ul>
 
@@ -174,7 +180,10 @@
                             @foreach($groupe as $note)
                                 <button type="button" class="list-group-item list-group-item-action note-item" data-note="{{ $note->id }}"
                                         onclick="ouvrirNote({{ $note->id }}, this)">
-                                    <div class="fw-semibold text-truncate" style="font-size:14px;">{{ $note->titre }}</div>
+                                    <div class="fw-semibold text-truncate" style="font-size:14px;">
+                                        {{ $note->titre }}
+                                        @if($note->notifier)<span title="{{ __('Rappel programmé le') }} {{ $note->date_notification?->format('d/m/Y') }}">🔔</span>@endif
+                                    </div>
                                     <div class="text-muted" style="font-size:11px;">
                                         {{ $note->updated_at->format('d/m/Y H:i') }}
                                         @if($note->image) · 🖼 @endif
@@ -199,10 +208,14 @@
                         </div>
                         @foreach($notes as $note)
                             @php
-                                $noteJson = json_encode(
-                                    $note->only(['id', 'titre', 'dossier', 'contenu']),
-                                    JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_TAG | JSON_HEX_AMP
-                                );
+                                $noteJson = json_encode([
+                                    'id'                => $note->id,
+                                    'titre'             => $note->titre,
+                                    'dossier'           => $note->dossier,
+                                    'contenu'           => $note->contenu,
+                                    'notifier'          => (bool) $note->notifier,
+                                    'date_notification' => $note->date_notification?->format('Y-m-d'),
+                                ], JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_TAG | JSON_HEX_AMP);
                             @endphp
                             <div class="note-detail d-none" data-note="{{ $note->id }}">
                                 <div class="d-flex justify-content-between align-items-start mb-2 gap-2">
@@ -301,6 +314,18 @@
                     </datalist>
                 </div>
                 <div class="mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="notifier" id="noteNotifier" value="1" onchange="majNoteNotif()">
+                        <label class="form-check-label" for="noteNotifier" style="font-size:13px;">
+                            🔔 {{ __('Être notifié par e-mail de cette note') }}
+                        </label>
+                    </div>
+                    <div id="noteDateWrap" class="mt-2 d-none">
+                        <label class="form-label mb-1" style="font-size:12px;">{{ __('Date du rappel') }} *</label>
+                        <input type="date" name="date_notification" id="noteDateNotif" class="form-control form-control-sm">
+                    </div>
+                </div>
+                <div class="mb-3">
                     <label class="form-label fw-semibold" style="font-size:13px;">{{ __('Texte') }}</label>
                     <textarea name="contenu" id="noteContenu" class="form-control" rows="5" maxlength="10000"></textarea>
                 </div>
@@ -369,6 +394,12 @@ function fermerNoteMobile() {
     document.getElementById('notePanneauMobile').classList.add('d-none');
 }
 
+function majNoteNotif() {
+    const coche = document.getElementById('noteNotifier').checked;
+    document.getElementById('noteDateWrap').classList.toggle('d-none', !coche);
+    document.getElementById('noteDateNotif').required = coche;
+}
+
 function ouvrirModalNote(note) {
     const form = document.getElementById('formNote');
     if (note && note.id) {
@@ -378,6 +409,8 @@ function ouvrirModalNote(note) {
         document.getElementById('noteTitre').value   = note.titre || '';
         document.getElementById('noteDossier').value = note.dossier || '';
         document.getElementById('noteContenu').value = note.contenu || '';
+        document.getElementById('noteNotifier').checked = !!note.notifier;
+        document.getElementById('noteDateNotif').value = note.date_notification || '';
     } else {
         form.action = '{{ route('pensebete.notes.store') }}';
         document.getElementById('noteMethode').value = 'POST';
@@ -385,7 +418,10 @@ function ouvrirModalNote(note) {
         document.getElementById('noteTitre').value = '';
         document.getElementById('noteDossier').value = '';
         document.getElementById('noteContenu').value = '';
+        document.getElementById('noteNotifier').checked = false;
+        document.getElementById('noteDateNotif').value = '';
     }
+    majNoteNotif();
     fermerNoteMobile();
     new bootstrap.Modal(document.getElementById('modalNote')).show();
 }

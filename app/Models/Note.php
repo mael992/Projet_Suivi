@@ -6,7 +6,19 @@ use Illuminate\Database\Eloquent\Model;
 
 class Note extends Model
 {
-    protected $fillable = ['user_id', 'dossier', 'titre', 'contenu', 'image'];
+    protected $fillable = [
+        'user_id', 'dossier', 'titre', 'contenu', 'image',
+        'notifier', 'date_notification', 'notifiee',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'notifier'          => 'boolean',
+            'notifiee'          => 'boolean',
+            'date_notification' => 'date',
+        ];
+    }
 
     public function utilisateur()
     {

@@ -77,6 +77,26 @@ class PenseBeteTest extends TestCase
         $this->assertSame(1, Rappel::where('envoye', true)->count());
     }
 
+    public function test_note_notifiable_par_email_le_jour_j(): void
+    {
+        \Illuminate\Support\Facades\Mail::fake();
+
+        // Note à rappeler aujourd'hui
+        Note::create([
+            'user_id'           => $this->user->id,
+            'titre'             => 'Rappel important',
+            'notifier'          => true,
+            'date_notification' => now()->toDateString(),
+        ]);
+        // Note sans rappel
+        Note::create(['user_id' => $this->user->id, 'titre' => 'Note simple']);
+
+        $this->artisan('mgds:envoyer-rappels')->assertSuccessful();
+
+        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\NoteRappel::class, 1);
+        $this->assertSame(1, Note::where('notifiee', true)->count());
+    }
+
     public function test_notes_crud_avec_titre_obligatoire(): void
     {
         $this->actingAs($this->user)->post('/pense-bete/notes', [

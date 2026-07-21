@@ -153,7 +153,15 @@
                     <a href="{{ route('pensebete.index') }}" class="text-decoration-none text-reset d-flex align-items-center gap-3 mb-3">
                         <span style="font-size:44px;line-height:1;">🗓️</span>
                         <span>
-                            <span class="h5 d-block mb-1" style="color:var(--brand);">{{ __('Pense-bête') }}</span>
+                            <span class="h5 d-block mb-1" style="color:var(--brand);">
+                                {{ __('Pense-bête') }}
+                                @php
+                                    $auj = now()->toDateString();
+                                    $nbPense = \App\Models\Rappel::where('user_id', $user->id)->whereDate('date_rappel', $auj)->count()
+                                             + \App\Models\Note::where('user_id', $user->id)->where('notifier', true)->whereDate('date_notification', $auj)->count();
+                                @endphp
+                                @if($nbPense > 0)<span class="bulle-notif ms-1">{{ $nbPense }}</span>@endif
+                            </span>
                             <span class="text-muted" style="font-size:13px;">{{ __('Calendrier avec rappels par email & notes personnelles classées') }}</span>
                         </span>
                     </a>

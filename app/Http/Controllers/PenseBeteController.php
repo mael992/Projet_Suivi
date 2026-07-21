@@ -52,14 +52,21 @@ class PenseBeteController extends Controller
             ->when($tri === 'alpha', fn ($q) => $q->orderBy('titre'), fn ($q) => $q->orderByDesc('created_at'))
             ->get();
 
+        // Compteurs « aujourd'hui » pour les bulles bleues
+        $auj             = now()->toDateString();
+        $badgeCalendrier = $user->hasMany(Rappel::class)->whereDate('date_rappel', $auj)->count();
+        $badgeNotes      = $user->hasMany(Note::class)->where('notifier', true)->whereDate('date_notification', $auj)->count();
+
         return view('pensebete.index', [
-            'mois'          => $mois,
-            'rappelsDuMois' => $rappelsDuMois,
-            'resultats'     => $resultats,
-            'enRecherche'   => $enRecherche,
-            'notes'         => $notes,
-            'tri'           => $tri,
-            'dossiers'      => $notes->pluck('dossier')->filter()->unique()->sort()->values(),
+            'mois'            => $mois,
+            'rappelsDuMois'   => $rappelsDuMois,
+            'resultats'       => $resultats,
+            'enRecherche'     => $enRecherche,
+            'notes'           => $notes,
+            'tri'             => $tri,
+            'dossiers'        => $notes->pluck('dossier')->filter()->unique()->sort()->values(),
+            'badgeCalendrier' => $badgeCalendrier,
+            'badgeNotes'      => $badgeNotes,
         ]);
     }
 
@@ -108,9 +115,11 @@ class PenseBeteController extends Controller
         $data = $this->validerNote($request);
 
         $note = new Note([
-            'dossier' => $data['dossier'] ?? null,
-            'titre'   => $data['titre'],
-            'contenu' => $data['contenu'] ?? null,
+            'dossier'           => $data['dossier'] ?? null,
+            'titre'             => $data['titre'],
+            'contenu'           => $data['contenu'] ?? null,
+            'notifier'          => $data['notifier'],
+            'date_notification' => $data['notifier'] ? $data['date_notification'] : null,
         ]);
         $note->user_id = auth()->id();
 
@@ -129,9 +138,14 @@ class PenseBeteController extends Controller
 
         $data = $this->validerNote($request);
 
-        $note->dossier = $data['dossier'] ?? null;
-        $note->titre   = $data['titre'];
-        $note->contenu = $data['contenu'] ?? null;
+        $note->dossier           = $data['dossier'] ?? null;
+        $note->titre             = $data['titre'];
+        $note->contenu           = $data['contenu'] ?? null;
+        $note->notifier          = $data['notifier'];
+        $note->date_notification = $data['notifier'] ? $data['date_notification'] : null;
+        if (! $data['notifier']) {
+            $note->notifiee = false;
+        }
 
         if ($request->hasFile('image')) {
             if ($note->image) {
@@ -159,11 +173,17 @@ class PenseBeteController extends Controller
 
     private function validerNote(Request $request): array
     {
-        return $request->validate([
-            'titre'   => 'required|string|max:150',
-            'dossier' => 'nullable|string|max:100',
-            'contenu' => 'nullable|string|max:10000',
-            'image'   => 'nullable|image|max:8192',
+        $data = $request->validate([
+            'titre'             => 'required|string|max:150',
+            'dossier'           => 'nullable|string|max:100',
+            'contenu'           => 'nullable|string|max:10000',
+            'image'             => 'nullable|image|max:8192',
+            'notifier'          => 'nullable|boolean',
+            'date_notification' => 'nullable|required_if:notifier,1|date',
         ]);
+
+        $data['notifier'] = $request->boolean('notifier');
+
+        return $data;
     }
 }
