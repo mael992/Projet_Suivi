@@ -131,7 +131,11 @@
                     <a href="{{ route('dialogue.index') }}" class="text-decoration-none text-reset d-flex align-items-center gap-3 mb-3">
                         <span style="font-size:44px;line-height:1;">💬</span>
                         <span>
-                            <span class="h5 d-block mb-1" style="color:var(--brand);">{{ __('Boîte de dialogue') }}</span>
+                            <span class="h5 d-block mb-1" style="color:var(--brand);">
+                                {{ __('Boîte de dialogue') }}
+                                @php $nbDialogue = \App\Models\DialogueQuestion::nonReponduesPour($user); @endphp
+                                @if($nbDialogue > 0)<span class="bulle-notif ms-1">{{ $nbDialogue }}</span>@endif
+                            </span>
                             <span class="text-muted" style="font-size:13px;">{{ __('Entraide collaborative entre mairies, application par application') }}</span>
                         </span>
                     </a>

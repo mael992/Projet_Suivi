@@ -94,6 +94,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/dialogue', [\App\Http\Controllers\DialogueController::class, 'index'])->name('dialogue.index');
     Route::post('/dialogue/questions', [\App\Http\Controllers\DialogueController::class, 'storeQuestion'])->name('dialogue.questions.store');
     Route::post('/dialogue/questions/{question}/reponses', [\App\Http\Controllers\DialogueController::class, 'storeReponse'])->name('dialogue.reponses.store');
+    Route::post('/dialogue/questions/{question}/cloturer', [\App\Http\Controllers\DialogueController::class, 'cloturerQuestion'])->name('dialogue.questions.cloturer');
     Route::delete('/dialogue/questions/{question}', [\App\Http\Controllers\DialogueController::class, 'destroyQuestion'])->name('dialogue.questions.destroy');
 
     // Pense-bête (Calendrier + Notes)

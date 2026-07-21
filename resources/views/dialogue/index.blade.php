@@ -4,8 +4,9 @@
 
 @section('content')
 @php
+    $labels        = DialogueQuestion::SECTIONS;
     $sectionActive = request('section');
-    $sectionActive = array_key_exists($sectionActive, DialogueQuestion::SECTIONS) ? $sectionActive : 'accueil';
+    $sectionActive = in_array($sectionActive, $sections, true) ? $sectionActive : 'accueil';
 @endphp
 
 <div class="container-fluid px-3 px-md-4 py-4">
@@ -33,12 +34,16 @@
                             data-section="accueil" onclick="montrerSection('accueil', this)" style="font-size:14px;">
                         💬 {{ __('Boîte de dialogue') }}
                     </button>
-                    @foreach(DialogueQuestion::SECTIONS as $cle => $label)
-                        <button type="button" class="list-group-item list-group-item-action dlg-item {{ $sectionActive === $cle ? 'active' : '' }}"
+                    @foreach($sections as $cle)
+                        <button type="button" class="list-group-item list-group-item-action dlg-item d-flex justify-content-between align-items-center {{ $sectionActive === $cle ? 'active' : '' }}"
                                 data-section="{{ $cle }}" onclick="montrerSection('{{ $cle }}', this)" style="font-size:14px;">
-                            {{ __($label) }}
-                            @php $nb = ($questions[$cle] ?? collect())->count(); @endphp
-                            @if($nb > 0)<span class="badge bg-secondary bg-opacity-25 text-secondary float-end">{{ $nb }}</span>@endif
+                            <span>{{ __($labels[$cle]) }}</span>
+                            <span>
+                                @if(($compteurs[$cle]['non_repondu'] ?? 0) > 0)
+                                    <span class="bulle-notif" title="{{ __('Questions sans réponse') }}">{{ $compteurs[$cle]['non_repondu'] }}</span>
+                                @endif
+                                <span class="compte-total ms-1" title="{{ __('Total de questions') }}">{{ $compteurs[$cle]['total'] ?? 0 }}</span>
+                            </span>
                         </button>
                     @endforeach
                 </div>
@@ -48,7 +53,7 @@
         {{-- ── Contenu ── --}}
         <div class="col-12 col-md-8 col-lg-9">
             <div class="card shadow-sm" style="min-height:420px;">
-                <div class="card-body position-relative d-flex flex-column">
+                <div class="card-body position-relative d-flex flex-column" id="zoneDialogue">
 
                     {{-- Accueil --}}
                     <div class="dlg-section {{ $sectionActive === 'accueil' ? '' : 'd-none' }}" data-section="accueil">
@@ -61,28 +66,44 @@
                         </p>
                     </div>
 
-                    {{-- Sections par application --}}
-                    @foreach(DialogueQuestion::SECTIONS as $cle => $label)
+                    {{-- Sections par application (uniquement celles autorisées) --}}
+                    @foreach($sections as $cle)
                         <div class="dlg-section {{ $sectionActive === $cle ? '' : 'd-none' }} d-flex flex-column flex-grow-1" data-section="{{ $cle }}">
-                            <h2 class="h5 mb-3" style="color:var(--brand);border-bottom:2px solid var(--gold);padding-bottom:8px;">
-                                {{ __($label) }} — ❓ {{ __('Questions & Entraide') }}
+                            <h2 class="h5 mb-3 d-flex align-items-center gap-2" style="color:var(--brand);border-bottom:2px solid var(--gold);padding-bottom:8px;">
+                                {{ __($labels[$cle]) }} — ❓ {{ __('Questions & Entraide') }}
+                                @if(($compteurs[$cle]['non_repondu'] ?? 0) > 0)
+                                    <span class="bulle-notif">{{ $compteurs[$cle]['non_repondu'] }}</span>
+                                @endif
+                                <span class="compte-total">/ {{ $compteurs[$cle]['total'] ?? 0 }}</span>
                             </h2>
 
                             @forelse($questions[$cle] ?? [] as $question)
-                                <div class="border rounded p-3 mb-3" style="background:#f8fafc;">
+                                <div class="border rounded p-3 mb-3" style="background:{{ $question->estFermee() ? '#f1f1f1' : '#f8fafc' }};">
                                     <div class="d-flex justify-content-between align-items-start">
                                         <div class="text-muted mb-1" style="font-size:12px;">
                                             {{ __('Posée par') }} <strong>{{ $question->auteur?->username ?? '—' }}</strong>
                                             @if($question->auteur?->mairie) ({{ $question->auteur->mairie->nom }}) @endif
                                             — {{ $question->created_at->format('d/m/Y H:i') }}
+                                            @if($question->estFermee())
+                                                <span class="badge bg-secondary ms-1">🔒 {{ __('Clôturée') }}</span>
+                                            @endif
                                         </div>
-                                        @if(auth()->user()->isAdmin() || $question->user_id === auth()->id())
-                                            <form action="{{ route('dialogue.questions.destroy', $question) }}" method="POST"
-                                                  onsubmit="return confirm('{{ __('Supprimer cette question et ses réponses ?') }}')">
-                                                @csrf @method('DELETE')
-                                                <button class="btn btn-sm btn-outline-danger py-0 px-1" style="font-size:11px;">🗑</button>
-                                            </form>
-                                        @endif
+                                        <div class="d-flex gap-1">
+                                            @if(! $question->estFermee() && $question->user_id === auth()->id())
+                                                <form action="{{ route('dialogue.questions.cloturer', $question) }}" method="POST"
+                                                      onsubmit="return confirm('{{ __('Clôturer cette question ? Une fois clôturée, elle sera fermée : personne ne pourra plus y répondre et elle ne pourra pas être rouverte.') }}')">
+                                                    @csrf
+                                                    <button class="btn btn-sm btn-outline-success py-0 px-1" style="font-size:12px;" title="{{ __('Clôturer la question') }}">✅</button>
+                                                </form>
+                                            @endif
+                                            @if(auth()->user()->isAdmin() || $question->user_id === auth()->id())
+                                                <form action="{{ route('dialogue.questions.destroy', $question) }}" method="POST"
+                                                      onsubmit="return confirm('{{ __('Supprimer cette question et ses réponses ?') }}')">
+                                                    @csrf @method('DELETE')
+                                                    <button class="btn btn-sm btn-outline-danger py-0 px-1" style="font-size:11px;">🗑</button>
+                                                </form>
+                                            @endif
+                                        </div>
                                     </div>
                                     <div class="fw-semibold mb-2" style="font-size:14px;white-space:pre-wrap;">{{ $question->texte }}</div>
 
@@ -98,12 +119,16 @@
                                             </div>
                                         @endforeach
 
-                                        <form method="POST" action="{{ route('dialogue.reponses.store', $question) }}" class="d-flex gap-2">
-                                            @csrf
-                                            <input type="text" name="texte" class="form-control form-control-sm"
-                                                   placeholder="{{ __('Votre réponse…') }} *" required maxlength="3000">
-                                            <button class="btn btn-sm text-white" style="background:var(--brand);">{{ __('Répondre') }}</button>
-                                        </form>
+                                        @if($question->estFermee())
+                                            <div class="text-muted fst-italic" style="font-size:12px;">🔒 {{ __('Question clôturée — aucune réponse possible.') }}</div>
+                                        @else
+                                            <form method="POST" action="{{ route('dialogue.reponses.store', $question) }}" class="d-flex gap-2">
+                                                @csrf
+                                                <input type="text" name="texte" class="form-control form-control-sm"
+                                                       placeholder="{{ __('Votre réponse…') }} *" required maxlength="3000">
+                                                <button class="btn btn-sm text-white" style="background:var(--brand);">{{ __('Répondre') }}</button>
+                                            </form>
+                                        @endif
                                     </div>
                                 </div>
                             @empty
@@ -164,11 +189,17 @@ function montrerSection(section, btn) {
     document.querySelectorAll('.dlg-section').forEach(s =>
         s.classList.toggle('d-none', s.dataset.section !== section));
     document.getElementById('btnAjouterWrap').classList.toggle('d-none', section === 'accueil');
+    // Refléter la section dans l'URL pour que l'auto-refresh la conserve
+    const url = new URL(window.location.href);
+    if (section === 'accueil') url.searchParams.delete('section'); else url.searchParams.set('section', section);
+    history.replaceState(null, '', url);
 }
 
 function ouvrirModalQuestion() {
+    if (sectionCourante === 'accueil') return;
     document.getElementById('questionSection').value = sectionCourante;
     new bootstrap.Modal(document.getElementById('modalQuestion')).show();
 }
 </script>
+@include('partials.autorefresh', ['selector' => '#zoneDialogue'])
 @endsection
