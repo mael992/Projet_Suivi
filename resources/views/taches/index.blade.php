@@ -166,7 +166,7 @@
                 @forelse($taches as $tache)
                     @php
                         $u              = auth()->user();
-                        $estCreateur    = $u->isAdmin() || $tache->created_by === $u->id;
+                        $estCreateur    = $tache->peutEtreGereePar($u);
                         $enAttentePourMoi = $tache->user_id === $u->id && $tache->enAttentePriseEnCharge();
                         $peutCloturerLigne = $tache->peutEtreClotureePar($u);
                     @endphp

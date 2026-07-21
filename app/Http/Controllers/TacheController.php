@@ -394,11 +394,10 @@ class TacheController extends Controller
         abort_unless($visible, 403);
     }
 
-    /** Seul le créateur (ou un admin) peut modifier / supprimer une tâche */
+    /** Créateur, admin ou direction de rang supérieur : modifier / supprimer */
     private function autoriserCreateur(Tache $tache): void
     {
-        $user = auth()->user();
-        abort_unless($user->isAdmin() || $tache->created_by === $user->id, 403);
+        abort_unless($tache->peutEtreGereePar(auth()->user()), 403);
     }
 
     /** Employés du service de la tâche (candidats à la substitution) */

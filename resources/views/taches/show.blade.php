@@ -5,7 +5,7 @@
 
     @php
         $user          = auth()->user();
-        $estCreateur   = $user->isAdmin() || $tache->created_by === $user->id;
+        $estCreateur   = $tache->peutEtreGereePar($user);
         $estResponsable = $tache->user_id === $user->id;
         $doitChoisir   = $estResponsable && $tache->enAttentePriseEnCharge();
         $peutCloturer  = $tache->peutEtreClotureePar($user);

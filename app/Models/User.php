@@ -98,11 +98,21 @@ class User extends Authenticatable
         return ! $this->isAdmin() && $this->aDroit('gestion_utilisateurs');
     }
 
+    /** Maire, Directeur de Cabinet ou DGS : « mini-admins » de leur mairie */
+    public function estDirection(): bool
+    {
+        return in_array($this->grade, [
+            Referentiel::GRADE_MAIRE,
+            Referentiel::GRADE_DIR_CABINET,
+            Referentiel::GRADE_DGS,
+        ], true);
+    }
+
     /** Cabinet du maire / DGS / Maire : voient toutes les tâches de la mairie */
     public function voitTousLesServices(): bool
     {
         return $this->isAdmin()
-            || $this->grade === Referentiel::GRADE_MAIRE
+            || $this->estDirection()
             || in_array($this->service, Referentiel::SERVICES_VUE_GLOBALE, true);
     }
 
@@ -176,6 +186,6 @@ class User extends Authenticatable
             ->where('service', $service)
             ->count();
 
-        return $service . '-' . $count;
+        return $service . '-' . ($count + 1);
     }
 }

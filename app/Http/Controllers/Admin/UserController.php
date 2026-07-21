@@ -55,6 +55,10 @@ class UserController extends Controller
 
         $estAdmin = $data['role'] === 'admin';
 
+        if (! $estAdmin && ! in_array((int) $data['grade'], Referentiel::gradesAutorises((int) $data['service']), true)) {
+            return back()->withInput()->withErrors(['grade' => 'Ce statut n\'est pas autorisé pour ce service.']);
+        }
+
         $user = User::create([
             'prenom'                   => $data['prenom'],
             'nom'                      => $data['nom'],
@@ -107,6 +111,11 @@ class UserController extends Controller
         ]);
 
         $estAdmin  = $data['role'] === 'admin';
+
+        if (! $estAdmin && ! in_array((int) $data['grade'], Referentiel::gradesAutorises((int) $data['service']), true)) {
+            return back()->withInput()->withErrors(['grade' => 'Ce statut n\'est pas autorisé pour ce service.']);
+        }
+
         $nomChange = $data['prenom'] !== $user->prenom || $data['nom'] !== $user->nom;
         $serviceChange = ! $estAdmin
             && ((int) $data['service'] !== (int) $user->service || (int) $data['mairie_id'] !== (int) $user->mairie_id);

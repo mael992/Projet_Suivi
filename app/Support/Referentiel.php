@@ -9,7 +9,10 @@ namespace App\Support;
 class Referentiel
 {
     // ── Services / Équipes ───────────────────────────────────────
+    public const SERVICE_MAIRE = 14;
+
     public const SERVICES = [
+        14 => 'M. / Mme le Maire',
         1  => 'Cabinet du maire',
         2  => 'Direction Générale des Services',
         3  => 'Événements & Vie associative',
@@ -26,7 +29,21 @@ class Referentiel
     ];
 
     // Services qui voient toutes les tâches de la mairie
-    public const SERVICES_VUE_GLOBALE = [1, 2];
+    public const SERVICES_VUE_GLOBALE = [14, 1, 2];
+
+    /**
+     * Statuts (grades) autorisés pour un service donné — couplage du
+     * formulaire de création d'utilisateur.
+     */
+    public static function gradesAutorises(?int $service): array
+    {
+        return match ($service) {
+            self::SERVICE_MAIRE => [self::GRADE_MAIRE],
+            1                   => [self::GRADE_DIR_CABINET, self::GRADE_EMPLOYE], // Cabinet du maire
+            2                   => [self::GRADE_DGS, self::GRADE_EMPLOYE],         // DGS
+            default             => [self::GRADE_EMPLOYE],
+        };
+    }
 
     // ── Grades (statuts utilisateur) ─────────────────────────────
     public const GRADE_MAIRE        = 1;
@@ -74,10 +91,10 @@ class Referentiel
      */
     public static function droitDefaut(?int $grade): string
     {
+        // Maire, Directeur de Cabinet et DGS : tous les droits cochés par défaut.
         return match ($grade) {
-            self::GRADE_MAIRE                        => 'gestion_utilisateurs',
-            self::GRADE_DIR_CABINET, self::GRADE_DGS => 'contacts_modification',
-            default                                  => '',
+            self::GRADE_MAIRE, self::GRADE_DIR_CABINET, self::GRADE_DGS => 'gestion_utilisateurs',
+            default                                                     => '',
         };
     }
 

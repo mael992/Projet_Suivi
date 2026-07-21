@@ -70,6 +70,34 @@ class Tache extends Model
             && ! $this->estFaite();
     }
 
+    /**
+     * L'utilisateur peut-il modifier / supprimer cette tâche ?
+     * Hiérarchie mini-admin : le créateur, un admin, le Maire, ou un membre
+     * de la direction d'un rang strictement supérieur à celui du créateur
+     * (une tâche créée par un admin est gérable par toute la direction).
+     */
+    public function peutEtreGereePar(User $user): bool
+    {
+        if ($user->isAdmin() || $this->created_by === $user->id) {
+            return true;
+        }
+
+        if (! $user->estDirection()) {
+            return false;
+        }
+
+        if ($user->grade === Referentiel::GRADE_MAIRE) {
+            return true;
+        }
+
+        $createur = $this->createur;
+        if (! $createur || $createur->role === 'admin') {
+            return true;
+        }
+
+        return $user->grade < ($createur->grade ?? 99);
+    }
+
     /** L'utilisateur est-il autorisé à clôturer cette tâche ? */
     public function peutEtreClotureePar(User $user): bool
     {
@@ -153,7 +181,7 @@ class Tache extends Model
             ->map(fn ($t) => (int) substr($t->reference, strlen((string) $service) + 1))
             ->max();
 
-        $numero = $dernier === null ? 0 : $dernier + 1;
+        $numero = $dernier === null ? 1 : $dernier + 1;
 
         return $service . '-' . $numero;
     }

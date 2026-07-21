@@ -65,12 +65,13 @@ class MgdsPagesTest extends TestCase
         $this->actingAs($maire)->get('/gestion/avancement')->assertOk();
     }
 
-    public function test_directeur_cabinet_accede_contacts_mais_pas_gestion_utilisateurs(): void
+    public function test_directeur_cabinet_a_tous_les_droits_par_defaut(): void
     {
+        // Nouvelle règle : Maire / Dir. Cabinet / DGS = tous les droits cochés par défaut
         $dirCab = $this->responsable();
 
         $this->actingAs($dirCab)->get('/gestion/contacts')->assertOk();
-        $this->actingAs($dirCab)->get('/gestion/utilisateurs')->assertForbidden();
+        $this->actingAs($dirCab)->get('/gestion/utilisateurs')->assertOk();
     }
 
     public function test_gestion_is_forbidden_for_employe(): void
@@ -119,7 +120,7 @@ class MgdsPagesTest extends TestCase
         $this->assertDatabaseHas('taches', [
             'mairie_id' => $this->mairie->id,
             'service'   => 12,
-            'reference' => '12-0',
+            'reference' => '12-1',
             'statut'    => 'ouvert',
         ]);
 
@@ -130,7 +131,7 @@ class MgdsPagesTest extends TestCase
             'date_butoir' => now()->addWeek()->toDateString(),
         ]);
 
-        $this->assertDatabaseHas('taches', ['reference' => '12-1']);
+        $this->assertDatabaseHas('taches', ['reference' => '12-2']);
     }
 
     public function test_responsable_obligatoire_a_la_creation(): void

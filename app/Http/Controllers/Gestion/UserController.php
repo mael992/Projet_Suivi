@@ -58,6 +58,10 @@ class UserController extends Controller
             'password'            => 'required|min:8',
         ]);
 
+        if (! in_array((int) $data['grade'], Referentiel::gradesAutorises((int) $data['service']), true)) {
+            return back()->withInput()->withErrors(['grade' => 'Ce statut n\'est pas autorisé pour ce service.']);
+        }
+
         $user = User::create([
             'prenom'                   => $data['prenom'],
             'nom'                      => $data['nom'],
@@ -108,6 +112,10 @@ class UserController extends Controller
             'telephone'           => 'nullable|string|max:20',
             'password'            => 'nullable|min:8',
         ]);
+
+        if (! in_array((int) $data['grade'], Referentiel::gradesAutorises((int) $data['service']), true)) {
+            return back()->withInput()->withErrors(['grade' => 'Ce statut n\'est pas autorisé pour ce service.']);
+        }
 
         $serviceChange = (int) $data['service'] !== (int) $user->service;
         $nomChange     = $data['prenom'] !== $user->prenom || $data['nom'] !== $user->nom;
