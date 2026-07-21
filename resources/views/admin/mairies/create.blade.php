@@ -17,9 +17,15 @@
         @csrf
         <div class="card-body">
             <div class="row g-3">
-                <div class="col-12">
+                <div class="col-md-8">
                     <label class="form-label fw-semibold">Nom de la mairie *</label>
                     <input type="text" name="nom" value="{{ old('nom') }}" class="form-control" required placeholder="Mairie de …">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Code postal *</label>
+                    <input type="text" name="code_postal" value="{{ old('code_postal') }}" class="form-control"
+                           required pattern="[0-9]{5}" maxlength="5" inputmode="numeric" placeholder="00000">
+                    <small class="text-muted">5 chiffres.</small>
                 </div>
                 <div class="col-12">
                     <label class="form-label fw-semibold">Adresse email *</label>
@@ -40,7 +46,15 @@
                 <div class="col-12">
                     <label class="form-label fw-semibold">Date de fin d'abonnement *</label>
                     <input type="date" name="date_fin_abonnement" value="{{ old('date_fin_abonnement') }}" class="form-control" required>
-                    <small class="text-muted">Passée cette date, les utilisateurs de la mairie ne pourront plus se connecter.</small>
+                    <small class="text-muted">Date incluse : ce jour-là, les utilisateurs peuvent encore se connecter.</small>
+                </div>
+                <div class="col-12">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="afficher_contact" id="afficher_contact" value="1" @checked(old('afficher_contact', true))>
+                        <label class="form-check-label" for="afficher_contact">
+                            Figurer dans la liste « Contacter votre Mairie » (page publique)
+                        </label>
+                    </div>
                 </div>
             </div>
 

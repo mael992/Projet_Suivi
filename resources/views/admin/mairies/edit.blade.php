@@ -20,9 +20,14 @@
         @csrf @method('PUT')
         <div class="card-body">
             <div class="row g-3">
-                <div class="col-12">
+                <div class="col-md-8">
                     <label class="form-label fw-semibold">Nom de la mairie *</label>
                     <input type="text" name="nom" value="{{ old('nom', $mairie->nom) }}" class="form-control" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Code postal *</label>
+                    <input type="text" name="code_postal" value="{{ old('code_postal', $mairie->code_postal) }}" class="form-control"
+                           required pattern="[0-9]{5}" maxlength="5" inputmode="numeric" placeholder="00000">
                 </div>
                 <div class="col-12">
                     <label class="form-label fw-semibold">Adresse email *</label>
@@ -45,6 +50,15 @@
                     <input type="date" name="date_fin_abonnement"
                            value="{{ old('date_fin_abonnement', $mairie->date_fin_abonnement?->format('Y-m-d')) }}"
                            class="form-control" required>
+                    <small class="text-muted">Date incluse : ce jour-là, les utilisateurs peuvent encore se connecter.</small>
+                </div>
+                <div class="col-12">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="afficher_contact" id="afficher_contact" value="1" @checked(old('afficher_contact', $mairie->afficher_contact))>
+                        <label class="form-check-label" for="afficher_contact">
+                            Figurer dans la liste « Contacter votre Mairie » (page publique)
+                        </label>
+                    </div>
                 </div>
             </div>
 

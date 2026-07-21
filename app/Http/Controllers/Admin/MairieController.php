@@ -31,6 +31,8 @@ class MairieController extends Controller
     {
         $data = $request->validate([
             'nom'                 => 'required|string|max:255|unique:mairies,nom',
+            'code_postal'         => 'required|digits:5',
+            'afficher_contact'    => 'nullable|boolean',
             'email'               => 'required|email',
             'telephone_indicatif' => 'nullable|string|max:8',
             'telephone'           => 'nullable|string|max:20',
@@ -38,10 +40,11 @@ class MairieController extends Controller
         ]);
 
         $data['telephone_indicatif'] = $data['telephone_indicatif'] ?: '+33';
+        $data['afficher_contact']    = $request->boolean('afficher_contact');
 
         $mairie = Mairie::create($data);
 
-        ActivityLogger::log('MAIRIE', 'CREATE', "Mairie créée : \"{$mairie->nom}\" (abonnement jusqu'au {$mairie->date_fin_abonnement->format('d/m/Y')})");
+        ActivityLogger::log('MAIRIE', 'CREATE', "Mairie créée : \"{$mairie->nom}\" ({$mairie->code_postal}) — abonnement pris jusqu'au {$mairie->date_fin_abonnement->format('d/m/Y')}");
 
         return redirect()->route('mairies.edit', $mairie)->with('success', 'Mairie créée. Vous pouvez maintenant ajouter des observateurs.');
     }
@@ -63,17 +66,27 @@ class MairieController extends Controller
     {
         $data = $request->validate([
             'nom'                 => 'required|string|max:255|unique:mairies,nom,' . $mairie->id,
+            'code_postal'         => 'required|digits:5',
+            'afficher_contact'    => 'nullable|boolean',
             'email'               => 'required|email',
             'telephone_indicatif' => 'nullable|string|max:8',
             'telephone'           => 'nullable|string|max:20',
             'date_fin_abonnement' => 'required|date',
         ]);
 
+        $ancienneDate = $mairie->date_fin_abonnement?->format('d/m/Y');
+
         $data['telephone_indicatif'] = $data['telephone_indicatif'] ?: '+33';
+        $data['afficher_contact']    = $request->boolean('afficher_contact');
 
         $mairie->update($data);
 
-        ActivityLogger::log('MAIRIE', 'UPDATE', "Mairie modifiée : \"{$mairie->nom}\"");
+        $nouvelleDate = $mairie->date_fin_abonnement->format('d/m/Y');
+        $detail = $ancienneDate !== $nouvelleDate
+            ? "Mairie modifiée : \"{$mairie->nom}\" — abonnement prolongé jusqu'au {$nouvelleDate} (avant : {$ancienneDate})"
+            : "Mairie modifiée : \"{$mairie->nom}\"";
+
+        ActivityLogger::log('MAIRIE', 'UPDATE', $detail);
 
         return redirect()->route('mairies.index')->with('success', 'Mairie mise à jour.');
     }

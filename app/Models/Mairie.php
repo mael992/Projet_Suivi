@@ -8,6 +8,8 @@ class Mairie extends Model
 {
     protected $fillable = [
         'nom',
+        'code_postal',
+        'afficher_contact',
         'email',
         'telephone_indicatif',
         'telephone',
@@ -19,6 +21,7 @@ class Mairie extends Model
     {
         return [
             'date_fin_abonnement' => 'date',
+            'afficher_contact'    => 'boolean',
         ];
     }
 
@@ -64,6 +67,38 @@ class Mairie extends Model
     {
         return $this->date_fin_abonnement !== null
             && $this->date_fin_abonnement->copy()->endOfDay()->isPast();
+    }
+
+    /** Jours restants avant la fin d'abonnement (négatif si dépassé, null si non défini) */
+    public function joursRestantsAbonnement(): ?int
+    {
+        if ($this->date_fin_abonnement === null) {
+            return null;
+        }
+
+        return (int) now()->startOfDay()->diffInDays($this->date_fin_abonnement->copy()->startOfDay(), false);
+    }
+
+    /**
+     * Badge d'abonnement pour l'admin :
+     *  - expiré                → « Expiré »
+     *  - 7 jours ou moins      → « Bientôt »
+     *  - 8 jours ou plus       → « Accès »
+     */
+    public function badgeAbonnement(): ?array
+    {
+        $jours = $this->joursRestantsAbonnement();
+        if ($jours === null) {
+            return null;
+        }
+
+        if ($this->abonnementExpire()) {
+            return ['label' => 'Expiré', 'couleur' => 'danger'];
+        }
+
+        return $jours <= 7
+            ? ['label' => 'Bientôt', 'couleur' => 'warning text-dark']
+            : ['label' => 'Accès', 'couleur' => 'success'];
     }
 
     /** Adresses e-mail qui reçoivent une copie de toutes les notifications */

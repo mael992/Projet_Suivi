@@ -34,16 +34,15 @@
                 <tbody>
                 @forelse($mairies as $mairie)
                     <tr>
-                        <td class="fw-semibold">{{ $mairie->nom }}</td>
+                        <td class="fw-semibold">{{ $mairie->nom }} <span class="text-muted fw-normal">({{ $mairie->code_postal ?? '—' }})</span></td>
                         <td>{{ $mairie->email }}</td>
                         <td>{{ $mairie->telephone ? '(' . $mairie->telephone_indicatif . ') ' . $mairie->telephone : '—' }}</td>
                         <td>
                             @if($mairie->date_fin_abonnement)
                                 {{ $mairie->date_fin_abonnement->format('d/m/Y') }}
-                                @if($mairie->abonnementExpire())
-                                    <span class="badge bg-danger ms-1">Expiré</span>
-                                @elseif($mairie->date_fin_abonnement->diffInDays(now()) < 30)
-                                    <span class="badge bg-warning text-dark ms-1">Bientôt</span>
+                                @php $badge = $mairie->badgeAbonnement(); @endphp
+                                @if($badge)
+                                    <span class="badge bg-{{ $badge['couleur'] }} ms-1">{{ $badge['label'] }}</span>
                                 @endif
                             @else
                                 —
