@@ -16,21 +16,54 @@ use Illuminate\Support\Str;
  */
 class ContactFicheController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        abort_unless(auth()->user()->aDroit('contacts_lecture'), 403);
+        $user = auth()->user();
 
-        [$mairie, $contacts, $standards] = $this->donnees();
+        // Côté admin : tri par mairie (Tout + chaque mairie), lecture globale
+        if ($user->isAdmin()) {
+            $mairies = \App\Models\Mairie::orderBy('nom')->get();
+            $filtre  = $request->input('mairie', 'tout');
 
-        return view('gestion.contacts.index', compact('mairie', 'contacts', 'standards'));
+            $blocs = $filtre !== 'tout'
+                ? collect([$this->blocMairie(\App\Models\Mairie::findOrFail($filtre))])
+                : $mairies->map(fn ($m) => $this->blocMairie($m));
+
+            return view('gestion.contacts.index', [
+                'admin'      => true,
+                'mairies'    => $mairies,
+                'filtre'     => $filtre,
+                'blocs'      => $blocs,
+                'mairieEdit' => $filtre !== 'tout' ? (int) $filtre : null,
+            ]);
+        }
+
+        abort_unless($user->aDroit('contacts_lecture'), 403);
+        $mairie = $user->mairie;
+        abort_unless($mairie !== null, 403);
+
+        return view('gestion.contacts.index', [
+            'admin'      => false,
+            'blocs'      => collect([$this->blocMairie($mairie)]),
+            'mairieEdit' => $mairie->id,
+        ]);
     }
 
     /** Téléchargement de la fiche contact en PDF. */
-    public function pdf()
+    public function pdf(Request $request)
     {
-        abort_unless(auth()->user()->aDroit('contacts_lecture'), 403);
+        $user = auth()->user();
 
-        [$mairie, $contacts, $standards] = $this->donnees();
+        $mairie = $user->isAdmin()
+            ? \App\Models\Mairie::findOrFail($request->input('mairie'))
+            : $user->mairie;
+
+        abort_unless($mairie !== null, 403);
+        abort_unless($user->isAdmin() || $user->aDroit('contacts_lecture'), 403);
+
+        $bloc      = $this->blocMairie($mairie);
+        $contacts  = $bloc['contacts'];
+        $standards = $bloc['standards'];
 
         $pdf = Pdf::loadView('pdf.contacts', compact('mairie', 'contacts', 'standards'))
             ->setPaper('a4', 'portrait');
@@ -42,7 +75,7 @@ class ContactFicheController extends Controller
     {
         abort_unless(auth()->user()->aDroit('contacts_modification'), 403);
 
-        $mairie = auth()->user()->mairie;
+        $mairie = $this->mairieCible($request);
         abort_unless($mairie !== null, 403);
 
         $data = $request->validate([
@@ -61,13 +94,13 @@ class ContactFicheController extends Controller
 
         ActivityLogger::log('CONTACT', 'CREATE', "Numéro de standard ajouté ({$mairie->nom}, service " . Referentiel::serviceLabel((int) $data['service']) . ')');
 
-        return redirect()->route('gestion.contacts.index')->with('success', 'Numéro de standard ajouté.');
+        return $this->retour($mairie)->with('success', 'Numéro de standard ajouté.');
     }
 
     public function updateStandard(Request $request, Standard $standard)
     {
         abort_unless(auth()->user()->aDroit('contacts_modification'), 403);
-        abort_if($standard->mairie_id !== auth()->user()->mairie_id, 403);
+        $this->verifierProprietaire($standard);
 
         $data = $request->validate([
             'telephone_indicatif' => 'nullable|string|max:8',
@@ -83,27 +116,50 @@ class ContactFicheController extends Controller
 
         ActivityLogger::log('CONTACT', 'UPDATE', 'Numéro de standard modifié (service ' . $standard->service_label . ')');
 
-        return redirect()->route('gestion.contacts.index')->with('success', 'Numéro de standard modifié.');
+        return $this->retour($standard->mairie)->with('success', 'Numéro de standard modifié.');
     }
 
     public function destroyStandard(Standard $standard)
     {
         abort_unless(auth()->user()->aDroit('contacts_modification'), 403);
-        abort_if($standard->mairie_id !== auth()->user()->mairie_id, 403);
+        $this->verifierProprietaire($standard);
+        $mairie = $standard->mairie;
 
         $standard->delete();
 
-        return redirect()->route('gestion.contacts.index')->with('success', 'Numéro de standard supprimé.');
+        return $this->retour($mairie)->with('success', 'Numéro de standard supprimé.');
     }
 
     // ── Helpers ──────────────────────────────────────────────────
 
-    private function donnees(): array
+    /** Mairie ciblée : celle de l'utilisateur, ou celle passée en paramètre pour un admin. */
+    private function mairieCible(Request $request): ?\App\Models\Mairie
     {
-        $mairie = auth()->user()->mairie;
-        abort_unless($mairie !== null, 403);
+        $user = auth()->user();
 
-        // Annuaire automatisé depuis la gestion des utilisateurs, trié par service puis grade
+        return $user->isAdmin()
+            ? \App\Models\Mairie::find($request->input('mairie_id'))
+            : $user->mairie;
+    }
+
+    /** Le standard appartient bien à la mairie de l'utilisateur (admin : toute mairie). */
+    private function verifierProprietaire(Standard $standard): void
+    {
+        $user = auth()->user();
+        abort_unless($user->isAdmin() || $standard->mairie_id === $user->mairie_id, 403);
+    }
+
+    /** Redirection vers la fiche, en conservant le filtre mairie côté admin. */
+    private function retour(?\App\Models\Mairie $mairie)
+    {
+        $params = (auth()->user()->isAdmin() && $mairie) ? ['mairie' => $mairie->id] : [];
+
+        return redirect()->route('gestion.contacts.index', $params);
+    }
+
+    /** Annuaire complet d'une mairie (contacts triés + numéros de standard). */
+    private function blocMairie(\App\Models\Mairie $mairie): array
+    {
         $contacts = $mairie->users()
             ->where('role', 'user')
             ->get()
@@ -114,8 +170,10 @@ class ContactFicheController extends Controller
             ])
             ->values();
 
-        $standards = $mairie->standards()->orderBy('service')->get();
-
-        return [$mairie, $contacts, $standards];
+        return [
+            'mairie'    => $mairie,
+            'contacts'  => $contacts,
+            'standards' => $mairie->standards()->orderBy('service')->get(),
+        ];
     }
 }

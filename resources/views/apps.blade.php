@@ -82,8 +82,8 @@
             </div>
         </div>
 
-        {{-- 📇 {{ __('Fiche Contact') }} (grades 1-3, hors admin) --}}
-        @if(!$user->isAdmin() && $mairie && $user->aDroit('contacts_lecture'))
+        {{-- 📇 {{ __('Fiche Contact') }} (droit contacts, ou admin = toutes les mairies) --}}
+        @if($user->isAdmin() || ($mairie && $user->aDroit('contacts_lecture')))
         <div class="col-12 col-md-6 app-tile" data-app="fiche contact contacts annuaire standard telephone email mairie">
             <div class="card shadow-sm h-100">
                 <div class="card-body d-flex flex-column">
