@@ -236,6 +236,41 @@ class MgdsPagesTest extends TestCase
         $this->assertSame('fait', $tache->fresh()->statut);
     }
 
+    public function test_rappel_echeance_envoye_le_jour_j(): void
+    {
+        \Illuminate\Support\Facades\Mail::fake();
+
+        $responsable = User::factory()->create([
+            'mairie_id' => $this->mairie->id,
+            'service'   => 12,
+            'grade'     => Referentiel::GRADE_DIR_CABINET,
+            'email'     => 'resp@mairie.fr',
+        ]);
+
+        // Échéance aujourd'hui, non terminée
+        Tache::create([
+            'mairie_id'   => $this->mairie->id,
+            'reference'   => '12-1',
+            'service'     => 12,
+            'user_id'     => $responsable->id,
+            'statut'      => 'en_cours',
+            'date_butoir' => now()->toDateString(),
+        ]);
+        // Échéance aujourd'hui mais déjà faite → pas de rappel
+        Tache::create([
+            'mairie_id'   => $this->mairie->id,
+            'reference'   => '12-2',
+            'service'     => 12,
+            'user_id'     => $responsable->id,
+            'statut'      => 'fait',
+            'date_butoir' => now()->toDateString(),
+        ]);
+
+        $this->artisan('mgds:rappeler-taches')->assertSuccessful();
+
+        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\TacheEcheance::class, 1);
+    }
+
     public function test_le_responsable_peut_changer_le_substitut(): void
     {
         $responsable = $this->responsable();

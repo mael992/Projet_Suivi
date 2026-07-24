@@ -17,6 +17,9 @@ Schedule::command('mgds:notifier-abonnements')->dailyAt('00:01');
 // ── Pense-bête : rappels du calendrier (email le jour J) ────────
 Schedule::command('mgds:envoyer-rappels')->dailyAt('00:05');
 
+// ── Tâches : rappel le jour de l'échéance (tâches non terminées) ──
+Schedule::command('mgds:rappeler-taches')->dailyAt('07:00');
+
 // ── Logs d'activité ─────────────────────────────────────────────
 // Sauvegarde toutes les 48h (tous les 2 jours à 02:00)
 Schedule::command('logs:backup')->cron('0 2 */2 * *');

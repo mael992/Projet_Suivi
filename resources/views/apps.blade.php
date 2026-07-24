@@ -46,7 +46,11 @@
                     <a href="{{ route('dashboard') }}" class="text-decoration-none text-reset d-flex align-items-center gap-3 mb-3">
                         <span style="font-size:44px;line-height:1;">📊</span>
                         <span>
-                            <span class="h5 d-block mb-1" style="color:var(--brand);">{{ __('Tableau des suivis') }}</span>
+                            <span class="h5 d-block mb-1" style="color:var(--brand);">
+                                {{ __('Tableau des suivis') }}
+                                @php $nbTaches = \App\Models\Tache::enAttentePour($user); @endphp
+                                @if($nbTaches > 0)<span class="bulle-notif ms-1" title="{{ __('Tâches en attente de prise en charge') }}">{{ $nbTaches }}</span>@endif
+                            </span>
                             <span class="text-muted" style="font-size:13px;">{{ __('Suivi des tâches des services de la mairie') }}</span>
                         </span>
                     </a>
@@ -183,7 +187,11 @@
                     <a href="{{ route('messagerie.index') }}" class="text-decoration-none text-reset d-flex align-items-center gap-3 mb-3">
                         <span style="font-size:44px;line-height:1;">💌</span>
                         <span>
-                            <span class="h5 d-block mb-1" style="color:var(--brand);">{{ __('Centre de Messagerie') }}</span>
+                            <span class="h5 d-block mb-1" style="color:var(--brand);">
+                                {{ __('Centre de Messagerie') }}
+                                @php $nbMsg = \App\Models\Ticket::enAttentePour($user); @endphp
+                                @if($nbMsg > 0)<span class="bulle-notif ms-1" title="{{ __('Messages en attente de réponse') }}">{{ $nbMsg }}</span>@endif
+                            </span>
                             <span class="text-muted" style="font-size:13px;">{{ __('Messages reçus des habitants & support') }}</span>
                         </span>
                     </a>
@@ -248,4 +256,5 @@ function filtrerApps() {
     document.getElementById('appsNoResult').classList.toggle('d-none', visibles > 0);
 }
 </script>
+@include('partials.autorefresh', ['selector' => '#appsGrid'])
 @endsection

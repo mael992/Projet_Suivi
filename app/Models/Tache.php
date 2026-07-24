@@ -98,6 +98,15 @@ class Tache extends Model
         return $user->grade < ($createur->grade ?? 99);
     }
 
+    /** Nombre de tâches en attente de prise en charge par cet utilisateur (lignes jaunes). */
+    public static function enAttentePour(User $user): int
+    {
+        return static::where('user_id', $user->id)
+            ->whereNull('prise_en_charge')
+            ->where('statut', '!=', Referentiel::STATUT_FAIT)
+            ->count();
+    }
+
     /** L'utilisateur est-il autorisé à clôturer cette tâche ? */
     public function peutEtreClotureePar(User $user): bool
     {

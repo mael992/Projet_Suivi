@@ -46,6 +46,25 @@ class Ticket extends Model
         return '(' . $this->telephone_indicatif . ') ' . $this->telephone;
     }
 
+    /** Le dernier message vient-il de la personne extérieure (mairie doit répondre) ? */
+    public function attendReponseMairie(): bool
+    {
+        $dernier = $this->messages()->latest('created_at')->first();
+
+        return $dernier !== null && $dernier->user_id === null;
+    }
+
+    /** Nombre de tickets externes en attente de réponse de la mairie (badge). */
+    public static function enAttentePour(User $user): int
+    {
+        $requete = static::where('type', 'externe');
+        if (! $user->isAdmin()) {
+            $requete->where('mairie_id', $user->mairie_id);
+        }
+
+        return $requete->with('messages')->get()->filter->attendReponseMairie()->count();
+    }
+
     /** Référence séquentielle par mairie (à partir de 1). */
     public static function genererReference(int $mairieId): string
     {
