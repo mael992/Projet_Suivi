@@ -68,12 +68,18 @@ class User extends Authenticatable
     }
 
     /**
-     * Droit d'application le plus fort de l'utilisateur (colonne `droit`,
-     * sinon le droit par défaut de son grade).
+     * Droit d'application le plus fort de l'utilisateur :
+     *  - null           → droit par défaut du grade
+     *  - 'aucun'        → aucun droit (explicitement retiré)
+     *  - clé de droit   → ce droit et tous les plus faibles
      */
     public function droitActuel(): string
     {
-        return $this->droit ?: Referentiel::droitDefaut($this->grade);
+        if ($this->droit === null) {
+            return Referentiel::droitDefaut($this->grade);
+        }
+
+        return $this->droit === Referentiel::DROIT_AUCUN ? '' : $this->droit;
     }
 
     /**

@@ -53,8 +53,13 @@ class MairieController extends Controller
     {
         $mairie->load('observateurs');
 
-        // Tous les utilisateurs avec email : liste déroulante des observateurs
-        $utilisateurs = \App\Models\User::whereNotNull('email')
+        // Liste déroulante des observateurs : utilisateurs (pas d'admin) ayant un
+        // e-mail, et qui ne sont pas déjà observateurs d'une mairie (une seule mairie).
+        $dejaObservateurs = MairieObservateur::pluck('email')->all();
+
+        $utilisateurs = \App\Models\User::where('role', 'user')
+            ->whereNotNull('email')
+            ->whereNotIn('email', $dejaObservateurs)
             ->with('mairie:id,nom')
             ->orderBy('username')
             ->get(['id', 'username', 'prenom', 'nom', 'email', 'mairie_id']);
@@ -110,8 +115,14 @@ class MairieController extends Controller
             'email' => 'required|email',
         ]);
 
-        if ($mairie->observateurs()->where('email', $data['email'])->exists()) {
-            return back()->withErrors(['email' => 'Cette adresse est déjà observatrice de cette mairie.']);
+        // Un observateur ne peut appartenir qu'à une seule mairie
+        if (MairieObservateur::where('email', $data['email'])->exists()) {
+            return back()->withErrors(['email' => 'Cette adresse est déjà observatrice d\'une mairie (une seule mairie autorisée).']);
+        }
+
+        // Un compte administrateur ne peut pas être observateur
+        if (\App\Models\User::where('email', $data['email'])->where('role', 'admin')->exists()) {
+            return back()->withErrors(['email' => 'Un administrateur ne peut pas être observateur.']);
         }
 
         $mairie->observateurs()->create($data);

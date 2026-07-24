@@ -50,7 +50,7 @@ class UserController extends Controller
             'nom'                 => 'required|string|max:100',
             'service'             => 'required|integer|in:' . implode(',', array_keys(Referentiel::SERVICES)),
             'grade'               => 'required|integer|in:' . implode(',', array_keys(Referentiel::GRADES)),
-            'droit'               => 'nullable|in:' . implode(',', array_keys(Referentiel::DROITS)),
+            'droit'               => 'nullable|in:' . implode(',', array_merge(array_keys(Referentiel::DROITS), [Referentiel::DROIT_AUCUN])),
             'fonction'            => 'nullable|string|max:150',
             'email'               => 'nullable|email|unique:users,email',
             'telephone_indicatif' => 'nullable|string|max:8',
@@ -75,7 +75,7 @@ class UserController extends Controller
             'mairie_id'                => $mairie->id,
             'service'                  => (int) $data['service'],
             'grade'                    => (int) $data['grade'],
-            'droit'                    => $data['droit'] ?? null,
+            'droit'                    => ($data['droit'] ?? '') === '' ? Referentiel::DROIT_AUCUN : $data['droit'],
             'fonction'                 => (int) $data['grade'] === Referentiel::GRADE_EMPLOYE ? ($data['fonction'] ?? null) : null,
             'reference'                => User::genererReference($mairie->id, (int) $data['service']),
             'telephone_indicatif'      => $data['telephone_indicatif'] ?: '+33',
@@ -105,7 +105,7 @@ class UserController extends Controller
             'nom'                 => 'required|string|max:100',
             'service'             => 'required|integer|in:' . implode(',', array_keys(Referentiel::SERVICES)),
             'grade'               => 'required|integer|in:' . implode(',', array_keys(Referentiel::GRADES)),
-            'droit'               => 'nullable|in:' . implode(',', array_keys(Referentiel::DROITS)),
+            'droit'               => 'nullable|in:' . implode(',', array_merge(array_keys(Referentiel::DROITS), [Referentiel::DROIT_AUCUN])),
             'fonction'            => 'nullable|string|max:150',
             'email'               => 'nullable|email|unique:users,email,' . $user->id,
             'telephone_indicatif' => 'nullable|string|max:8',
@@ -124,7 +124,7 @@ class UserController extends Controller
         $user->nom     = $data['nom'];
         $user->service  = (int) $data['service'];
         $user->grade    = (int) $data['grade'];
-        $user->droit    = $data['droit'] ?? null;
+        $user->droit    = ($data['droit'] ?? '') === '' ? Referentiel::DROIT_AUCUN : $data['droit'];
         $user->fonction = (int) $data['grade'] === Referentiel::GRADE_EMPLOYE ? ($data['fonction'] ?? null) : null;
         $user->email    = $data['email'] ?: null;
         $user->telephone_indicatif = $data['telephone_indicatif'] ?: '+33';

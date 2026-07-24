@@ -74,6 +74,22 @@ class MgdsPagesTest extends TestCase
         $this->actingAs($dirCab)->get('/gestion/utilisateurs')->assertOk();
     }
 
+    public function test_droit_aucun_retire_tous_les_droits(): void
+    {
+        // Un chef à qui on retire explicitement tous les droits n'a plus accès
+        $chef = User::factory()->create([
+            'mairie_id' => $this->mairie->id,
+            'service'   => 1,
+            'grade'     => Referentiel::GRADE_DIR_CABINET,
+            'droit'     => Referentiel::DROIT_AUCUN,
+        ]);
+
+        $this->assertFalse($chef->aDroit('marche_gestion'));
+        $this->assertFalse($chef->aDroit('contacts_lecture'));
+        $this->actingAs($chef)->get('/gestion/utilisateurs')->assertForbidden();
+        $this->actingAs($chef)->get('/marche/ville')->assertForbidden();
+    }
+
     public function test_gestion_is_forbidden_for_employe(): void
     {
         $this->actingAs($this->employe())

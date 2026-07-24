@@ -76,6 +76,9 @@ class Referentiel
         'taches_gestion'        => 'Tableau des suivis — gestion',
     ];
 
+    // Valeur explicite « aucun droit » (distincte de null = droit par défaut du grade)
+    public const DROIT_AUCUN = 'aucun';
+
     /** Position du droit dans la hiérarchie (0 = le plus fort). */
     public static function rangDroit(?string $droit): int
     {

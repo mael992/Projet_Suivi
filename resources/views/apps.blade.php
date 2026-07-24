@@ -62,7 +62,8 @@
             </div>
         </div>
 
-        {{-- 🛍 Marché --}}
+        {{-- 🛍 Marché (droit marché, ou admin) --}}
+        @if($user->isAdmin() || $user->aDroit('marche_gestion'))
         <div class="col-12 col-md-6 app-tile" data-app="marche marché exposants commercants plan placement registre banque">
             <div class="card shadow-sm h-100">
                 <div class="card-body d-flex flex-column">
@@ -81,6 +82,7 @@
                 </div>
             </div>
         </div>
+        @endif
 
         {{-- 📇 {{ __('Fiche Contact') }} (droit contacts, ou admin = toutes les mairies) --}}
         @if($user->isAdmin() || ($mairie && $user->aDroit('contacts_lecture')))

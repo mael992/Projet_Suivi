@@ -15,6 +15,9 @@ trait ResolveMairie
     {
         $user = $request->user();
 
+        // Accès à l'application Marché réservé au droit « marche_gestion » (ou admin)
+        abort_unless($user->isAdmin() || $user->aDroit('marche_gestion'), 403);
+
         if ($user->isAdmin()) {
             $mairie = $request->filled('mairie')
                 ? Mairie::find($request->integer('mairie'))
