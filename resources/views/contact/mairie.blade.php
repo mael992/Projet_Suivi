@@ -33,7 +33,7 @@
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">{{ __('Votre ville ou village') }} *</label>
-                        <select name="mairie_id" class="form-select" required>
+                        <select name="mairie_id" id="mairieSelect" class="form-select" required onchange="majServices()">
                             <option value="">— {{ __('Sélectionnez') }} —</option>
                             @foreach($mairies as $m)
                                 <option value="{{ $m->id }}" @selected(old('mairie_id') == $m->id)>{{ $m->nom }} ({{ $m->code_postal }})</option>
@@ -42,11 +42,8 @@
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">{{ __('Service à contacter') }} *</label>
-                        <select name="service" class="form-select" required>
+                        <select name="service" id="serviceSelect" class="form-select" required>
                             <option value="">{{ __('Je ne sais pas') }}</option>
-                            @foreach($services as $num => $label)
-                                <option value="{{ $num }}" @selected(old('service') == $num)>{{ $label }}</option>
-                            @endforeach
                         </select>
                     </div>
 
@@ -103,22 +100,54 @@
         </form>
     </div>
 
-    {{-- Onglet 2 : suivi d'un ticket existant (à venir) --}}
+    {{-- Onglet 2 : suivi d'un ticket existant --}}
     <div id="ongletTicket" class="d-none">
-        <div class="card shadow-sm">
-            <div class="card-body text-center text-muted py-5">
-                🎫 {{ __('Le suivi de ticket sera bientôt disponible. Conservez votre numéro de ticket ; votre mairie vous recontactera par e-mail.') }}
+        <form method="POST" action="{{ route('contact.ticket.suivi') }}" class="card shadow-sm">
+            @csrf
+            <div class="card-body">
+                <p class="text-muted" style="font-size:14px;">
+                    {{ __('Saisissez votre numéro de ticket et l\'adresse e-mail utilisée lors de votre demande.') }}
+                </p>
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <label class="form-label fw-semibold">{{ __('Numéro de ticket') }} *</label>
+                        <input type="text" name="reference" value="{{ old('reference') }}" class="form-control" required>
+                    </div>
+                    <div class="col-md-7">
+                        <label class="form-label fw-semibold">{{ __('Adresse e-mail') }} *</label>
+                        <input type="email" name="email" value="{{ old('email') }}" class="form-control" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary mt-3">{{ __('Accéder à mon ticket') }}</button>
             </div>
-        </div>
+        </form>
     </div>
 </div>
 
 <script>
+const SERVICES_PAR_MAIRIE = @json($servicesParMairie);
+const LABELS_SERVICE = @json($services);
+const OLD_SERVICE = @json(old('service'));
+
+function majServices() {
+    const mid = document.getElementById('mairieSelect').value;
+    const sel = document.getElementById('serviceSelect');
+    sel.innerHTML = '<option value="">{{ __('Je ne sais pas') }}</option>';
+    (SERVICES_PAR_MAIRIE[mid] || []).forEach(num => {
+        const o = document.createElement('option');
+        o.value = num; o.textContent = LABELS_SERVICE[num];
+        if (String(OLD_SERVICE) === String(num)) o.selected = true;
+        sel.appendChild(o);
+    });
+}
+
 function ongletContact(onglet, btn) {
     document.querySelectorAll('.nav-tabs .nav-link').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('ongletAide').classList.toggle('d-none', onglet !== 'aide');
     document.getElementById('ongletTicket').classList.toggle('d-none', onglet !== 'ticket');
 }
+
+majServices();
 </script>
 @endsection

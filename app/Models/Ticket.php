@@ -54,12 +54,31 @@ class Ticket extends Model
         return $dernier !== null && $dernier->user_id === null;
     }
 
-    /** Nombre de tickets externes en attente de réponse de la mairie (badge). */
+    /** Nombre de tickets externes en attente de réponse, visibles par l'utilisateur (badge). */
     public static function enAttentePour(User $user): int
     {
         $requete = static::where('type', 'externe');
+
         if (! $user->isAdmin()) {
             $requete->where('mairie_id', $user->mairie_id);
+
+            if (! $user->estDirection()) {
+                $cats        = $user->categoriesCommunication();
+                $numServices = array_values(array_filter($cats, fn ($c) => $c !== 'inconnu'));
+                $inconnu     = in_array('inconnu', $cats, true);
+
+                $requete->where(function ($q) use ($numServices, $inconnu) {
+                    if ($numServices) {
+                        $q->whereIn('service', $numServices);
+                    }
+                    if ($inconnu) {
+                        $q->orWhereNull('service');
+                    }
+                    if (! $numServices && ! $inconnu) {
+                        $q->whereRaw('1 = 0');
+                    }
+                });
+            }
         }
 
         return $requete->with('messages')->get()->filter->attendReponseMairie()->count();

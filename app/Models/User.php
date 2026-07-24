@@ -26,6 +26,7 @@ class User extends Authenticatable
         'service',
         'grade',
         'droit',
+        'communication',
         'fonction',
         'reference',
         'telephone_indicatif',
@@ -45,6 +46,7 @@ class User extends Authenticatable
             'must_change_password'     => 'boolean',
             'service'                  => 'integer',
             'grade'                    => 'integer',
+            'communication'            => 'array',
         ];
     }
 
@@ -102,6 +104,34 @@ class User extends Authenticatable
     public function peutGererMairie(): bool
     {
         return ! $this->isAdmin() && $this->aDroit('gestion_utilisateurs');
+    }
+
+    /**
+     * Catégories de messages externes que l'utilisateur reçoit (services +
+     * « inconnu »). null = défaut : la direction reçoit tout, les autres rien.
+     */
+    public function categoriesCommunication(): array
+    {
+        if ($this->communication !== null) {
+            return $this->communication;
+        }
+
+        if ($this->estDirection()) {
+            return array_merge(
+                array_map('strval', array_keys(Referentiel::SERVICES)),
+                ['inconnu'],
+            );
+        }
+
+        return [];
+    }
+
+    /** L'utilisateur reçoit-il les messages du service donné (null = « Je ne sais pas ») ? */
+    public function recoitCommunication(?int $service): bool
+    {
+        $categorie = $service ? (string) $service : 'inconnu';
+
+        return in_array($categorie, $this->categoriesCommunication(), true);
     }
 
     /** Maire, Directeur de Cabinet ou DGS : « mini-admins » de leur mairie */

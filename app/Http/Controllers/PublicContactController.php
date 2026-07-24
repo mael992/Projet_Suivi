@@ -2,30 +2,40 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\NouveauMessageTicket;
 use App\Models\Mairie;
 use App\Models\Ticket;
 use App\Models\TicketMessage;
 use App\Support\Referentiel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 
 /**
  * Page publique « Contacter votre Mairie » : une personne extérieure
- * envoie une demande (ticket) à la mairie de son choix.
+ * envoie une demande (ticket) à la mairie de son choix, puis peut suivre
+ * son ticket (numéro + e-mail).
  */
 class PublicContactController extends Controller
 {
     public function create()
     {
+        $mairies = Mairie::where('afficher_contact', true)->orderBy('nom')->get();
+
+        // Services proposés par mairie (ceux qui ont au moins un destinataire)
+        $servicesParMairie = [];
+        foreach ($mairies as $m) {
+            $servicesParMairie[$m->id] = $m->servicesContactables();
+        }
+
         return view('contact.mairie', [
-            'mairies'  => Mairie::where('afficher_contact', true)->orderBy('nom')->get(),
-            'services' => Referentiel::SERVICES,
+            'mairies'           => $mairies,
+            'services'          => Referentiel::SERVICES,
+            'servicesParMairie' => $servicesParMairie,
         ]);
     }
 
     public function store(Request $request)
     {
-        // Champs tous obligatoires ; TrimStrings retire les espaces → « min:2 »
-        // rejette les valeurs vides ou d'un seul caractère.
         $data = $request->validate([
             'mairie_id'           => 'required|exists:mairies,id',
             'service'             => 'nullable|integer|in:' . implode(',', array_keys(Referentiel::SERVICES)),
@@ -40,7 +50,6 @@ class PublicContactController extends Controller
             'photos.*'            => 'image|max:8192',
         ]);
 
-        // La mairie choisie doit être publiquement contactable
         $mairie = Mairie::where('id', $data['mairie_id'])->where('afficher_contact', true)->firstOrFail();
 
         $photos = [];
@@ -62,14 +71,73 @@ class PublicContactController extends Controller
             'photos'              => $photos ?: null,
         ]);
 
-        // Le message initial (description) devient le premier message du fil
         TicketMessage::create([
             'ticket_id' => $ticket->id,
             'user_id'   => null,
             'corps'     => $data['message'],
         ]);
 
-        return redirect()->route('contact.mairie')
-            ->with('ticket_ok', $ticket->reference);
+        $this->notifierMairie($ticket);
+
+        return redirect()->route('contact.mairie')->with('ticket_ok', $ticket->reference);
+    }
+
+    // ── Suivi d'un ticket existant (« J'ai déjà un ticket ») ─────
+
+    public function suivi(Request $request)
+    {
+        $data = $request->validate([
+            'reference' => 'required|string',
+            'email'     => 'required|email',
+        ]);
+
+        $ticket = Ticket::where('reference', $data['reference'])
+            ->whereRaw('LOWER(email) = ?', [mb_strtolower($data['email'])])
+            ->with('messages.auteur')
+            ->first();
+
+        if (! $ticket) {
+            return back()->withErrors(['ticket' => 'Les données saisies sont erronées. Merci de vérifier votre numéro de ticket et votre adresse e-mail.'])
+                ->withInput();
+        }
+
+        // Jeton simple en session pour autoriser la réponse
+        session(['ticket_suivi_' . $ticket->id => true]);
+
+        return view('contact.ticket', compact('ticket'));
+    }
+
+    public function repondreCitoyen(Request $request, Ticket $ticket)
+    {
+        abort_unless(session('ticket_suivi_' . $ticket->id) === true, 403);
+
+        $data = $request->validate([
+            'corps' => 'required|string|min:2|max:5000',
+        ]);
+
+        TicketMessage::create([
+            'ticket_id' => $ticket->id,
+            'user_id'   => null,
+            'corps'     => $data['corps'],
+        ]);
+        $ticket->touch();
+
+        $this->notifierMairie($ticket);
+
+        return redirect()->route('contact.mairie')->with('ticket_ok', $ticket->reference);
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────
+
+    /** Prévient par e-mail les agents de la mairie qui reçoivent ce service. */
+    private function notifierMairie(Ticket $ticket): void
+    {
+        foreach ($ticket->mairie->destinatairesCommunication($ticket->service) as $agent) {
+            try {
+                Mail::to($agent->email)->send(new NouveauMessageTicket($ticket, pourCitoyen: false));
+            } catch (\Exception $e) {
+                report($e);
+            }
+        }
     }
 }

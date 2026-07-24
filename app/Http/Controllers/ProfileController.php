@@ -37,6 +37,24 @@ class ProfileController extends Controller
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
 
+    /** Préférences de réception des messages externes (droit communication extérieur). */
+    public function communication(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        abort_if($user->isAdmin(), 403);
+
+        $data = $request->validate([
+            'categories'   => 'nullable|array',
+            'categories.*' => 'string|in:inconnu,' . implode(',', array_keys(\App\Support\Referentiel::SERVICES)),
+        ]);
+
+        // Toujours enregistrer un tableau explicite (même vide = ne rien recevoir)
+        $user->communication = array_values(array_unique($data['categories'] ?? []));
+        $user->save();
+
+        return Redirect::route('profile.edit')->with('status', 'communication-updated');
+    }
+
     /**
      * Delete the user's account.
      */

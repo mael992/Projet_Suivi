@@ -107,6 +107,35 @@ class Mairie extends Model
         return $this->observateurs()->pluck('email')->all();
     }
 
+    /** Utilisateurs de la mairie qui reçoivent les messages du service donné. */
+    public function destinatairesCommunication(?int $service)
+    {
+        return $this->users()
+            ->where('role', 'user')
+            ->whereNotNull('email')
+            ->get()
+            ->filter(fn ($u) => $u->recoitCommunication($service))
+            ->values();
+    }
+
+    /** Services (clés) proposés sur « Contacter votre Mairie » : au moins un destinataire. */
+    public function servicesContactables(): array
+    {
+        $users    = $this->users()->where('role', 'user')->get();
+        $services = [];
+
+        foreach (array_keys(\App\Support\Referentiel::SERVICES) as $s) {
+            foreach ($users as $u) {
+                if ($u->recoitCommunication($s)) {
+                    $services[] = $s;
+                    break;
+                }
+            }
+        }
+
+        return $services;
+    }
+
     /**
      * Destinataires des emails d'abonnement : les personnes qui dirigent
      * la mairie (Maire, Directeur de Cabinet, DGS) + les observateurs

@@ -30,6 +30,8 @@ Route::get('/contact',    [PageController::class, 'contact'])->name('contact');
 // Page publique « Contacter votre Mairie » (formulaire → ticket)
 Route::get('/contacter-mairie',  [\App\Http\Controllers\PublicContactController::class, 'create'])->name('contact.mairie');
 Route::post('/contacter-mairie', [\App\Http\Controllers\PublicContactController::class, 'store'])->name('contact.mairie.store');
+Route::post('/mon-ticket',       [\App\Http\Controllers\PublicContactController::class, 'suivi'])->name('contact.ticket.suivi');
+Route::post('/mon-ticket/{ticket}/repondre', [\App\Http\Controllers\PublicContactController::class, 'repondreCitoyen'])->name('contact.ticket.repondre');
 
 // ── ESPACE CONNECTÉ ──────────────────────────────────────────
 Route::middleware('auth')->group(function () {
@@ -116,6 +118,7 @@ Route::middleware('auth')->group(function () {
     // Profil
     Route::get('/profile',    [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile',  [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile/communication', [ProfileController::class, 'communication'])->name('profile.communication');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 

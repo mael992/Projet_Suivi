@@ -64,9 +64,33 @@ class MessagerieTest extends TestCase
         ])->assertSessionHasErrors(['nom', 'prenom', 'sujet', 'message']);
     }
 
+    public function test_reprise_ticket_citoyen_verifie_ref_et_email(): void
+    {
+        $ticket = Ticket::create([
+            'mairie_id' => $this->mairie->id,
+            'reference' => '1',
+            'nom'       => 'Dupont', 'prenom' => 'Marie',
+            'telephone' => '0612345678', 'email' => 'marie@example.fr',
+            'sujet'     => 'Voirie',
+        ]);
+
+        // Données erronées → refus
+        $this->post('/mon-ticket', ['reference' => '1', 'email' => 'faux@example.fr'])
+            ->assertSessionHasErrors('ticket');
+
+        // Bon couple ref + email → accès au ticket
+        $this->post('/mon-ticket', ['reference' => '1', 'email' => 'marie@example.fr'])
+            ->assertOk()
+            ->assertSee('Voirie');
+    }
+
     public function test_agent_mairie_repond_admin_lecture_seule(): void
     {
-        $agent = User::factory()->create(['mairie_id' => $this->mairie->id]);
+        // Agent de la direction : reçoit tous les services par défaut
+        $agent = User::factory()->create([
+            'mairie_id' => $this->mairie->id,
+            'grade'     => \App\Support\Referentiel::GRADE_DIR_CABINET,
+        ]);
         $ticket = Ticket::create([
             'mairie_id' => $this->mairie->id,
             'reference' => '1',

@@ -67,6 +67,44 @@
         </div>
     </div>
 
+    {{-- ── Droit communication extérieur ── --}}
+    @if(! $user->isAdmin() && $user->mairie)
+    @php $mesCat = $user->categoriesCommunication(); @endphp
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h2 class="h5 mb-1">📨 {{ __('Droit communication extérieur') }}</h2>
+            <p class="text-muted" style="font-size:13px;">
+                {{ __('Choisissez les services dont vous recevez les messages envoyés via « Contacter votre Mairie ». Si personne ne reçoit un service, il n\'est pas proposé aux habitants.') }}
+            </p>
+
+            @if(session('status') === 'communication-updated')
+                <div class="alert alert-success py-2">{{ __('Préférences de réception mises à jour.') }}</div>
+            @endif
+
+            <form method="POST" action="{{ route('profile.communication') }}">
+                @csrf
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" name="categories[]" value="inconnu" id="cat_inconnu"
+                           @checked(in_array('inconnu', $mesCat, true))>
+                    <label class="form-check-label" for="cat_inconnu">🤷 {{ __('Je ne sais pas') }} ({{ __('demandes générales') }})</label>
+                </div>
+                <div class="row g-1">
+                    @foreach(\App\Support\Referentiel::SERVICES as $num => $label)
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="categories[]" value="{{ $num }}" id="cat_{{ $num }}"
+                                       @checked(in_array((string) $num, $mesCat, true))>
+                                <label class="form-check-label" for="cat_{{ $num }}" style="font-size:13px;">{{ $label }}</label>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+                <button type="submit" class="btn btn-primary mt-3">{{ __('Enregistrer') }}</button>
+            </form>
+        </div>
+    </div>
+    @endif
+
     {{-- ── Mot de passe ── --}}
     <div class="card shadow-sm mb-4">
         <div class="card-body">
