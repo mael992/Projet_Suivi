@@ -112,13 +112,21 @@ class PublicContactController extends Controller
         abort_unless(session('ticket_suivi_' . $ticket->id) === true, 403);
 
         $data = $request->validate([
-            'corps' => 'required|string|min:2|max:5000',
+            'corps'      => 'required|string|min:2|max:5000',
+            'fichiers'   => 'nullable|array|max:3',
+            'fichiers.*' => 'file|max:8192|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx,txt',
         ]);
+
+        $fichiers = [];
+        foreach ($request->file('fichiers', []) as $fichier) {
+            $fichiers[] = $fichier->store('tickets', 'public');
+        }
 
         TicketMessage::create([
             'ticket_id' => $ticket->id,
             'user_id'   => null,
             'corps'     => $data['corps'],
+            'fichiers'  => $fichiers ?: null,
         ]);
         $ticket->touch();
 

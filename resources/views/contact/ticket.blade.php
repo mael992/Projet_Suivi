@@ -24,18 +24,40 @@
                     </div>
                     <div class="rounded p-2" style="max-width:75%;background:{{ $ext ? '#dbe7f5' : '#fff' }};border:1px solid #e2e8f0;">
                         <div class="text-muted" style="font-size:11px;">
-                            {{ $ext ? __('Vous') : ($ticket->mairie?->nom ?? __('Mairie')) }} — {{ $message->created_at->format('d/m/Y H:i') }}
+                            @if($ext)
+                                {{ __('Vous') }}
+                            @else
+                                {{ $message->auteur?->full_name ?? __('Mairie') }}
+                                @if($message->auteur) — {{ $ticket->mairie?->nom }} @endif
+                            @endif
+                            — {{ $message->created_at->format('d/m/Y H:i') }}
                         </div>
                         <div style="font-size:14px;white-space:pre-wrap;">{{ $message->corps }}</div>
+                        @if($message->fichiers)
+                            <div class="d-flex gap-2 flex-wrap mt-2">
+                                @foreach($message->fichiers as $fichier)
+                                    <a href="{{ asset('storage/' . $fichier) }}" target="_blank" class="badge bg-secondary text-decoration-none">
+                                        📎 {{ \Illuminate\Support\Str::limit(basename($fichier), 24) }}
+                                    </a>
+                                @endforeach
+                            </div>
+                        @endif
                     </div>
                 </div>
             @endforeach
         </div>
         <div class="card-footer">
-            <form method="POST" action="{{ route('contact.ticket.repondre', $ticket) }}" class="d-flex gap-2">
+            <form method="POST" action="{{ route('contact.ticket.repondre', $ticket) }}" enctype="multipart/form-data">
                 @csrf
-                <input type="text" name="corps" class="form-control" placeholder="{{ __('Écrire un message à la mairie…') }}" required minlength="2" maxlength="5000">
-                <button type="submit" class="btn btn-primary">{{ __('Envoyer') }}</button>
+                <textarea name="corps" class="form-control mb-2" rows="4" required minlength="2" maxlength="5000"
+                          placeholder="{{ __('Écrire un message à la mairie…') }}"></textarea>
+                <div class="d-flex gap-2 align-items-center flex-wrap">
+                    <input type="file" name="fichiers[]" class="form-control form-control-sm" style="max-width:340px;"
+                           accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" multiple
+                           onchange="if(this.files.length>3){alert('{{ __('3 fichiers maximum.') }}');this.value='';}">
+                    <small class="text-muted">{{ __('Photos ou documents (3 maximum)') }}</small>
+                    <button type="submit" class="btn btn-primary ms-auto">{{ __('Envoyer') }}</button>
+                </div>
             </form>
         </div>
     </div>

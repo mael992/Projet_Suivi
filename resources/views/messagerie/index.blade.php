@@ -4,7 +4,7 @@
 <div class="container-fluid px-3 px-md-4 py-4">
 
     <a href="{{ route('apps') }}" class="text-decoration-none d-inline-block mb-2" style="font-size:14px;">← {{ __('mgds.nav_apps') }}</a>
-    <h1 class="h3 mb-1">💌 {{ __('Centre de Messagerie') }}</h1>
+    <h1 class="h3 mb-1">📬 {{ __('Centre de Messagerie') }}</h1>
     @if($admin)
         <p class="text-muted mb-3" style="font-size:14px;">{{ __('Gestionnaire des messages de toutes les mairies (lecture seule).') }}</p>
     @endif
@@ -120,21 +120,36 @@
                         </div>
                         <div class="rounded p-2" style="max-width:75%;background:{{ $ext ? '#fff' : '#dbe7f5' }};border:1px solid #e2e8f0;">
                             <div class="text-muted" style="font-size:11px;">
-                                {{ $ext ? $ticket->nom_complet . ' (' . __('extérieur') . ')' : ($message->auteur?->username ?? '—') }}
+                                {{ $ext ? $ticket->nom_complet . ' (' . __('extérieur') . ')' : ($message->auteur?->full_name ?? '—') }}
                                 — {{ $message->created_at->format('d/m/Y H:i') }}
                             </div>
                             <div style="font-size:14px;white-space:pre-wrap;">{{ $message->corps }}</div>
+                            @if($message->fichiers)
+                                <div class="d-flex gap-2 flex-wrap mt-2">
+                                    @foreach($message->fichiers as $fichier)
+                                        <a href="{{ asset('storage/' . $fichier) }}" target="_blank" class="badge bg-secondary text-decoration-none">
+                                            📎 {{ \Illuminate\Support\Str::limit(basename($fichier), 24) }}
+                                        </a>
+                                    @endforeach
+                                </div>
+                            @endif
                         </div>
                     </div>
                 @endforeach
             </div>
             @if($peutRepondre)
                 <div class="modal-footer py-2">
-                    <form method="POST" action="{{ route('messagerie.repondre', $ticket) }}" class="w-100 d-flex gap-2">
+                    <form method="POST" action="{{ route('messagerie.repondre', $ticket) }}" class="w-100" enctype="multipart/form-data">
                         @csrf
-                        <input type="text" name="corps" class="form-control form-control-sm"
-                               placeholder="{{ __('Écrire un message à la personne…') }}" required maxlength="5000">
-                        <button type="submit" class="btn btn-sm btn-primary">{{ __('Envoyer') }}</button>
+                        <textarea name="corps" class="form-control mb-2" rows="4" required maxlength="5000"
+                                  placeholder="{{ __('Écrire un message à la personne…') }}"></textarea>
+                        <div class="d-flex gap-2 align-items-center flex-wrap">
+                            <input type="file" name="fichiers[]" class="form-control form-control-sm" style="max-width:320px;"
+                                   accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" multiple
+                                   onchange="if(this.files.length>3){alert('{{ __('3 fichiers maximum.') }}');this.value='';}">
+                            <small class="text-muted">{{ __('Photos ou documents (3 maximum)') }}</small>
+                            <button type="submit" class="btn btn-primary ms-auto">{{ __('Envoyer') }}</button>
+                        </div>
                     </form>
                 </div>
             @else

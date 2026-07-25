@@ -98,12 +98,22 @@ class Tache extends Model
         return $user->grade < ($createur->grade ?? 99);
     }
 
-    /** Nombre de tâches en attente de prise en charge par cet utilisateur (lignes jaunes). */
+    /**
+     * Nombre de tâches qui réclament l'attention de l'utilisateur :
+     * en attente de prise en charge (lignes jaunes) OU dont l'échéance
+     * est arrivée / dépassée sans être terminées.
+     */
     public static function enAttentePour(User $user): int
     {
-        return static::where('user_id', $user->id)
-            ->whereNull('prise_en_charge')
-            ->where('statut', '!=', Referentiel::STATUT_FAIT)
+        return static::where('statut', '!=', Referentiel::STATUT_FAIT)
+            ->where(function (Builder $q) use ($user) {
+                $q->where('user_id', $user->id)
+                  ->orWhere('substitut_id', $user->id);
+            })
+            ->where(function (Builder $q) {
+                $q->whereNull('prise_en_charge')
+                  ->orWhereDate('date_butoir', '<=', now()->toDateString());
+            })
             ->count();
     }
 

@@ -77,13 +77,21 @@ class MessagerieController extends Controller
         abort_unless($user->estDirection() || $user->recoitCommunication($ticket->service), 403);
 
         $data = $request->validate([
-            'corps' => 'required|string|min:1|max:5000',
+            'corps'      => 'required|string|min:1|max:5000',
+            'fichiers'   => 'nullable|array|max:3',
+            'fichiers.*' => 'file|max:8192|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx,txt',
         ]);
+
+        $fichiers = [];
+        foreach ($request->file('fichiers', []) as $fichier) {
+            $fichiers[] = $fichier->store('tickets', 'public');
+        }
 
         TicketMessage::create([
             'ticket_id' => $ticket->id,
             'user_id'   => $user->id,
             'corps'     => $data['corps'],
+            'fichiers'  => $fichiers ?: null,
         ]);
 
         $ticket->touch();

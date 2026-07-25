@@ -49,7 +49,7 @@
                             <span class="h5 d-block mb-1" style="color:var(--brand);">
                                 {{ __('Tableau des suivis') }}
                                 @php $nbTaches = \App\Models\Tache::enAttentePour($user); @endphp
-                                @if($nbTaches > 0)<span class="bulle-notif ms-1" title="{{ __('Tâches en attente de prise en charge') }}">{{ $nbTaches }}</span>@endif
+                                @if($nbTaches > 0)<span class="bulle-notif ms-1" title="{{ __('Tâches en attente ou arrivées à échéance') }}">{{ $nbTaches }}</span>@endif
                             </span>
                             <span class="text-muted" style="font-size:13px;">{{ __('Suivi des tâches des services de la mairie') }}</span>
                         </span>
@@ -179,13 +179,13 @@
             </div>
         </div>
 
-        {{-- 💌 {{ __('Centre de Messagerie') }} (mairie ou admin) --}}
+        {{-- 📬 {{ __('Centre de Messagerie') }} (mairie ou admin) --}}
         @if($user->isAdmin() || $mairie)
         <div class="col-12 col-md-6 app-tile" data-app="centre de messagerie message externe interne support ticket contacter mairie">
             <div class="card shadow-sm h-100">
                 <div class="card-body d-flex flex-column">
                     <a href="{{ route('messagerie.index') }}" class="text-decoration-none text-reset d-flex align-items-center gap-3 mb-3">
-                        <span style="font-size:44px;line-height:1;">💌</span>
+                        <span style="font-size:44px;line-height:1;">📬</span>
                         <span>
                             <span class="h5 d-block mb-1" style="color:var(--brand);">
                                 {{ __('Centre de Messagerie') }}

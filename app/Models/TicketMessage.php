@@ -6,7 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class TicketMessage extends Model
 {
-    protected $fillable = ['ticket_id', 'user_id', 'corps'];
+    protected $fillable = ['ticket_id', 'user_id', 'corps', 'fichiers'];
+
+    protected function casts(): array
+    {
+        return ['fichiers' => 'array'];
+    }
 
     public function ticket()
     {

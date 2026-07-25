@@ -98,9 +98,16 @@
         document.getElementById('fonctionWrap').classList.toggle('d-none', grade !== GRADE_EMPLOYE);
     }
 
+    // Au premier rendu, on ne touche pas aux cases : elles reflètent déjà
+    // les droits enregistrés. Les défauts ne s'appliquent qu'ensuite,
+    // quand l'utilisateur change réellement de statut.
+    let initialise = false;
+
     function onGradeChange() {
         majFonction();
-        cocherDepuisCle(DEFAUTS[parseInt(gradeSel?.value || '0', 10)] || '');
+        if (initialise) {
+            cocherDepuisCle(DEFAUTS[parseInt(gradeSel?.value || '0', 10)] || '');
+        }
     }
 
     // Le Service pilote la liste des Statuts possibles
@@ -141,5 +148,7 @@
         }
     }
     majFonction();
+    majDroit();       // le champ caché reflète les cases affichées
+    initialise = true; // à partir d'ici, changer de statut applique les défauts
 })();
 </script>
