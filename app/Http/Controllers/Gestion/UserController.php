@@ -52,6 +52,8 @@ class UserController extends Controller
             'grade'               => 'required|integer|in:' . implode(',', array_keys(Referentiel::GRADES)),
             'droit'               => 'nullable|in:' . implode(',', array_merge(array_keys(Referentiel::DROITS), [Referentiel::DROIT_AUCUN])),
             'fonction'            => 'nullable|string|max:150',
+            'communication'       => 'nullable|array',
+            'communication.*'     => 'string|in:inconnu,' . implode(',', array_keys(Referentiel::SERVICES)),
             'email'               => 'nullable|email|unique:users,email',
             'telephone_indicatif' => 'nullable|string|max:8',
             'telephone'           => 'nullable|string|max:20',
@@ -77,6 +79,7 @@ class UserController extends Controller
             'grade'                    => (int) $data['grade'],
             'droit'                    => ($data['droit'] ?? '') === '' ? Referentiel::DROIT_AUCUN : $data['droit'],
             'fonction'                 => (int) $data['grade'] === Referentiel::GRADE_EMPLOYE ? ($data['fonction'] ?? null) : null,
+            'communication'            => array_values(array_unique($data['communication'] ?? [])),
             'reference'                => User::genererReference($mairie->id, (int) $data['service']),
             'telephone_indicatif'      => $data['telephone_indicatif'] ?: '+33',
             'telephone'                => $data['telephone'] ?: null,
@@ -107,6 +110,8 @@ class UserController extends Controller
             'grade'               => 'required|integer|in:' . implode(',', array_keys(Referentiel::GRADES)),
             'droit'               => 'nullable|in:' . implode(',', array_merge(array_keys(Referentiel::DROITS), [Referentiel::DROIT_AUCUN])),
             'fonction'            => 'nullable|string|max:150',
+            'communication'       => 'nullable|array',
+            'communication.*'     => 'string|in:inconnu,' . implode(',', array_keys(Referentiel::SERVICES)),
             'email'               => 'nullable|email|unique:users,email,' . $user->id,
             'telephone_indicatif' => 'nullable|string|max:8',
             'telephone'           => 'nullable|string|max:20',
@@ -126,6 +131,7 @@ class UserController extends Controller
         $user->grade    = (int) $data['grade'];
         $user->droit    = ($data['droit'] ?? '') === '' ? Referentiel::DROIT_AUCUN : $data['droit'];
         $user->fonction = (int) $data['grade'] === Referentiel::GRADE_EMPLOYE ? ($data['fonction'] ?? null) : null;
+        $user->communication = array_values(array_unique($data['communication'] ?? []));
         $user->email    = $data['email'] ?: null;
         $user->telephone_indicatif = $data['telephone_indicatif'] ?: '+33';
         $user->telephone           = $data['telephone'] ?: null;

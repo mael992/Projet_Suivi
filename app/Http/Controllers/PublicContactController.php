@@ -122,17 +122,62 @@ class PublicContactController extends Controller
             $fichiers[] = $fichier->store('tickets', 'public');
         }
 
+        abort_unless($ticket->peutEcrire(), 403, 'Cette conversation est clôturée.');
+
         TicketMessage::create([
             'ticket_id' => $ticket->id,
             'user_id'   => null,
             'corps'     => $data['corps'],
             'fichiers'  => $fichiers ?: null,
         ]);
-        $ticket->touch();
+        $ticket->majStatutApresMessage(deLaMairie: false);
 
         $this->notifierMairie($ticket);
 
         return redirect()->route('contact.mairie')->with('ticket_ok', $ticket->reference);
+    }
+
+    /** Le citoyen clôture lui-même sa demande (il n'a plus besoin d'aide). */
+    public function cloturerCitoyen(Ticket $ticket)
+    {
+        abort_unless(session('ticket_suivi_' . $ticket->id) === true, 403);
+        abort_unless($ticket->peutEcrire(), 403);
+
+        $ticket->update([
+            'statut'      => Ticket::STATUT_CLOTURE,
+            'cloture_at'  => now(),
+            'cloture_par' => 'citoyen',
+        ]);
+
+        return redirect()->route('contact.mairie')
+            ->with('ticket_ok', $ticket->reference)
+            ->with('ticket_message', 'Votre demande a été clôturée. Vous pouvez encore demander sa réouverture pendant ' . Ticket::JOURS_REOUVERTURE . ' jours.');
+    }
+
+    /** Le citoyen demande la réouverture d'une conversation clôturée (15 jours max). */
+    public function demanderReouverture(Request $request, Ticket $ticket)
+    {
+        abort_unless(session('ticket_suivi_' . $ticket->id) === true, 403);
+
+        if (! $ticket->reouverturePossible()) {
+            return back()->withErrors(['reouverture' => 'Le délai de ' . Ticket::JOURS_REOUVERTURE . ' jours est dépassé : cette conversation ne peut plus être rouverte.']);
+        }
+
+        $data = $request->validate([
+            'motif' => 'required|string|min:2|max:1000',
+        ]);
+
+        $ticket->update([
+            'statut'                  => Ticket::STATUT_REOUVERTURE,
+            'reouverture_demandee_at' => now(),
+            'reouverture_motif'       => $data['motif'],
+        ]);
+
+        $this->notifierMairie($ticket);
+
+        return redirect()->route('contact.mairie')
+            ->with('ticket_ok', $ticket->reference)
+            ->with('ticket_message', 'Votre demande de réouverture a été transmise à la mairie.');
     }
 
     // ── Helpers ──────────────────────────────────────────────────

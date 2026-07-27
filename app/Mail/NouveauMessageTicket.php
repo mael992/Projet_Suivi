@@ -16,12 +16,15 @@ class NouveauMessageTicket extends Mailable
     public function __construct(
         public Ticket $ticket,
         public bool $pourCitoyen,
+        public bool $cloture = false,
     ) {}
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'MGDS — Nouveau message concernant votre demande (' . $this->ticket->sujet . ')',
+            subject: $this->cloture
+                ? 'MGDS — Votre demande a été clôturée (' . $this->ticket->sujet . ')'
+                : 'MGDS — Nouveau message concernant votre demande (' . $this->ticket->sujet . ')',
         );
     }
 

@@ -47,18 +47,49 @@
             @endforeach
         </div>
         <div class="card-footer">
-            <form method="POST" action="{{ route('contact.ticket.repondre', $ticket) }}" enctype="multipart/form-data">
-                @csrf
-                <textarea name="corps" class="form-control mb-2" rows="4" required minlength="2" maxlength="5000"
-                          placeholder="{{ __('Écrire un message à la mairie…') }}"></textarea>
-                <div class="d-flex gap-2 align-items-center flex-wrap">
-                    <input type="file" name="fichiers[]" class="form-control form-control-sm" style="max-width:340px;"
-                           accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" multiple
-                           onchange="if(this.files.length>3){alert('{{ __('3 fichiers maximum.') }}');this.value='';}">
-                    <small class="text-muted">{{ __('Photos ou documents (3 maximum)') }}</small>
-                    <button type="submit" class="btn btn-primary ms-auto">{{ __('Envoyer') }}</button>
+            @if($ticket->peutEcrire())
+                <form method="POST" action="{{ route('contact.ticket.repondre', $ticket) }}" enctype="multipart/form-data">
+                    @csrf
+                    <textarea name="corps" class="form-control mb-2" rows="4" required minlength="2" maxlength="5000"
+                              placeholder="{{ __('Écrire un message à la mairie…') }}"></textarea>
+                    <div class="d-flex gap-2 align-items-center flex-wrap">
+                        <input type="file" name="fichiers[]" class="form-control form-control-sm" style="max-width:340px;"
+                               accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" multiple
+                               onchange="if(this.files.length>3){alert('{{ __('3 fichiers maximum.') }}');this.value='';}">
+                        <small class="text-muted">{{ __('Photos ou documents (3 maximum)') }}</small>
+                        <button type="submit" class="btn btn-primary ms-auto">{{ __('Envoyer') }}</button>
+                    </div>
+                </form>
+                <form method="POST" action="{{ route('contact.ticket.cloturer', $ticket) }}" class="mt-2"
+                      onsubmit="return confirm('{{ __('Clôturer votre demande ? Vous pourrez encore demander sa réouverture pendant 15 jours.') }}')">
+                    @csrf
+                    <button class="btn btn-outline-dark btn-sm">🔒 {{ __('Je n\'ai plus besoin d\'aide — clôturer') }}</button>
+                </form>
+
+            @elseif($ticket->statut === \App\Models\Ticket::STATUT_REOUVERTURE)
+                <div class="alert alert-warning py-2 mb-0" style="font-size:13px;">
+                    🔓 {{ __('Votre demande de réouverture a été transmise. La mairie va l\'étudier.') }}
                 </div>
-            </form>
+
+            @elseif($ticket->reouverturePossible())
+                <form method="POST" action="{{ route('contact.ticket.reouverture', $ticket) }}">
+                    @csrf
+                    <p class="text-muted mb-2" style="font-size:13px;">
+                        🔒 {{ __('Cette conversation est clôturée.') }}
+                        {{ __('Vous pouvez demander sa réouverture pendant encore') }}
+                        <strong>{{ $ticket->joursRestantsReouverture() }} {{ __('jour(s)') }}</strong>.
+                    </p>
+                    <textarea name="motif" class="form-control mb-2" rows="3" required minlength="2" maxlength="1000"
+                              placeholder="{{ __('Expliquez pourquoi vous souhaitez rouvrir cette demande…') }}"></textarea>
+                    <button class="btn btn-primary btn-sm">🔓 {{ __('Demander la réouverture') }}</button>
+                </form>
+
+            @else
+                <div class="alert alert-secondary py-2 mb-0" style="font-size:13px;">
+                    🔒 {{ __('Cette conversation est clôturée et ne peut plus être rouverte. Elle reste consultable pendant 6 mois.') }}
+                    {{ __('Pour une nouvelle demande, utilisez l\'onglet « J\'ai besoin d\'aide ».') }}
+                </div>
+            @endif
         </div>
     </div>
 </div>

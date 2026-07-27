@@ -14,12 +14,22 @@ body { font-family: Arial, sans-serif; color: #111; background:#f4f6f9; margin:0
     <div class="body">
         <h2 style="margin:0 0 12px;font-size:17px;">Bonjour,</h2>
 
-        <p style="font-size:14px;">
-            Vous avez un <strong>nouveau message</strong> concernant la demande
-            « <strong>{{ $ticket->sujet }}</strong> ».
-            Merci de consulter votre ticket <strong>{{ $ticket->reference }}</strong>
-            pour lire le message en attente de réponse.
-        </p>
+        @if($cloture ?? false)
+            <p style="font-size:14px;">
+                Votre demande « <strong>{{ $ticket->sujet }}</strong> »
+                (ticket <strong>{{ $ticket->reference }}</strong>) a été <strong>clôturée</strong>.
+                Vous pouvez encore demander sa réouverture pendant
+                <strong>{{ \App\Models\Ticket::JOURS_REOUVERTURE }} jours</strong>.
+                Passé ce délai, la conversation restera consultable mais ne pourra plus être rouverte.
+            </p>
+        @else
+            <p style="font-size:14px;">
+                Vous avez un <strong>nouveau message</strong> concernant la demande
+                « <strong>{{ $ticket->sujet }}</strong> ».
+                Merci de consulter votre ticket <strong>{{ $ticket->reference }}</strong>
+                pour lire le message en attente de réponse.
+            </p>
+        @endif
 
         @if($pourCitoyen)
             <div class="info">

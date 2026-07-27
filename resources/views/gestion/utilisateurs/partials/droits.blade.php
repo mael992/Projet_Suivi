@@ -52,6 +52,38 @@
     <small class="text-muted">{{ __('Si aucune case n\'est cochée, le droit par défaut du statut est appliqué.') }}</small>
 </div>
 
+{{-- ── Droit communication extérieur (messages « Contacter votre Mairie ») ── --}}
+@php
+    $catsUser = isset($user) ? $user->categoriesCommunication() : [];
+    $catsOld  = old('communication', $catsUser);
+@endphp
+<div class="col-12">
+    <label class="form-label fw-semibold mb-1">📨 {{ __('Droit communication extérieur') }}</label>
+    <p class="text-muted mb-2" style="font-size:12px;">
+        {{ __('Services dont cette personne reçoit les messages envoyés via « Contacter votre Mairie ». Si aucun agent ne reçoit un service, il n\'est pas proposé aux habitants.') }}
+    </p>
+    <div class="border rounded p-2">
+        <div class="form-check mb-1">
+            <input class="form-check-input" type="checkbox" name="communication[]" value="inconnu" id="com_inconnu"
+                   @checked(in_array('inconnu', $catsOld, true))>
+            <label class="form-check-label fw-semibold" for="com_inconnu" style="font-size:13px;">
+                🤷 {{ __('Je ne sais pas') }} ({{ __('demandes générales') }})
+            </label>
+        </div>
+        <div class="row g-1">
+            @foreach(Referentiel::SERVICES as $num => $label)
+                <div class="col-md-6">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="communication[]" value="{{ $num }}" id="com_{{ $num }}"
+                               @checked(in_array((string) $num, $catsOld, true))>
+                        <label class="form-check-label" for="com_{{ $num }}" style="font-size:12px;">{{ $label }}</label>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    </div>
+</div>
+
 <script>
 (function () {
     const cases      = Array.from(document.querySelectorAll('.droit-case'));

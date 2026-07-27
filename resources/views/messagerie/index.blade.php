@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@php use App\Models\Ticket; @endphp
+
 @section('content')
 <div class="container-fluid px-3 px-md-4 py-4">
 
@@ -16,6 +18,7 @@
         <div class="alert alert-danger mb-3">{{ $errors->first() }}</div>
     @endif
 
+    {{-- ── Onglets principaux ── --}}
     <div class="d-flex justify-content-between align-items-end flex-wrap gap-2 mb-2">
         <ul class="nav nav-tabs" style="flex:1;">
             <li class="nav-item"><button class="nav-link" onclick="ongletMsg('interne', this)">📨 {{ __('Message Interne') }}</button></li>
@@ -36,43 +39,114 @@
 
     {{-- ── Message Externe ── --}}
     <div id="msgExterne">
-        <div class="card shadow-sm" id="zoneMessagerie">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0 align-middle">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>{{ __('Ticket') }}</th>
-                            @if($admin)<th>{{ __('Mairie') }}</th>@endif
-                            <th>{{ __('Nom & Prénom') }}</th>
-                            <th>{{ __('Sujet') }}</th>
-                            <th>{{ __('Service') }}</th>
-                            <th>{{ __('Reçu le') }}</th>
-                            <th class="text-end">{{ __('Action') }}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    @forelse($tickets as $ticket)
-                        <tr>
-                            <td class="fw-semibold">{{ $ticket->reference }}</td>
-                            @if($admin)<td style="font-size:13px;">{{ $ticket->mairie?->nom }}</td>@endif
-                            <td>{{ $ticket->nom_complet }}</td>
-                            <td style="font-size:13px;">{{ $ticket->sujet }}</td>
-                            <td style="font-size:13px;">{{ $ticket->service_label }}</td>
-                            <td style="font-size:13px;">{{ $ticket->created_at->format('d/m/Y H:i') }}</td>
-                            <td class="text-end">
-                                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#ticket{{ $ticket->id }}">
-                                    {{ __('Ouvrir') }}
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-secondary" disabled title="{{ __('Bientôt disponible') }}">
-                                    {{ __('Transféré') }}
-                                </button>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr><td colspan="{{ $admin ? 7 : 6 }}" class="text-center text-muted py-4">{{ __('Aucun message pour le moment.') }}</td></tr>
-                    @endforelse
-                    </tbody>
-                </table>
+        <div class="row g-3">
+
+            {{-- Dossiers --}}
+            <div class="col-12 col-md-3">
+                <div class="card shadow-sm">
+                    <div class="card-header py-2 text-white fw-semibold" style="background:var(--brand-dark);font-size:14px;">
+                        {{ __('Dossiers') }}
+                    </div>
+                    <div class="list-group list-group-flush">
+                        @foreach(Ticket::STATUTS as $cle => $label)
+                            @php
+                                $icones = ['reception' => '📥', 'reponse' => '↩️', 'cloture' => '🔒', 'reouverture_demandee' => '🔓'];
+                                $notif  = in_array($cle, [Ticket::STATUT_RECEPTION, Ticket::STATUT_REOUVERTURE], true);
+                            @endphp
+                            <a href="{{ route('messagerie.index', array_merge(request()->only('mairie', 'q', 'tri'), ['dossier' => $cle])) }}"
+                               class="list-group-item list-group-item-action d-flex justify-content-between align-items-center {{ $dossier === $cle ? 'active' : '' }}"
+                               style="font-size:14px;">
+                                <span>{{ $icones[$cle] }} {{ __($label) }}</span>
+                                @if(($compteurs[$cle] ?? 0) > 0)
+                                    @if($notif)
+                                        <span class="bulle-notif">{{ $compteurs[$cle] }}</span>
+                                    @else
+                                        <span class="compte-total">{{ $compteurs[$cle] }}</span>
+                                    @endif
+                                @endif
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+
+            {{-- Liste --}}
+            <div class="col-12 col-md-9">
+                {{-- Recherche + tri --}}
+                <form method="GET" action="{{ route('messagerie.index') }}" class="card shadow-sm mb-2">
+                    <input type="hidden" name="dossier" value="{{ $dossier }}">
+                    @if(request('mairie'))<input type="hidden" name="mairie" value="{{ request('mairie') }}">@endif
+                    <div class="card-body py-2">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-12 col-md-7">
+                                <div class="search-input-group">
+                                    <span class="search-icon">🔍</span>
+                                    <input type="text" name="q" value="{{ request('q') }}" class="search-input"
+                                           placeholder="{{ __('Rechercher un message ou un sujet, e-mail, nom, prénom…') }}" autocomplete="off">
+                                </div>
+                            </div>
+                            <div class="col-8 col-md-3">
+                                <select name="tri" class="form-select form-select-sm" onchange="this.form.submit()">
+                                    <option value="recent" @selected($tri === 'recent')>{{ __('Plus récent d\'abord') }}</option>
+                                    <option value="ancien" @selected($tri === 'ancien')>{{ __('Plus ancien d\'abord') }}</option>
+                                </select>
+                            </div>
+                            <div class="col-4 col-md-2 d-flex gap-1">
+                                <button class="btn btn-sm btn-dark w-100">{{ __('Rechercher') }}</button>
+                                @if(request('q'))
+                                    <a href="{{ route('messagerie.index', ['dossier' => $dossier]) }}" class="btn btn-sm btn-outline-secondary">✕</a>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="card shadow-sm" id="zoneMessagerie">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>{{ __('Ticket') }}</th>
+                                    @if($admin)<th>{{ __('Mairie') }}</th>@endif
+                                    <th>{{ __('Nom & Prénom') }}</th>
+                                    <th>{{ __('Sujet') }}</th>
+                                    <th>{{ __('Service') }}</th>
+                                    <th>{{ __('Reçu le') }}</th>
+                                    <th class="text-end">{{ __('Action') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            @forelse($tickets as $ticket)
+                                @php
+                                    // Ancienneté du dernier échange : plus c'est vieux, plus la ligne est grisée
+                                    $jours = (int) $ticket->updated_at->diffInDays(now());
+                                    $fond  = $jours >= 14 ? '#e9e7e2' : ($jours >= 7 ? '#f2f0eb' : ($jours >= 3 ? '#faf9f6' : ''));
+                                @endphp
+                                <tr @if($fond) style="background:{{ $fond }};" @endif>
+                                    <td class="fw-semibold">{{ $ticket->reference }}</td>
+                                    @if($admin)<td style="font-size:13px;">{{ $ticket->mairie?->nom }}</td>@endif
+                                    <td>{{ $ticket->nom_complet }}</td>
+                                    <td style="font-size:13px;">{{ $ticket->sujet }}</td>
+                                    <td style="font-size:13px;">{{ $ticket->service_label }}</td>
+                                    <td style="font-size:13px;">
+                                        {{ $ticket->created_at->format('d/m/Y') }}
+                                        <div class="text-muted" style="font-size:11px;">
+                                            {{ __('Dernier échange') }} : {{ $ticket->updated_at->format('d/m/Y H:i') }}
+                                        </div>
+                                    </td>
+                                    <td class="text-end">
+                                        <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#ticket{{ $ticket->id }}">
+                                            {{ __('Ouvrir') }}
+                                        </button>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="{{ $admin ? 7 : 6 }}" class="text-center text-muted py-4">{{ __('Aucun message dans ce dossier.') }}</td></tr>
+                            @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -92,7 +166,10 @@
         <div class="modal-content">
             <div class="modal-header py-2">
                 <div>
-                    <h5 class="modal-title mb-0" style="font-size:16px;">{{ $ticket->sujet }}</h5>
+                    <h5 class="modal-title mb-0" style="font-size:16px;">
+                        {{ $ticket->sujet }}
+                        <span class="badge bg-secondary ms-1" style="font-size:10px;">{{ __($ticket->statut_label) }}</span>
+                    </h5>
                     <div class="text-muted" style="font-size:12px;">
                         {{ __('De') }} : <strong>{{ $ticket->nom_complet }}</strong> · {{ $ticket->telephone_complet }} · {{ $ticket->email }}
                         · {{ __('Ticket') }} {{ $ticket->reference }} · {{ $ticket->service_label }}
@@ -101,6 +178,20 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" style="background:#f4f6f9;">
+                @if($ticket->statut === Ticket::STATUT_REOUVERTURE)
+                    <div class="alert alert-warning py-2" style="font-size:13px;">
+                        🔓 <strong>{{ __('Demande de réouverture') }}</strong>
+                        ({{ $ticket->reouverture_demandee_at?->format('d/m/Y H:i') }}) :
+                        <div style="white-space:pre-wrap;">{{ $ticket->reouverture_motif }}</div>
+                    </div>
+                @elseif($ticket->estCloture())
+                    <div class="alert alert-secondary py-2" style="font-size:13px;">
+                        🔒 {{ __('Conversation clôturée le') }} {{ $ticket->cloture_at?->format('d/m/Y') }}
+                        ({{ $ticket->cloture_par === 'citoyen' ? __('par l\'habitant') : __('par la mairie') }}) —
+                        {{ __('lecture seule, conservée 6 mois.') }}
+                    </div>
+                @endif
+
                 @if($ticket->photos)
                     <div class="d-flex gap-2 mb-3 flex-wrap">
                         @foreach($ticket->photos as $photo)
@@ -137,20 +228,41 @@
                     </div>
                 @endforeach
             </div>
+
             @if($peutRepondre)
-                <div class="modal-footer py-2">
-                    <form method="POST" action="{{ route('messagerie.repondre', $ticket) }}" class="w-100" enctype="multipart/form-data">
-                        @csrf
-                        <textarea name="corps" class="form-control mb-2" rows="4" required maxlength="5000"
-                                  placeholder="{{ __('Écrire un message à la personne…') }}"></textarea>
-                        <div class="d-flex gap-2 align-items-center flex-wrap">
-                            <input type="file" name="fichiers[]" class="form-control form-control-sm" style="max-width:320px;"
-                                   accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" multiple
-                                   onchange="if(this.files.length>3){alert('{{ __('3 fichiers maximum.') }}');this.value='';}">
-                            <small class="text-muted">{{ __('Photos ou documents (3 maximum)') }}</small>
-                            <button type="submit" class="btn btn-primary ms-auto">{{ __('Envoyer') }}</button>
+                <div class="modal-footer py-2 d-block">
+                    @if($ticket->statut === Ticket::STATUT_REOUVERTURE)
+                        <div class="d-flex gap-2">
+                            <form method="POST" action="{{ route('messagerie.reouverture.accepter', $ticket) }}">
+                                @csrf
+                                <button class="btn btn-success btn-sm">✅ {{ __('Accepter la réouverture') }}</button>
+                            </form>
+                            <form method="POST" action="{{ route('messagerie.reouverture.refuser', $ticket) }}">
+                                @csrf
+                                <button class="btn btn-outline-danger btn-sm">✖ {{ __('Refuser') }}</button>
+                            </form>
                         </div>
-                    </form>
+                    @elseif($ticket->peutEcrire())
+                        <form method="POST" action="{{ route('messagerie.repondre', $ticket) }}" enctype="multipart/form-data">
+                            @csrf
+                            <textarea name="corps" class="form-control mb-2" rows="4" required maxlength="5000"
+                                      placeholder="{{ __('Écrire un message à la personne…') }}"></textarea>
+                            <div class="d-flex gap-2 align-items-center flex-wrap">
+                                <input type="file" name="fichiers[]" class="form-control form-control-sm" style="max-width:300px;"
+                                       accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" multiple
+                                       onchange="if(this.files.length>3){alert('{{ __('3 fichiers maximum.') }}');this.value='';}">
+                                <small class="text-muted">{{ __('Photos ou documents (3 maximum)') }}</small>
+                                <button type="submit" class="btn btn-primary ms-auto">{{ __('Envoyer') }}</button>
+                            </div>
+                        </form>
+                        <form method="POST" action="{{ route('messagerie.cloturer', $ticket) }}" class="mt-2"
+                              onsubmit="return confirm('{{ __('Clôturer cette conversation ? L\'habitant pourra demander sa réouverture pendant 15 jours.') }}')">
+                            @csrf
+                            <button class="btn btn-outline-dark btn-sm">🔒 {{ __('Clôturer la conversation') }}</button>
+                        </form>
+                    @else
+                        <div class="text-muted" style="font-size:12px;">🔒 {{ __('Conversation clôturée — lecture seule.') }}</div>
+                    @endif
                 </div>
             @else
                 <div class="modal-footer py-2 text-muted" style="font-size:12px;">

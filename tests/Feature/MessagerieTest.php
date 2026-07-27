@@ -84,6 +84,71 @@ class MessagerieTest extends TestCase
             ->assertSee('Voirie');
     }
 
+    public function test_cycle_cloture_reouverture(): void
+    {
+        $agent = User::factory()->create([
+            'mairie_id' => $this->mairie->id,
+            'grade'     => \App\Support\Referentiel::GRADE_DIR_CABINET,
+        ]);
+        $ticket = Ticket::create([
+            'mairie_id' => $this->mairie->id,
+            'reference' => '1',
+            'nom'       => 'Dupont', 'prenom' => 'Marie',
+            'telephone' => '0612345678', 'email' => 'marie@example.fr',
+            'sujet'     => 'Voirie', 'statut' => Ticket::STATUT_RECEPTION,
+        ]);
+
+        // La mairie répond → dossier « Réponse »
+        $this->actingAs($agent)->post("/messagerie/tickets/{$ticket->id}/repondre", ['corps' => 'Bonjour']);
+        $this->assertSame(Ticket::STATUT_REPONSE, $ticket->fresh()->statut);
+
+        // La mairie clôture → dossier « Clôturé », écriture impossible
+        $this->actingAs($agent)->post("/messagerie/tickets/{$ticket->id}/cloturer")->assertRedirect();
+        $ticket->refresh();
+        $this->assertSame(Ticket::STATUT_CLOTURE, $ticket->statut);
+        $this->assertFalse($ticket->peutEcrire());
+        $this->assertTrue($ticket->reouverturePossible());
+
+        $this->actingAs($agent)->post("/messagerie/tickets/{$ticket->id}/repondre", ['corps' => 'Trop tard'])
+            ->assertForbidden();
+
+        // Le citoyen demande la réouverture
+        $this->post('/mon-ticket', ['reference' => '1', 'email' => 'marie@example.fr'])->assertOk();
+        $this->post("/mon-ticket/{$ticket->id}/reouverture", ['motif' => 'Le problème persiste.'])->assertRedirect();
+        $this->assertSame(Ticket::STATUT_REOUVERTURE, $ticket->fresh()->statut);
+
+        // La mairie refuse → retour à « Clôturé »
+        $this->actingAs($agent)->post("/messagerie/tickets/{$ticket->id}/reouverture/refuser")->assertRedirect();
+        $this->assertSame(Ticket::STATUT_CLOTURE, $ticket->fresh()->statut);
+
+        // Nouvelle demande, acceptée cette fois → retour à « Réception »
+        $this->post("/mon-ticket/{$ticket->id}/reouverture", ['motif' => 'Toujours pas résolu.']);
+        $this->actingAs($agent)->post("/messagerie/tickets/{$ticket->id}/reouverture/accepter")->assertRedirect();
+        $ticket->refresh();
+        $this->assertSame(Ticket::STATUT_RECEPTION, $ticket->statut);
+        $this->assertTrue($ticket->peutEcrire());
+    }
+
+    public function test_reouverture_impossible_apres_15_jours(): void
+    {
+        $ticket = Ticket::create([
+            'mairie_id'   => $this->mairie->id,
+            'reference'   => '1',
+            'nom'         => 'Dupont', 'prenom' => 'Marie',
+            'telephone'   => '0612345678', 'email' => 'marie@example.fr',
+            'sujet'       => 'Voirie',
+            'statut'      => Ticket::STATUT_CLOTURE,
+            'cloture_at'  => now()->subDays(16),
+            'cloture_par' => 'mairie',
+        ]);
+
+        $this->assertFalse($ticket->reouverturePossible());
+
+        $this->post('/mon-ticket', ['reference' => '1', 'email' => 'marie@example.fr'])->assertOk();
+        $this->post("/mon-ticket/{$ticket->id}/reouverture", ['motif' => 'Trop tard'])
+            ->assertSessionHasErrors('reouverture');
+    }
+
     public function test_agent_mairie_repond_admin_lecture_seule(): void
     {
         // Agent de la direction : reçoit tous les services par défaut

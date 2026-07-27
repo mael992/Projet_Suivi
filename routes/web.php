@@ -32,6 +32,8 @@ Route::get('/contacter-mairie',  [\App\Http\Controllers\PublicContactController:
 Route::post('/contacter-mairie', [\App\Http\Controllers\PublicContactController::class, 'store'])->name('contact.mairie.store');
 Route::post('/mon-ticket',       [\App\Http\Controllers\PublicContactController::class, 'suivi'])->name('contact.ticket.suivi');
 Route::post('/mon-ticket/{ticket}/repondre', [\App\Http\Controllers\PublicContactController::class, 'repondreCitoyen'])->name('contact.ticket.repondre');
+Route::post('/mon-ticket/{ticket}/cloturer', [\App\Http\Controllers\PublicContactController::class, 'cloturerCitoyen'])->name('contact.ticket.cloturer');
+Route::post('/mon-ticket/{ticket}/reouverture', [\App\Http\Controllers\PublicContactController::class, 'demanderReouverture'])->name('contact.ticket.reouverture');
 
 // ── ESPACE CONNECTÉ ──────────────────────────────────────────
 Route::middleware('auth')->group(function () {
@@ -99,6 +101,9 @@ Route::middleware('auth')->group(function () {
     // Centre de Messagerie (messages externes reçus par la mairie)
     Route::get('/messagerie', [\App\Http\Controllers\MessagerieController::class, 'index'])->name('messagerie.index');
     Route::post('/messagerie/tickets/{ticket}/repondre', [\App\Http\Controllers\MessagerieController::class, 'repondre'])->name('messagerie.repondre');
+    Route::post('/messagerie/tickets/{ticket}/cloturer', [\App\Http\Controllers\MessagerieController::class, 'cloturer'])->name('messagerie.cloturer');
+    Route::post('/messagerie/tickets/{ticket}/reouverture/accepter', [\App\Http\Controllers\MessagerieController::class, 'accepterReouverture'])->name('messagerie.reouverture.accepter');
+    Route::post('/messagerie/tickets/{ticket}/reouverture/refuser', [\App\Http\Controllers\MessagerieController::class, 'refuserReouverture'])->name('messagerie.reouverture.refuser');
 
     // Boîte de dialogue (entraide entre mairies)
     Route::get('/dialogue', [\App\Http\Controllers\DialogueController::class, 'index'])->name('dialogue.index');
@@ -118,7 +123,6 @@ Route::middleware('auth')->group(function () {
     // Profil
     Route::get('/profile',    [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile',  [ProfileController::class, 'update'])->name('profile.update');
-    Route::post('/profile/communication', [ProfileController::class, 'communication'])->name('profile.communication');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 

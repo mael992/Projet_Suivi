@@ -2,16 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\NouveauMessageTicket;
 use App\Models\Mairie;
 use App\Models\Ticket;
 use App\Models\TicketMessage;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 
 /**
- * Centre de Messagerie : boîte de réception des messages externes d'une
- * mairie (tickets de la page « Contacter votre Mairie »).
- * - Agents de la mairie : consultent et répondent aux tickets de leur mairie.
- * - Admin : consulte tous les tickets, avec tri par mairie (lecture seule).
+ * Centre de Messagerie : messages externes reçus par la mairie, classés en
+ * dossiers (Réception, Réponse, Clôturé, Réouverture demandée).
+ * - Agents de la mairie : consultent, répondent, clôturent, traitent les
+ *   demandes de réouverture (selon les services qu'ils reçoivent).
+ * - Admin : consulte tout, avec tri par mairie (lecture seule).
  * Un message envoyé ne peut être ni modifié ni supprimé.
  */
 class MessagerieController extends Controller
@@ -21,9 +25,27 @@ class MessagerieController extends Controller
         $user  = auth()->user();
         $admin = $user->isAdmin();
 
+        $dossier = $request->input('dossier', Ticket::STATUT_RECEPTION);
+        if (! array_key_exists($dossier, Ticket::STATUTS)) {
+            $dossier = Ticket::STATUT_RECEPTION;
+        }
+
         $requete = Ticket::with(['messages.auteur', 'mairie'])
             ->where('type', 'externe')
-            ->orderByDesc('updated_at');
+            ->visiblesPar($user)
+            ->where('statut', $dossier);
+
+        // Recherche : sujet, e-mail, nom, prénom, référence
+        if ($request->filled('q')) {
+            $q = $request->input('q');
+            $requete->where(function ($sub) use ($q) {
+                $sub->where('sujet', 'like', "%{$q}%")
+                    ->orWhere('email', 'like', "%{$q}%")
+                    ->orWhere('nom', 'like', "%{$q}%")
+                    ->orWhere('prenom', 'like', "%{$q}%")
+                    ->orWhere('reference', 'like', "%{$q}%");
+            });
+        }
 
         $mairies = collect();
         $filtre  = 'tout';
@@ -36,45 +58,29 @@ class MessagerieController extends Controller
             }
         } else {
             abort_unless($user->mairie !== null, 403);
-            $requete->where('mairie_id', $user->mairie_id);
-
-            // Un agent non-direction ne voit que les services qu'il reçoit
-            if (! $user->estDirection()) {
-                $cats        = $user->categoriesCommunication();
-                $numServices = array_values(array_filter($cats, fn ($c) => $c !== 'inconnu'));
-                $inconnu     = in_array('inconnu', $cats, true);
-
-                $requete->where(function ($q) use ($numServices, $inconnu) {
-                    if ($numServices) {
-                        $q->whereIn('service', $numServices);
-                    }
-                    if ($inconnu) {
-                        $q->orWhereNull('service');
-                    }
-                    if (! $numServices && ! $inconnu) {
-                        $q->whereRaw('1 = 0');
-                    }
-                });
-            }
         }
+
+        // Tri : plus récent d'abord (défaut) ou plus ancien
+        $tri = $request->input('tri') === 'ancien' ? 'asc' : 'desc';
+        $requete->orderBy('updated_at', $tri);
 
         return view('messagerie.index', [
             'tickets'      => $requete->get(),
             'admin'        => $admin,
-            'peutRepondre' => ! $admin, // admin (et observateurs) : lecture seule
+            'peutRepondre' => ! $admin,
             'mairies'      => $mairies,
             'filtre'       => $filtre,
+            'dossier'      => $dossier,
+            'tri'          => $tri === 'asc' ? 'ancien' : 'recent',
+            'compteurs'    => Ticket::compteursPour($user),
         ]);
     }
 
     /** Un agent de la mairie répond au ticket (message ajouté, jamais modifiable). */
     public function repondre(Request $request, Ticket $ticket)
     {
-        $user = auth()->user();
-        abort_if($user->isAdmin(), 403); // admin en lecture seule
-        abort_unless($user->mairie_id === $ticket->mairie_id, 403);
-        // L'agent doit recevoir ce service (la direction reçoit tout)
-        abort_unless($user->estDirection() || $user->recoitCommunication($ticket->service), 403);
+        $this->verifierAgent($ticket);
+        abort_unless($ticket->peutEcrire(), 403, 'Cette conversation est clôturée.');
 
         $data = $request->validate([
             'corps'      => 'required|string|min:1|max:5000',
@@ -89,21 +95,89 @@ class MessagerieController extends Controller
 
         TicketMessage::create([
             'ticket_id' => $ticket->id,
-            'user_id'   => $user->id,
+            'user_id'   => auth()->id(),
             'corps'     => $data['corps'],
             'fichiers'  => $fichiers ?: null,
         ]);
 
-        $ticket->touch();
+        $ticket->majStatutApresMessage(deLaMairie: true);
 
-        // Prévenir la personne extérieure qu'un nouveau message l'attend
+        $this->notifierCitoyen($ticket);
+
+        return back()->with('success', 'Réponse envoyée.');
+    }
+
+    /** La mairie clôture la conversation (lecture seule, réouverture possible 15 jours). */
+    public function cloturer(Ticket $ticket)
+    {
+        $this->verifierAgent($ticket);
+
+        $ticket->update([
+            'statut'                  => Ticket::STATUT_CLOTURE,
+            'cloture_at'              => now(),
+            'cloture_par'             => 'mairie',
+            'reouverture_demandee_at' => null,
+            'reouverture_motif'       => null,
+        ]);
+
+        ActivityLogger::log('MESSAGERIE', 'CLOTURE', "Ticket {$ticket->reference} clôturé par la mairie");
+        $this->notifierCitoyen($ticket, cloture: true);
+
+        return back()->with('success', 'Conversation clôturée.');
+    }
+
+    /** La mairie accepte la demande de réouverture du citoyen. */
+    public function accepterReouverture(Ticket $ticket)
+    {
+        $this->verifierAgent($ticket);
+        abort_unless($ticket->statut === Ticket::STATUT_REOUVERTURE, 403);
+
+        $ticket->update([
+            'statut'                  => Ticket::STATUT_RECEPTION,
+            'cloture_at'              => null,
+            'cloture_par'             => null,
+            'reouverture_demandee_at' => null,
+        ]);
+
+        ActivityLogger::log('MESSAGERIE', 'REOUVERTURE', "Ticket {$ticket->reference} rouvert");
+        $this->notifierCitoyen($ticket);
+
+        return back()->with('success', 'Conversation rouverte.');
+    }
+
+    /** La mairie refuse la réouverture : retour au dossier « Clôturé ». */
+    public function refuserReouverture(Ticket $ticket)
+    {
+        $this->verifierAgent($ticket);
+        abort_unless($ticket->statut === Ticket::STATUT_REOUVERTURE, 403);
+
+        $ticket->update([
+            'statut'                  => Ticket::STATUT_CLOTURE,
+            'reouverture_demandee_at' => null,
+        ]);
+
+        ActivityLogger::log('MESSAGERIE', 'REOUVERTURE', "Réouverture refusée pour le ticket {$ticket->reference}");
+        $this->notifierCitoyen($ticket, cloture: true);
+
+        return back()->with('success', 'Demande de réouverture refusée.');
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────
+
+    private function verifierAgent(Ticket $ticket): void
+    {
+        $user = auth()->user();
+        abort_if($user->isAdmin(), 403); // admin en lecture seule
+        abort_unless($user->mairie_id === $ticket->mairie_id, 403);
+        abort_unless($user->estDirection() || $user->recoitCommunication($ticket->service), 403);
+    }
+
+    private function notifierCitoyen(Ticket $ticket, bool $cloture = false): void
+    {
         try {
-            \Illuminate\Support\Facades\Mail::to($ticket->email)
-                ->send(new \App\Mail\NouveauMessageTicket($ticket, pourCitoyen: true));
+            Mail::to($ticket->email)->send(new NouveauMessageTicket($ticket, pourCitoyen: true, cloture: $cloture));
         } catch (\Exception $e) {
             report($e);
         }
-
-        return redirect()->route('messagerie.index')->with('success', 'Réponse envoyée.');
     }
 }
