@@ -98,6 +98,10 @@ Route::middleware('auth')->group(function () {
         Route::delete('/commercants/{commercant}', [CommercantController::class, 'destroy'])->name('commercants.destroy');
     });
 
+    // Besoin d'aide (guide des applications + exemples d'e-mails)
+    Route::get('/besoin-aide',     [\App\Http\Controllers\AideController::class, 'index'])->name('aide.index');
+    Route::get('/besoin-aide/pdf', [\App\Http\Controllers\AideController::class, 'pdf'])->name('aide.pdf');
+
     // Centre de Messagerie (messages externes reçus par la mairie)
     Route::get('/messagerie', [\App\Http\Controllers\MessagerieController::class, 'index'])->name('messagerie.index');
     Route::post('/messagerie/tickets/{ticket}/repondre', [\App\Http\Controllers\MessagerieController::class, 'repondre'])->name('messagerie.repondre');
