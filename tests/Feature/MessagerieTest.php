@@ -46,9 +46,58 @@ class MessagerieTest extends TestCase
         ])->assertRedirect();
 
         $ticket = Ticket::first();
-        $this->assertSame('1', $ticket->reference);
+        // Référence « mairie-numéro » : chaque mairie repart à 1
+        $this->assertSame($this->mairie->id . '-1', $ticket->reference);
         $this->assertSame('Voirie abîmée', $ticket->sujet);
         $this->assertCount(1, $ticket->messages);
+    }
+
+    public function test_numerotation_par_mairie_et_notification(): void
+    {
+        \Illuminate\Support\Facades\Mail::fake();
+
+        // Une personne qui voit tous les messages mais n'a aucun service coché :
+        // elle doit quand même être prévenue (filet de sécurité)
+        $maire = User::factory()->create([
+            'mairie_id'          => $this->mairie->id,
+            'grade'              => \App\Support\Referentiel::GRADE_MAIRE,
+            'email'              => 'maire@mairie.fr',
+            'communication'      => [],
+            'voit_tous_messages' => true,
+        ]);
+
+        $autre = Mairie::create([
+            'nom'                 => 'Mairie Testroro',
+            'code_postal'         => '26230',
+            'afficher_contact'    => true,
+            'email'               => 'roro@mairie.fr',
+            'date_fin_abonnement' => now()->addYear()->toDateString(),
+        ]);
+
+        $envoyer = fn (Mairie $m, string $sujet) => $this->post('/contacter-mairie', [
+            'mairie_id' => $m->id,
+            'nom'       => 'Dupont', 'prenom' => 'Marie',
+            'telephone' => '0612345678', 'email' => 'marie@example.fr',
+            'sujet'     => $sujet, 'message' => 'Bonjour, ceci est un test.',
+        ]);
+
+        $envoyer($this->mairie, 'Premier')->assertRedirect();
+        $envoyer($this->mairie, 'Deuxième')->assertRedirect();
+        $envoyer($autre, 'Chez le voisin')->assertRedirect();
+
+        // Numérotation indépendante par mairie
+        $this->assertSame($this->mairie->id . '-1', Ticket::where('sujet', 'Premier')->first()->reference);
+        $this->assertSame($this->mairie->id . '-2', Ticket::where('sujet', 'Deuxième')->first()->reference);
+        $this->assertSame($autre->id . '-1', Ticket::where('sujet', 'Chez le voisin')->first()->reference);
+
+        // Le maire (visibilité globale) est prévenu même sans service coché
+        \Illuminate\Support\Facades\Mail::assertSent(
+            \App\Mail\NouveauMessageTicket::class,
+            fn ($mail) => $mail->hasTo('maire@mairie.fr')
+        );
+
+        // Il voit les messages de sa mairie, pas ceux de la voisine
+        $this->assertSame(2, Ticket::visiblesPar($maire)->count());
     }
 
     public function test_champs_vides_ou_un_caractere_refuses(): void
@@ -78,10 +127,12 @@ class MessagerieTest extends TestCase
         $this->post('/mon-ticket', ['reference' => '1', 'email' => 'faux@example.fr'])
             ->assertSessionHasErrors('ticket');
 
-        // Bon couple ref + email → accès au ticket
+        // Bon couple ref + email → redirection vers la conversation (page GET)
         $this->post('/mon-ticket', ['reference' => '1', 'email' => 'marie@example.fr'])
-            ->assertOk()
-            ->assertSee('Voirie');
+            ->assertRedirect(route('contact.ticket.voir', $ticket, absolute: false));
+
+        // La conversation est consultable et rafraîchissable
+        $this->get("/mon-ticket/{$ticket->id}")->assertOk()->assertSee('Voirie');
     }
 
     public function test_cycle_cloture_reouverture(): void
@@ -113,7 +164,7 @@ class MessagerieTest extends TestCase
             ->assertForbidden();
 
         // Le citoyen demande la réouverture
-        $this->post('/mon-ticket', ['reference' => '1', 'email' => 'marie@example.fr'])->assertOk();
+        $this->post('/mon-ticket', ['reference' => '1', 'email' => 'marie@example.fr'])->assertRedirect();
         $this->post("/mon-ticket/{$ticket->id}/reouverture", ['motif' => 'Le problème persiste.'])->assertRedirect();
         $this->assertSame(Ticket::STATUT_REOUVERTURE, $ticket->fresh()->statut);
 
@@ -144,7 +195,7 @@ class MessagerieTest extends TestCase
 
         $this->assertFalse($ticket->reouverturePossible());
 
-        $this->post('/mon-ticket', ['reference' => '1', 'email' => 'marie@example.fr'])->assertOk();
+        $this->post('/mon-ticket', ['reference' => '1', 'email' => 'marie@example.fr'])->assertRedirect();
         $this->post("/mon-ticket/{$ticket->id}/reouverture", ['motif' => 'Trop tard'])
             ->assertSessionHasErrors('reouverture');
     }

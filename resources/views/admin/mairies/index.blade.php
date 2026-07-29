@@ -22,6 +22,7 @@
             <table class="table table-hover mb-0 align-middle">
                 <thead class="table-dark">
                     <tr>
+                        <th style="width:70px;">Réf.</th>
                         <th>Nom de la mairie</th>
                         <th>Adresse email</th>
                         <th>{{ __('Téléphone') }}</th>
@@ -34,6 +35,7 @@
                 <tbody>
                 @forelse($mairies as $mairie)
                     <tr>
+                        <td class="fw-bold" style="color:var(--brand);" title="Numéro utilisé dans les références de tickets (ex. {{ $mairie->id }}-1)">{{ $mairie->id }}</td>
                         <td class="fw-semibold">{{ $mairie->nom }} <span class="text-muted fw-normal">({{ $mairie->code_postal ?? '—' }})</span></td>
                         <td>{{ $mairie->email }}</td>
                         <td>{{ $mairie->telephone ? '(' . $mairie->telephone_indicatif . ') ' . $mairie->telephone : '—' }}</td>
@@ -62,7 +64,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="7" class="text-center text-muted py-4">Aucune mairie enregistrée.</td></tr>
+                    <tr><td colspan="8" class="text-center text-muted py-4">Aucune mairie enregistrée.</td></tr>
                 @endforelse
                 </tbody>
             </table>

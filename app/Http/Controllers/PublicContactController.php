@@ -69,6 +69,8 @@ class PublicContactController extends Controller
             'email'               => $data['email'],
             'sujet'               => $data['sujet'],
             'photos'              => $photos ?: null,
+            // Toujours explicite : le ticket arrive dans le dossier « Réception »
+            'statut'              => Ticket::STATUT_RECEPTION,
         ]);
 
         TicketMessage::create([
@@ -101,8 +103,19 @@ class PublicContactController extends Controller
                 ->withInput();
         }
 
-        // Jeton simple en session pour autoriser la réponse
+        // Jeton simple en session pour autoriser la consultation et la réponse
         session(['ticket_suivi_' . $ticket->id => true]);
+
+        // Redirection en GET : la page reste rafraîchissable (F5, auto-refresh)
+        return redirect()->route('contact.ticket.voir', $ticket);
+    }
+
+    /** Affiche la conversation d'un ticket déjà authentifié en session. */
+    public function voirTicket(Ticket $ticket)
+    {
+        abort_unless(session('ticket_suivi_' . $ticket->id) === true, 403);
+
+        $ticket->load('messages.auteur');
 
         return view('contact.ticket', compact('ticket'));
     }
@@ -134,7 +147,9 @@ class PublicContactController extends Controller
 
         $this->notifierMairie($ticket);
 
-        return redirect()->route('contact.mairie')->with('ticket_ok', $ticket->reference);
+        // On reste sur la conversation : le citoyen voit son message envoyé
+        return redirect()->route('contact.ticket.voir', $ticket)
+            ->with('success', 'Votre message a bien été envoyé à la mairie.');
     }
 
     /** Le citoyen clôture lui-même sa demande (il n'a plus besoin d'aide). */

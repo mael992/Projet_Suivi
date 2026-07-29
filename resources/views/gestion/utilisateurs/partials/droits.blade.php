@@ -63,6 +63,18 @@
         {{ __('Services dont cette personne reçoit les messages envoyés via « Contacter votre Mairie ». Si aucun agent ne reçoit un service, il n\'est pas proposé aux habitants.') }}
     </p>
     <div class="border rounded p-2">
+        {{-- Visibilité globale : lire tous les messages sans être destinataire --}}
+        <div class="form-check mb-2 pb-2 border-bottom">
+            <input class="form-check-input" type="checkbox" name="voit_tous_messages" value="1" id="voitTousMessages"
+                   @checked(old('voit_tous_messages', isset($user) ? $user->voitTousLesMessages() : false))>
+            <label class="form-check-label fw-semibold" for="voitTousMessages" style="font-size:13px;">
+                👁 {{ __('Visibilité sur tous les messages de la mairie') }}
+            </label>
+            <div class="text-muted" style="font-size:11px;">
+                {{ __('Permet de lire et de traiter tous les messages, sans faire apparaître de service supplémentaire sur la page publique.') }}
+            </div>
+        </div>
+
         <div class="form-check mb-1">
             <input class="form-check-input" type="checkbox" name="communication[]" value="inconnu" id="com_inconnu"
                    @checked(in_array('inconnu', $catsOld, true))>

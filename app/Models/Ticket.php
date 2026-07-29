@@ -141,7 +141,8 @@ class Ticket extends Model
 
         $query->where('mairie_id', $user->mairie_id);
 
-        if ($user->estDirection()) {
+        // Visibilité globale (case « voir tous les messages »)
+        if ($user->voitTousLesMessages()) {
             return $query;
         }
 
@@ -184,9 +185,19 @@ class Ticket extends Model
             ->count();
     }
 
-    /** Référence séquentielle par mairie (à partir de 1). */
+    /**
+     * Référence « mairie-numéro » : la numérotation repart à 1 pour chaque
+     * mairie, préfixée par son numéro (ex. 1-1, 1-2, 2-1…).
+     */
     public static function genererReference(int $mairieId): string
     {
-        return (string) (static::where('mairie_id', $mairieId)->count() + 1);
+        $dernier = static::where('mairie_id', $mairieId)
+            ->get(['reference'])
+            ->map(fn ($t) => (int) (str_contains($t->reference, '-')
+                ? substr($t->reference, strpos($t->reference, '-') + 1)
+                : $t->reference))
+            ->max();
+
+        return $mairieId . '-' . (($dernier ?? 0) + 1);
     }
 }

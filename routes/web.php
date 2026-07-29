@@ -31,6 +31,7 @@ Route::get('/contact',    [PageController::class, 'contact'])->name('contact');
 Route::get('/contacter-mairie',  [\App\Http\Controllers\PublicContactController::class, 'create'])->name('contact.mairie');
 Route::post('/contacter-mairie', [\App\Http\Controllers\PublicContactController::class, 'store'])->name('contact.mairie.store');
 Route::post('/mon-ticket',       [\App\Http\Controllers\PublicContactController::class, 'suivi'])->name('contact.ticket.suivi');
+Route::get('/mon-ticket/{ticket}', [\App\Http\Controllers\PublicContactController::class, 'voirTicket'])->name('contact.ticket.voir');
 Route::post('/mon-ticket/{ticket}/repondre', [\App\Http\Controllers\PublicContactController::class, 'repondreCitoyen'])->name('contact.ticket.repondre');
 Route::post('/mon-ticket/{ticket}/cloturer', [\App\Http\Controllers\PublicContactController::class, 'cloturerCitoyen'])->name('contact.ticket.cloturer');
 Route::post('/mon-ticket/{ticket}/reouverture', [\App\Http\Controllers\PublicContactController::class, 'demanderReouverture'])->name('contact.ticket.reouverture');

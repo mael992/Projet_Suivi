@@ -107,15 +107,25 @@ class Mairie extends Model
         return $this->observateurs()->pluck('email')->all();
     }
 
-    /** Utilisateurs de la mairie qui reçoivent les messages du service donné. */
+    /**
+     * Utilisateurs prévenus par e-mail pour un message destiné à ce service.
+     * Si personne n'est coché pour ce service, on se rabat sur les personnes
+     * ayant la visibilité globale : aucun message ne se perd.
+     */
     public function destinatairesCommunication(?int $service)
     {
-        return $this->users()
+        $agents = $this->users()
             ->where('role', 'user')
             ->whereNotNull('email')
-            ->get()
-            ->filter(fn ($u) => $u->recoitCommunication($service))
-            ->values();
+            ->get();
+
+        $destinataires = $agents->filter(fn ($u) => $u->recoitCommunication($service))->values();
+
+        if ($destinataires->isNotEmpty()) {
+            return $destinataires;
+        }
+
+        return $agents->filter(fn ($u) => $u->voitTousLesMessages())->values();
     }
 
     /** Services (clés) proposés sur « Contacter votre Mairie » : au moins un destinataire. */

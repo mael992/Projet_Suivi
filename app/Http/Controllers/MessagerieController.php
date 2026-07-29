@@ -169,7 +169,9 @@ class MessagerieController extends Controller
         $user = auth()->user();
         abort_if($user->isAdmin(), 403); // admin en lecture seule
         abort_unless($user->mairie_id === $ticket->mairie_id, 403);
-        abort_unless($user->estDirection() || $user->recoitCommunication($ticket->service), 403);
+        // Agir sur un message : être destinataire du service, ou disposer de
+        // la visibilité globale sur les messages de la mairie
+        abort_unless($user->voitTousLesMessages() || $user->recoitCommunication($ticket->service), 403);
     }
 
     private function notifierCitoyen(Ticket $ticket, bool $cloture = false): void

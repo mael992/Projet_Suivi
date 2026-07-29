@@ -27,6 +27,7 @@ class User extends Authenticatable
         'grade',
         'droit',
         'communication',
+        'voit_tous_messages',
         'fonction',
         'reference',
         'telephone_indicatif',
@@ -47,6 +48,7 @@ class User extends Authenticatable
             'service'                  => 'integer',
             'grade'                    => 'integer',
             'communication'            => 'array',
+            'voit_tous_messages'       => 'boolean',
         ];
     }
 
@@ -112,18 +114,18 @@ class User extends Authenticatable
      */
     public function categoriesCommunication(): array
     {
-        if ($this->communication !== null) {
-            return $this->communication;
-        }
+        // Aucun service coché par défaut : un service n'apparaît sur
+        // « Contacter votre Mairie » que si quelqu'un doit y répondre.
+        return $this->communication ?? [];
+    }
 
-        if ($this->estDirection()) {
-            return array_merge(
-                array_map('strval', array_keys(Referentiel::SERVICES)),
-                ['inconnu'],
-            );
-        }
-
-        return [];
+    /**
+     * Visibilité en lecture sur TOUS les messages de la mairie, sans être
+     * destinataire (par défaut : Maire, Directeur de Cabinet, DGS).
+     */
+    public function voitTousLesMessages(): bool
+    {
+        return $this->voit_tous_messages ?? $this->estDirection();
     }
 
     /** L'utilisateur reçoit-il les messages du service donné (null = « Je ne sais pas ») ? */

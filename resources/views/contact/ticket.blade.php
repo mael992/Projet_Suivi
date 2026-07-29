@@ -9,12 +9,15 @@
         {{ $ticket->mairie?->nom }} · {{ $ticket->service_label }}
     </p>
 
+    @if(session('success'))
+        <div class="alert alert-success">{{ session('success') }}</div>
+    @endif
     @if($errors->any())
         <div class="alert alert-danger">{{ $errors->first() }}</div>
     @endif
 
     <div class="card shadow-sm mb-3">
-        <div class="card-body" style="background:#f4f6f9;">
+        <div class="card-body" id="zoneConversation" style="background:#f4f6f9;">
             @foreach($ticket->messages as $message)
                 @php $ext = $message->estExterieur(); @endphp
                 <div class="d-flex gap-2 mb-2 {{ $ext ? 'flex-row-reverse' : '' }}">
@@ -93,4 +96,5 @@
         </div>
     </div>
 </div>
+@include('partials.autorefresh', ['selector' => '#zoneConversation'])
 @endsection

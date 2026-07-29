@@ -54,6 +54,7 @@ class UserController extends Controller
             'fonction'            => 'nullable|string|max:150',
             'communication'       => 'nullable|array',
             'communication.*'     => 'string|in:inconnu,' . implode(',', array_keys(Referentiel::SERVICES)),
+            'voit_tous_messages'  => 'nullable|boolean',
             'email'               => 'nullable|email|unique:users,email',
             'telephone_indicatif' => 'nullable|string|max:8',
             'telephone'           => 'nullable|string|max:20',
@@ -80,6 +81,7 @@ class UserController extends Controller
             'droit'                    => ($data['droit'] ?? '') === '' ? Referentiel::DROIT_AUCUN : $data['droit'],
             'fonction'                 => (int) $data['grade'] === Referentiel::GRADE_EMPLOYE ? ($data['fonction'] ?? null) : null,
             'communication'            => array_values(array_unique($data['communication'] ?? [])),
+            'voit_tous_messages'       => $request->boolean('voit_tous_messages'),
             'reference'                => User::genererReference($mairie->id, (int) $data['service']),
             'telephone_indicatif'      => $data['telephone_indicatif'] ?: '+33',
             'telephone'                => $data['telephone'] ?: null,
@@ -112,6 +114,7 @@ class UserController extends Controller
             'fonction'            => 'nullable|string|max:150',
             'communication'       => 'nullable|array',
             'communication.*'     => 'string|in:inconnu,' . implode(',', array_keys(Referentiel::SERVICES)),
+            'voit_tous_messages'  => 'nullable|boolean',
             'email'               => 'nullable|email|unique:users,email,' . $user->id,
             'telephone_indicatif' => 'nullable|string|max:8',
             'telephone'           => 'nullable|string|max:20',
@@ -131,7 +134,8 @@ class UserController extends Controller
         $user->grade    = (int) $data['grade'];
         $user->droit    = ($data['droit'] ?? '') === '' ? Referentiel::DROIT_AUCUN : $data['droit'];
         $user->fonction = (int) $data['grade'] === Referentiel::GRADE_EMPLOYE ? ($data['fonction'] ?? null) : null;
-        $user->communication = array_values(array_unique($data['communication'] ?? []));
+        $user->communication      = array_values(array_unique($data['communication'] ?? []));
+        $user->voit_tous_messages = $request->boolean('voit_tous_messages');
         $user->email    = $data['email'] ?: null;
         $user->telephone_indicatif = $data['telephone_indicatif'] ?: '+33';
         $user->telephone           = $data['telephone'] ?: null;
