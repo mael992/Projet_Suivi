@@ -129,7 +129,8 @@ class User extends Authenticatable
     /** L'utilisateur reçoit-il les messages du service donné (null = « Je ne sais pas ») ? */
     public function recoitCommunication(?int $service): bool
     {
-        $categorie = $service ? (string) $service : 'inconnu';
+        // Le service 0 (Maire) est une valeur valide : comparaison stricte à null
+        $categorie = $service !== null ? (string) $service : 'inconnu';
 
         return in_array($categorie, $this->categoriesCommunication(), true);
     }

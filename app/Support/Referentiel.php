@@ -9,10 +9,10 @@ namespace App\Support;
 class Referentiel
 {
     // ── Services / Équipes ───────────────────────────────────────
-    public const SERVICE_MAIRE = 14;
+    public const SERVICE_MAIRE = 0;
 
     public const SERVICES = [
-        14 => 'M. / Mme le Maire',
+        0  => 'M. / Mme le Maire',
         1  => 'Cabinet du maire',
         2  => 'Direction Générale des Services',
         3  => 'Événements & Vie associative',
@@ -29,7 +29,7 @@ class Referentiel
     ];
 
     // Services qui voient toutes les tâches de la mairie
-    public const SERVICES_VUE_GLOBALE = [14, 1, 2];
+    public const SERVICES_VUE_GLOBALE = [0, 1, 2];
 
     /**
      * Statuts (grades) autorisés pour un service donné — couplage du

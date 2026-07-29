@@ -37,7 +37,7 @@
         @endif
         <tr><td class="label">Identifiant :</td><td class="value">{{ $user->username }}</td></tr>
         <tr><td class="label">Mot de passe provisoire :</td><td class="value">{{ $user->temp_password }}</td></tr>
-        @if($user->service)
+        @if($user->service !== null)
         <tr><td class="label">Service :</td><td class="value">{{ $user->service_label }}</td></tr>
         @endif
         @if($user->grade)

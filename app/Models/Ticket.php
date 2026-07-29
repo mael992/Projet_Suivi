@@ -58,7 +58,8 @@ class Ticket extends Model
 
     public function getServiceLabelAttribute(): string
     {
-        return $this->service ? Referentiel::serviceLabel($this->service) : 'Je ne sais pas';
+        // Attention : le service 0 (Maire) est valide → comparaison stricte à null
+        return $this->service !== null ? Referentiel::serviceLabel($this->service) : 'Je ne sais pas';
     }
 
     public function getStatutLabelAttribute(): string
