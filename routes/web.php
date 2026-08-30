@@ -119,6 +119,7 @@ Route::middleware('auth')->group(function () {
     // Centre de Messagerie (messages externes reçus par la mairie)
     Route::get('/messagerie', [\App\Http\Controllers\MessagerieController::class, 'index'])->name('messagerie.index');
     Route::post('/messagerie/tickets/{ticket}/repondre', [\App\Http\Controllers\MessagerieController::class, 'repondre'])->name('messagerie.repondre');
+    Route::post('/messagerie/tickets/{ticket}/transferer', [\App\Http\Controllers\MessagerieController::class, 'transferer'])->name('messagerie.transferer');
     Route::post('/messagerie/tickets/{ticket}/cloturer', [\App\Http\Controllers\MessagerieController::class, 'cloturer'])->name('messagerie.cloturer');
     Route::post('/messagerie/tickets/{ticket}/reouverture/accepter', [\App\Http\Controllers\MessagerieController::class, 'accepterReouverture'])->name('messagerie.reouverture.accepter');
     Route::post('/messagerie/tickets/{ticket}/reouverture/refuser', [\App\Http\Controllers\MessagerieController::class, 'refuserReouverture'])->name('messagerie.reouverture.refuser');
@@ -151,6 +152,11 @@ Route::middleware(['auth', 'gestion'])->prefix('gestion')->name('gestion.')->gro
     Route::resource('utilisateurs', GestionUserController::class)
         ->parameters(['utilisateurs' => 'user']);
     Route::get('/utilisateurs/{user}/courrier', [GestionUserController::class, 'courrier'])->name('utilisateurs.courrier');
+
+    // Services (équipes) propres à la mairie
+    Route::get('/services',  [\App\Http\Controllers\Gestion\ServiceController::class, 'index'])->name('services.index');
+    Route::put('/services',  [\App\Http\Controllers\Gestion\ServiceController::class, 'update'])->name('services.update');
+    Route::post('/services', [\App\Http\Controllers\Gestion\ServiceController::class, 'store'])->name('services.store');
 
     // Avancement des tâches de travail
     Route::get('/avancement', [AvancementController::class, 'index'])->name('avancement');

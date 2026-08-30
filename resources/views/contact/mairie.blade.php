@@ -31,20 +31,17 @@
             @csrf
             <div class="card-body">
                 <div class="row g-3">
-                    <div class="col-md-6">
+                    <div class="col-12">
                         <label class="form-label fw-semibold">{{ __('Votre ville ou village') }} *</label>
-                        <select name="mairie_id" id="mairieSelect" class="form-select" required onchange="majServices()">
+                        <select name="mairie_id" id="mairieSelect" class="form-select" required>
                             <option value="">— {{ __('Sélectionnez') }} —</option>
                             @foreach($mairies as $m)
                                 <option value="{{ $m->id }}" @selected(old('mairie_id') == $m->id)>{{ $m->nom }} ({{ $m->code_postal }})</option>
                             @endforeach
                         </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold">{{ __('Service à contacter') }} *</label>
-                        <select name="service" id="serviceSelect" class="form-select" required>
-                            <option value="">{{ __('Je ne sais pas') }}</option>
-                        </select>
+                        <small class="text-muted">
+                            {{ __('Votre demande sera orientée vers le bon service par la mairie : vous n\'avez rien d\'autre à choisir.') }}
+                        </small>
                     </div>
 
                     <div class="col-md-6">
@@ -125,29 +122,11 @@
 </div>
 
 <script>
-const SERVICES_PAR_MAIRIE = @json($servicesParMairie);
-const LABELS_SERVICE = @json($services);
-const OLD_SERVICE = @json(old('service'));
-
-function majServices() {
-    const mid = document.getElementById('mairieSelect').value;
-    const sel = document.getElementById('serviceSelect');
-    sel.innerHTML = '<option value="">{{ __('Je ne sais pas') }}</option>';
-    (SERVICES_PAR_MAIRIE[mid] || []).forEach(num => {
-        const o = document.createElement('option');
-        o.value = num; o.textContent = LABELS_SERVICE[num];
-        if (String(OLD_SERVICE) === String(num)) o.selected = true;
-        sel.appendChild(o);
-    });
-}
-
 function ongletContact(onglet, btn) {
     document.querySelectorAll('.nav-tabs .nav-link').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('ongletAide').classList.toggle('d-none', onglet !== 'aide');
     document.getElementById('ongletTicket').classList.toggle('d-none', onglet !== 'ticket');
 }
-
-majServices();
 </script>
 @endsection

@@ -64,8 +64,18 @@ class MessagerieController extends Controller
         $tri = $request->input('tri') === 'ancien' ? 'asc' : 'desc';
         $requete->orderBy('updated_at', $tri);
 
+        $tickets = $requete->get();
+
+        // Agents joignables par mairie, pour le transfert nominatif
+        $agentsMairie = \App\Models\User::where('role', 'user')
+            ->whereIn('mairie_id', $tickets->pluck('mairie_id')->unique()->all() ?: [0])
+            ->orderBy('nom')->orderBy('prenom')
+            ->get()
+            ->groupBy('mairie_id');
+
         return view('messagerie.index', [
-            'tickets'      => $requete->get(),
+            'tickets'      => $tickets,
+            'agentsMairie' => $agentsMairie,
             'admin'        => $admin,
             'peutRepondre' => ! $admin,
             'mairies'      => $mairies,
@@ -160,6 +170,70 @@ class MessagerieController extends Controller
         $this->notifierCitoyen($ticket, cloture: true);
 
         return back()->with('success', 'Demande de réouverture refusée.');
+    }
+
+    /**
+     * Transfert « facteur » : le destinataire redistribue la demande à un
+     * service ou à une personne. Il en garde la visibilité et le suivi.
+     */
+    public function transferer(Request $request, Ticket $ticket)
+    {
+        $this->verifierAgent($ticket);
+        $user = auth()->user();
+
+        $data = $request->validate([
+            'cible'   => 'required|in:service,personne',
+            'service' => 'required_if:cible,service|nullable|integer',
+            'user_id' => 'required_if:cible,personne|nullable|exists:users,id',
+        ]);
+
+        if ($data['cible'] === 'personne') {
+            $destinataire = \App\Models\User::findOrFail($data['user_id']);
+            abort_unless($destinataire->mairie_id === $ticket->mairie_id, 403);
+
+            $ticket->update([
+                'transfere_service' => null,
+                'transfere_user_id' => $destinataire->id,
+                'transfere_par'     => $user->id,
+                'transfere_at'      => now(),
+                'statut'            => Ticket::STATUT_RECEPTION,
+            ]);
+
+            $vers = $destinataire->username;
+
+            if ($destinataire->email) {
+                try {
+                    Mail::to($destinataire->email)->send(new NouveauMessageTicket($ticket, pourCitoyen: false));
+                } catch (\Exception $e) {
+                    report($e);
+                }
+            }
+        } else {
+            $service = (int) $data['service'];
+            abort_unless(array_key_exists($service, $ticket->mairie->libellesServices()), 422);
+
+            $ticket->update([
+                'transfere_service' => $service,
+                'transfere_user_id' => null,
+                'transfere_par'     => $user->id,
+                'transfere_at'      => now(),
+                'statut'            => Ticket::STATUT_RECEPTION,
+            ]);
+
+            $vers = $ticket->mairie->libelleService($service);
+
+            foreach ($ticket->mairie->destinatairesCommunication($service) as $agent) {
+                try {
+                    Mail::to($agent->email)->send(new NouveauMessageTicket($ticket, pourCitoyen: false));
+                } catch (\Exception $e) {
+                    report($e);
+                }
+            }
+        }
+
+        ActivityLogger::log('MESSAGERIE', 'TRANSFERT', "Ticket {$ticket->reference} transféré vers « {$vers} » par {$user->username}");
+
+        return back()->with('success', "Demande transférée vers « {$vers} ».");
     }
 
     // ── Helpers ──────────────────────────────────────────────────

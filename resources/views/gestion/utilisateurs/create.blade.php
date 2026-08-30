@@ -33,7 +33,7 @@
                     <label class="form-label fw-semibold">Service (équipe) *</label>
                     <select name="service" class="form-select" required>
                         <option value="">— Sélectionnez —</option>
-                        @foreach(Referentiel::SERVICES as $num => $label)
+                        @foreach(Referentiel::servicesPour($mairie) as $num => $label)
                             <option value="{{ $num }}" @selected(old('service') == $num)>{{ $num }} — {{ $label }}</option>
                         @endforeach
                     </select>

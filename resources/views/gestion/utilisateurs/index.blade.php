@@ -29,7 +29,10 @@
                        placeholder="{{ __('Recherche service ou nom prénom…') }}" autocomplete="off">
             </div>
         </div>
-        <a href="{{ route('gestion.utilisateurs.create') }}" class="btn btn-primary">{{ __('+ Ajouter') }}</a>
+        <div class="d-flex gap-2">
+            <a href="{{ route('gestion.services.index') }}" class="btn btn-outline-dark">🏢 {{ __('Services de la mairie') }}</a>
+            <a href="{{ route('gestion.utilisateurs.create') }}" class="btn btn-primary">{{ __('+ Ajouter') }}</a>
+        </div>
     </div>
 
     <div class="card shadow-sm">

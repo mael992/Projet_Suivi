@@ -113,7 +113,7 @@
                     <label class="form-label mb-1" style="font-size:12px;">{{ __('Équipe / Service') }}</label>
                     <select name="service" class="form-select form-select-sm">
                         <option value="">{{ __('Tous') }}</option>
-                        @foreach(Referentiel::SERVICES as $num => $label)
+                        @foreach(Referentiel::servicesPour(auth()->user()->mairie) as $num => $label)
                             <option value="{{ $num }}" @selected(request('service') == $num)>{{ $num }} — {{ $label }}</option>
                         @endforeach
                     </select>

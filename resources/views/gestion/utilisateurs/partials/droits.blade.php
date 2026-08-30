@@ -138,7 +138,7 @@
             </label>
         </div>
         <div class="row g-1">
-            @foreach(Referentiel::SERVICES as $num => $label)
+            @foreach(Referentiel::servicesPour(auth()->user()->mairie) as $num => $label)
                 <div class="col-md-6">
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" name="communication[]" value="{{ $num }}" id="com_{{ $num }}"

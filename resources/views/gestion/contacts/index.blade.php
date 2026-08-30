@@ -66,7 +66,7 @@
                             <label class="form-label mb-1" style="font-size:12px;">{{ __('Service') }}</label>
                             <select name="service" id="standardService{{ $sfx }}" class="form-select form-select-sm" required>
                                 <option value="">— Sélectionnez —</option>
-                                @foreach(Referentiel::SERVICES as $num => $label)
+                                @foreach(Referentiel::servicesPour($mairie) as $num => $label)
                                     <option value="{{ $num }}">{{ $label }}</option>
                                 @endforeach
                             </select>
@@ -108,7 +108,7 @@
                         </tr>
                     </thead>
                     <tbody class="contactsBody">
-                    @foreach(Referentiel::SERVICES as $num => $label)
+                    @foreach(Referentiel::servicesPour($mairie) as $num => $label)
                         @php
                             $lignes = $standardsParService->get($num, collect());
                             $ascii  = strtolower(\Illuminate\Support\Str::ascii($label . ' standard'));

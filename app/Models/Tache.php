@@ -199,7 +199,9 @@ class Tache extends Model
 
     public function getServiceLabelAttribute(): string
     {
-        return Referentiel::serviceLabel($this->service);
+        return $this->mairie
+            ? $this->mairie->libelleService($this->service)
+            : Referentiel::serviceLabel($this->service);
     }
 
     public function getStatutLabelAttribute(): string

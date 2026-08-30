@@ -129,6 +129,12 @@ class Referentiel
     // ── Indicatifs téléphoniques proposés ────────────────────────
     public const INDICATIFS = ['+33', '+32', '+41', '+352', '+377', '+44', '+34', '+39', '+49'];
 
+    /** Services effectifs d'une mairie (personnalisés) ou référentiel par défaut. */
+    public static function servicesPour($mairie = null): array
+    {
+        return $mairie ? $mairie->libellesServices() : self::SERVICES;
+    }
+
     public static function serviceLabel(?int $service): string
     {
         return self::SERVICES[$service] ?? '—';

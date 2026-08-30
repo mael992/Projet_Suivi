@@ -216,7 +216,10 @@ class User extends Authenticatable
 
     public function getServiceLabelAttribute(): string
     {
-        return Referentiel::serviceLabel($this->service);
+        // Nom personnalisé par la mairie s'il existe, sinon référentiel par défaut
+        return $this->mairie
+            ? $this->mairie->libelleService($this->service)
+            : Referentiel::serviceLabel($this->service);
     }
 
     public function getGradeLabelAttribute(): string

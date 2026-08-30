@@ -50,6 +50,50 @@ class Mairie extends Model
         return $this->hasMany(MarcheZone::class);
     }
 
+    public function servicesPersonnalises()
+    {
+        return $this->hasMany(MairieService::class);
+    }
+
+    /**
+     * Services effectifs de la mairie : [numéro => nom].
+     * Sans personnalisation, le référentiel par défaut s'applique ;
+     * sinon les noms sont remplacés, les services désactivés retirés et
+     * les services propres à la commune ajoutés.
+     */
+    public function libellesServices(): array
+    {
+        $perso = $this->servicesPersonnalises()->get();
+
+        if ($perso->isEmpty()) {
+            return \App\Support\Referentiel::SERVICES;
+        }
+
+        $services = \App\Support\Referentiel::SERVICES;
+
+        foreach ($perso as $s) {
+            if (! $s->actif) {
+                unset($services[$s->numero]);
+                continue;
+            }
+            $services[$s->numero] = $s->nom;
+        }
+
+        ksort($services);
+
+        return $services;
+    }
+
+    /** Nom d'un service pour cette mairie (référentiel par défaut sinon). */
+    public function libelleService(?int $numero): string
+    {
+        if ($numero === null) {
+            return '—';
+        }
+
+        return $this->libellesServices()[$numero] ?? \App\Support\Referentiel::serviceLabel($numero);
+    }
+
     /** Image de la vue aérienne (sinon plan de démonstration neutre) */
     public function vueAerienneUrl(): string
     {

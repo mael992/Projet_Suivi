@@ -100,6 +100,67 @@ class MessagerieTest extends TestCase
         $this->assertSame(2, Ticket::visiblesPar($maire)->count());
     }
 
+    public function test_transfert_facteur_vers_service_et_personne(): void
+    {
+        \Illuminate\Support\Facades\Mail::fake();
+
+        // Le « facteur » : reçoit les demandes générales
+        $facteur = User::factory()->create([
+            'mairie_id'     => $this->mairie->id,
+            'grade'         => \App\Support\Referentiel::GRADE_EMPLOYE,
+            'communication' => ['inconnu'],
+            'email'         => 'facteur@mairie.fr',
+        ]);
+        // L'agent destinataire du transfert
+        $agent = User::factory()->create([
+            'mairie_id'     => $this->mairie->id,
+            'service'       => 12,
+            'grade'         => \App\Support\Referentiel::GRADE_EMPLOYE,
+            'communication' => [],
+            'email'         => 'agent@mairie.fr',
+        ]);
+
+        $ticket = Ticket::create([
+            'mairie_id' => $this->mairie->id,
+            'reference' => $this->mairie->id . '-1',
+            'nom'       => 'Dupont', 'prenom' => 'Marie',
+            'telephone' => '0612345678', 'email' => 'marie@example.fr',
+            'sujet'     => 'Trou dans la route', 'statut' => Ticket::STATUT_RECEPTION,
+        ]);
+
+        // Avant transfert : l'agent ne voit rien, le facteur oui
+        $this->assertFalse(Ticket::visiblesPar($agent)->whereKey($ticket->id)->exists());
+        $this->assertTrue(Ticket::visiblesPar($facteur)->whereKey($ticket->id)->exists());
+
+        // Transfert nominatif
+        $this->actingAs($facteur)->post("/messagerie/tickets/{$ticket->id}/transferer", [
+            'cible'   => 'personne',
+            'user_id' => $agent->id,
+        ])->assertRedirect();
+
+        $ticket->refresh();
+        $this->assertSame($agent->id, $ticket->transfere_user_id);
+        $this->assertSame($facteur->id, $ticket->transfere_par);
+
+        // L'agent voit désormais la demande, le facteur la garde sous les yeux
+        $this->assertTrue(Ticket::visiblesPar($agent->fresh())->whereKey($ticket->id)->exists());
+        $this->assertTrue(Ticket::visiblesPar($facteur->fresh())->whereKey($ticket->id)->exists());
+
+        // L'agent destinataire est prévenu par e-mail
+        \Illuminate\Support\Facades\Mail::assertQueued(
+            \App\Mail\NouveauMessageTicket::class,
+            fn ($mail) => $mail->hasTo('agent@mairie.fr')
+        );
+
+        // Transfert vers un service
+        $this->actingAs($facteur)->post("/messagerie/tickets/{$ticket->id}/transferer", [
+            'cible'   => 'service',
+            'service' => 12,
+        ])->assertRedirect();
+
+        $this->assertSame(12, $ticket->fresh()->transfere_service);
+    }
+
     public function test_champs_vides_ou_un_caractere_refuses(): void
     {
         $this->post('/contacter-mairie', [

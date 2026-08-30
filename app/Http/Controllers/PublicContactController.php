@@ -19,18 +19,10 @@ class PublicContactController extends Controller
 {
     public function create()
     {
-        $mairies = Mairie::where('afficher_contact', true)->orderBy('nom')->get();
-
-        // Services proposés par mairie (ceux qui ont au moins un destinataire)
-        $servicesParMairie = [];
-        foreach ($mairies as $m) {
-            $servicesParMairie[$m->id] = $m->servicesContactables();
-        }
-
+        // L'habitant choisit uniquement sa commune : c'est la mairie qui
+        // oriente ensuite la demande vers le bon service (« facteur »).
         return view('contact.mairie', [
-            'mairies'           => $mairies,
-            'services'          => Referentiel::SERVICES,
-            'servicesParMairie' => $servicesParMairie,
+            'mairies' => Mairie::where('afficher_contact', true)->orderBy('nom')->get(),
         ]);
     }
 
@@ -38,7 +30,7 @@ class PublicContactController extends Controller
     {
         $data = $request->validate([
             'mairie_id'           => 'required|exists:mairies,id',
-            'service'             => 'nullable|integer|in:' . implode(',', array_keys(Referentiel::SERVICES)),
+            // Plus de choix de service côté habitant : la mairie oriente elle-même
             'nom'                 => 'required|string|min:2|max:100',
             'prenom'              => 'required|string|min:2|max:100',
             'telephone_indicatif' => 'nullable|string|max:8',
@@ -61,7 +53,7 @@ class PublicContactController extends Controller
             'mairie_id'           => $mairie->id,
             'reference'           => Ticket::genererReference($mairie->id),
             'type'                => 'externe',
-            'service'             => $data['service'] ?? null,
+            'service'             => null,
             'nom'                 => $data['nom'],
             'prenom'              => $data['prenom'],
             'telephone_indicatif' => ($data['telephone_indicatif'] ?? '') ?: '+33',

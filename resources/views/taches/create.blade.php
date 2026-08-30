@@ -39,7 +39,7 @@
                 <label class="form-label fw-semibold">{{ __('Service chargé de réaliser la tâche *') }}</label>
                 <select name="service" id="serviceSelect" class="form-select" required onchange="filtrerUsers()">
                     <option value="">— Sélectionnez —</option>
-                    @foreach(Referentiel::SERVICES as $num => $label)
+                    @foreach(Referentiel::servicesPour(auth()->user()->mairie) as $num => $label)
                         <option value="{{ $num }}" @selected(old('service') == $num)>{{ $num }} — {{ $label }}</option>
                     @endforeach
                 </select>

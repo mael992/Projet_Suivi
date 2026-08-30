@@ -138,6 +138,14 @@
                                         <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#ticket{{ $ticket->id }}">
                                             {{ __('Ouvrir') }}
                                         </button>
+                                        @if($peutRepondre)
+                                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                    data-bs-toggle="modal" data-bs-target="#transfert{{ $ticket->id }}">
+                                                {{ $ticket->estTransfere() ? '🔁 ' . __('Retransférer') : '🔁 ' . __('Transférer') }}
+                                            </button>
+                                        @elseif($ticket->estTransfere())
+                                            <span class="badge bg-secondary">{{ __('Transféré') }}</span>
+                                        @endif
                                     </td>
                                 </tr>
                             @empty
@@ -158,6 +166,78 @@
         </div></div>
     </div>
 </div>
+
+{{-- ── Modales de transfert (« facteur ») ── --}}
+@if($peutRepondre)
+    @foreach($tickets as $ticket)
+    <div class="modal fade" id="transfert{{ $ticket->id }}" tabindex="-1">
+        <div class="modal-dialog">
+            <form method="POST" action="{{ route('messagerie.transferer', $ticket) }}" class="modal-content">
+                @csrf
+                <div class="modal-header py-2">
+                    <h5 class="modal-title" style="font-size:16px;">🔁 {{ __('Transférer la demande') }} {{ $ticket->reference }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    @if($ticket->estTransfere())
+                        <div class="alert alert-info py-2" style="font-size:13px;">
+                            {{ __('Déjà transférée à') }}
+                            <strong>{{ $ticket->destinataireTransfert?->username ?? $ticket->mairie->libelleService($ticket->transfere_service) }}</strong>
+                            {{ __('le') }} {{ $ticket->transfere_at->format('d/m/Y H:i') }}
+                            @if($ticket->facteur) {{ __('par') }} {{ $ticket->facteur->username }} @endif
+                        </div>
+                    @endif
+
+                    <div class="mb-2">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="cible" value="service"
+                                   id="cibleService{{ $ticket->id }}" checked
+                                   onchange="majCible({{ $ticket->id }})">
+                            <label class="form-check-label" for="cibleService{{ $ticket->id }}">🏢 {{ __('Vers un service') }}</label>
+                        </div>
+                        <select name="service" class="form-select form-select-sm mt-1" id="selService{{ $ticket->id }}">
+                            @foreach($ticket->mairie->libellesServices() as $num => $label)
+                                <option value="{{ $num }}" @selected($ticket->transfere_service === $num)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="cible" value="personne"
+                                   id="ciblePersonne{{ $ticket->id }}" onchange="majCible({{ $ticket->id }})">
+                            <label class="form-check-label" for="ciblePersonne{{ $ticket->id }}">👤 {{ __('Vers une personne') }}</label>
+                        </div>
+                        <select name="user_id" class="form-select form-select-sm mt-1 d-none" id="selPersonne{{ $ticket->id }}">
+                            @foreach($agentsMairie[$ticket->mairie_id] ?? [] as $agent)
+                                <option value="{{ $agent->id }}" @selected($ticket->transfere_user_id === $agent->id)>
+                                    {{ $agent->username }} — {{ $agent->service_label }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <p class="text-muted mt-2 mb-0" style="font-size:12px;">
+                        {{ __('Vous gardez la visibilité sur cette demande après le transfert : si elle revient (réouverture), elle repasse par vous.') }}
+                    </p>
+                </div>
+                <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">{{ __('Annuler') }}</button>
+                    <button type="submit" class="btn btn-primary btn-sm">{{ __('Transférer') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    @endforeach
+
+    <script>
+    function majCible(id) {
+        const versService = document.getElementById('cibleService' + id).checked;
+        document.getElementById('selService' + id).classList.toggle('d-none', ! versService);
+        document.getElementById('selPersonne' + id).classList.toggle('d-none', versService);
+    }
+    </script>
+@endif
 
 {{-- ── Modales des tickets (fil de discussion) ── --}}
 @foreach($tickets as $ticket)

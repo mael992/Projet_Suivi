@@ -31,6 +31,7 @@ class Ticket extends Model
         'mairie_id', 'reference', 'type', 'service',
         'nom', 'prenom', 'telephone_indicatif', 'telephone', 'email',
         'sujet', 'photos', 'statut', 'confidentiel', 'confidents',
+        'transfere_service', 'transfere_user_id', 'transfere_par', 'transfere_at',
         'cloture_at', 'cloture_par', 'reouverture_demandee_at', 'reouverture_motif',
     ];
 
@@ -41,6 +42,8 @@ class Ticket extends Model
             'photos'                  => 'array',
             'confidentiel'            => 'boolean',
             'confidents'              => 'array',
+            'transfere_service'       => 'integer',
+            'transfere_at'            => 'datetime',
             'cloture_at'              => 'datetime',
             'reouverture_demandee_at' => 'datetime',
         ];
@@ -56,12 +59,35 @@ class Ticket extends Model
         return $this->hasMany(TicketMessage::class)->orderBy('created_at');
     }
 
+    /** Personne à qui la demande a été transférée. */
+    public function destinataireTransfert()
+    {
+        return $this->belongsTo(User::class, 'transfere_user_id');
+    }
+
+    /** Le « facteur » : personne qui a transféré la demande. */
+    public function facteur()
+    {
+        return $this->belongsTo(User::class, 'transfere_par');
+    }
+
+    public function estTransfere(): bool
+    {
+        return $this->transfere_at !== null;
+    }
+
     // ── Libellés ─────────────────────────────────────────────────
 
     public function getServiceLabelAttribute(): string
     {
         // Attention : le service 0 (Maire) est valide → comparaison stricte à null
-        return $this->service !== null ? Referentiel::serviceLabel($this->service) : 'Je ne sais pas';
+        if ($this->service === null) {
+            return 'Je ne sais pas';
+        }
+
+        return $this->mairie
+            ? $this->mairie->libelleService($this->service)
+            : Referentiel::serviceLabel($this->service);
     }
 
     public function getStatutLabelAttribute(): string
@@ -161,15 +187,23 @@ class Ticket extends Model
         $numServices = array_values(array_filter($cats, fn ($c) => $c !== 'inconnu'));
         $inconnu     = in_array('inconnu', $cats, true);
 
-        return $query->where(function (Builder $q) use ($numServices, $inconnu) {
+        return $query->where(function (Builder $q) use ($numServices, $inconnu, $user) {
             if ($numServices) {
                 $q->whereIn('service', $numServices);
+                // Demandes transférées vers un service que l'utilisateur reçoit
+                $q->orWhereIn('transfere_service', $numServices);
             }
             if ($inconnu) {
                 $q->orWhereNull('service');
             }
+
+            // Transfert nominatif, et le « facteur » garde la main sur ce qu'il a transféré
+            $q->orWhere('transfere_user_id', $user->id)
+              ->orWhere('transfere_par', $user->id);
+
             if (! $numServices && ! $inconnu) {
-                $q->whereRaw('1 = 0');
+                // Sans service coché, on ne voit que ce qui nous est adressé
+                $q->orWhereRaw('1 = 0');
             }
         });
     }
