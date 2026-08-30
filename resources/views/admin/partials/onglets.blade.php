@@ -22,4 +22,8 @@
         <a class="nav-link {{ request()->routeIs('admin.donnees.*') ? 'active' : '' }}"
            href="{{ route('admin.donnees.index') }}">🗄️ {{ __('Données (RGPD)') }}</a>
     </li>
+    <li class="nav-item">
+        <a class="nav-link {{ request()->routeIs('admin.devis.*') ? 'active' : '' }}"
+           href="{{ route('admin.devis.index') }}">🧾 {{ __('Devis') }}</a>
+    </li>
 </ul>

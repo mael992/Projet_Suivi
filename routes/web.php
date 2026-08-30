@@ -199,4 +199,11 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/donnees', [\App\Http\Controllers\Admin\DonneesController::class, 'index'])->name('admin.donnees.index');
     Route::get('/admin/donnees/{mairie}/export', [\App\Http\Controllers\Admin\DonneesController::class, 'exporter'])->name('admin.donnees.export');
     Route::post('/admin/donnees/{mairie}/detruire', [\App\Http\Controllers\Admin\DonneesController::class, 'detruire'])->name('admin.donnees.detruire');
+
+    // Devis d'abonnement adressés aux mairies
+    Route::get('/admin/devis',  [\App\Http\Controllers\Admin\DevisController::class, 'index'])->name('admin.devis.index');
+    Route::post('/admin/devis', [\App\Http\Controllers\Admin\DevisController::class, 'store'])->name('admin.devis.store');
+    Route::get('/admin/devis/{devis}/pdf', [\App\Http\Controllers\Admin\DevisController::class, 'pdf'])->name('admin.devis.pdf');
+    Route::post('/admin/devis/{devis}/statut', [\App\Http\Controllers\Admin\DevisController::class, 'statut'])->name('admin.devis.statut');
+    Route::delete('/admin/devis/{devis}', [\App\Http\Controllers\Admin\DevisController::class, 'destroy'])->name('admin.devis.destroy');
 });
