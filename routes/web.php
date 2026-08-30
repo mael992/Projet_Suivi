@@ -72,6 +72,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/zones/{zone}', [ZoneController::class, 'update'])->name('zones.update');
         Route::delete('/zones/{zone}', [ZoneController::class, 'destroy'])->name('zones.destroy');
         Route::post('/zones/{zone}/config', [ZoneController::class, 'saveConfig'])->name('zones.config');
+        Route::post('/zones/{zone}/plan-pdf', [ZoneController::class, 'planPdf'])->name('zones.plan-pdf');
 
         // 🗺️ Plan 2D daté
         Route::get('/plan', [PlanController::class, 'index'])->name('plan');

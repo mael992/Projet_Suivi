@@ -10,6 +10,13 @@ Artisan::command('inspire', function () {
 
 Schedule::command('tickets:cleanup')->daily();
 
+// ── File d'attente des e-mails ──────────────────────────────────
+// Les mails partent en arrière-plan (pages instantanées) ; ce worker vide
+// la file chaque minute puis s'arrête, sans nécessiter de superviseur.
+Schedule::command('queue:work --stop-when-empty --max-time=55 --tries=3')
+    ->everyMinute()
+    ->withoutOverlapping();
+
 // ── Abonnements des mairies ─────────────────────────────────────
 // Chaque jour à 00h01 : email « dernier jour » (jour J) + « désabonné » (J+1)
 Schedule::command('mgds:notifier-abonnements')->dailyAt('00:01');

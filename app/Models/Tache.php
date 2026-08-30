@@ -18,6 +18,8 @@ class Tache extends Model
         'substitut_id',
         'created_by',
         'statut',
+        'confidentiel',
+        'confidents',
         'prise_en_charge',
         'photo_avant',
         'photo_apres',
@@ -33,6 +35,8 @@ class Tache extends Model
             'service'      => 'integer',
             'date_butoir'  => 'date',
             'date_cloture' => 'datetime',
+            'confidentiel' => 'boolean',
+            'confidents'   => 'array',
         ];
     }
 
@@ -141,6 +145,22 @@ class Tache extends Model
      */
     public function scopeVisiblesPar(Builder $query, User $user): Builder
     {
+        // La confidentialité prime sur TOUT, y compris l'admin et la direction :
+        // une tâche confidentielle n'est visible que par les personnes choisies,
+        // son créateur, son responsable et son éventuel substitut.
+        $query->where(fn (Builder $q) => $q
+            ->where('confidentiel', false)
+            ->orWhere(fn (Builder $c) => $c
+                ->where('confidentiel', true)
+                ->where(fn (Builder $p) => $p
+                    ->where('created_by', $user->id)
+                    ->orWhere('user_id', $user->id)
+                    ->orWhere('substitut_id', $user->id)
+                    ->orWhereJsonContains('confidents', $user->id)
+                )
+            )
+        );
+
         if ($user->isAdmin()) {
             return $query;
         }

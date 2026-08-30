@@ -30,7 +30,7 @@ class Ticket extends Model
     protected $fillable = [
         'mairie_id', 'reference', 'type', 'service',
         'nom', 'prenom', 'telephone_indicatif', 'telephone', 'email',
-        'sujet', 'photos', 'statut',
+        'sujet', 'photos', 'statut', 'confidentiel', 'confidents',
         'cloture_at', 'cloture_par', 'reouverture_demandee_at', 'reouverture_motif',
     ];
 
@@ -39,6 +39,8 @@ class Ticket extends Model
         return [
             'service'                 => 'integer',
             'photos'                  => 'array',
+            'confidentiel'            => 'boolean',
+            'confidents'              => 'array',
             'cloture_at'              => 'datetime',
             'reouverture_demandee_at' => 'datetime',
         ];
@@ -135,6 +137,15 @@ class Ticket extends Model
     /** Restreint aux tickets visibles par l'utilisateur (mairie + services reçus). */
     public function scopeVisiblesPar(Builder $query, User $user): Builder
     {
+        // La confidentialité prime sur tout, y compris l'admin et la direction
+        $query->where(fn (Builder $q) => $q
+            ->where('confidentiel', false)
+            ->orWhere(fn (Builder $c) => $c
+                ->where('confidentiel', true)
+                ->whereJsonContains('confidents', $user->id)
+            )
+        );
+
         if ($user->isAdmin()) {
             return $query;
         }

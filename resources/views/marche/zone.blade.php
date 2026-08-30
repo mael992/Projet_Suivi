@@ -112,6 +112,11 @@
             <ul class="nav nav-tabs mb-2" id="apercus">
                 <li class="nav-item"><button class="nav-link active" data-vue="3d" onclick="montrerVue('3d', this)">🏙 {{ __('Vue 3D') }}</button></li>
                 <li class="nav-item"><button class="nav-link" data-vue="2d" onclick="montrerVue('2d', this)">🗺️ {{ __('Plan 2D (obstacles)') }}</button></li>
+                <li class="nav-item ms-auto">
+                    <button class="nav-link border-0 bg-transparent" onclick="telechargerPlanPdf()" title="{{ __('Télécharger le plan 2D en PDF') }}">
+                        ⬇ {{ __('Plan en PDF') }}
+                    </button>
+                </li>
             </ul>
 
             <div class="card shadow-sm">
@@ -154,6 +159,8 @@
 const PEUT_EDITER = @json($peutEditer);
 let obstacles = @json(array_values($config['obstacles'] ?? []));   // [{type, x, y}] en mètres
 let stands    = [];
+// Référence ou nom d'exposant par emplacement (index du stand → texte)
+let nomsStands = @json($config['noms'] ?? new stdClass);
 
 const RAYONS_OBSTACLES = { arbre: 1.6, fontaine: 2.2, poteau: 0.4, temporaire: 1.2 };
 const EMOJIS           = { arbre: '🌳', fontaine: '⛲', poteau: '⚡', temporaire: '🚧' };
@@ -266,15 +273,30 @@ function dessiner2D() {
 
     svg.appendChild(el('rect', { x: 0, y: 0, width: c.longueur, height: c.largeur, fill: '#b9b4a8', stroke: '#8f8a7e', 'stroke-width': 0.15 }));
 
-    stands.forEach(s => {
+    stands.forEach((s, i) => {
         const horiz = s.rot % 180 === 0;
-        svg.appendChild(el('rect', {
+        const rect = el('rect', {
             x: s.x - (horiz ? s.w : s.d) / 2,
             y: s.y - (horiz ? s.d : s.w) / 2,
             width:  horiz ? s.w : s.d,
             height: horiz ? s.d : s.w,
-            fill: '#b08d4a', stroke: '#12294a', 'stroke-width': 0.1, rx: 0.25,
-        }));
+            fill: nomsStands[i] ? '#8a6a3b' : '#b08d4a',
+            stroke: '#12294a', 'stroke-width': 0.1, rx: 0.25,
+            style: PEUT_EDITER ? 'cursor:pointer;' : '',
+        });
+        if (PEUT_EDITER) {
+            rect.addEventListener('click', () => nommerStand(i));
+        }
+        svg.appendChild(rect);
+
+        // Numéro d'emplacement + référence / nom de l'exposant
+        const etiquette = el('text', {
+            x: s.x, y: s.y, 'font-size': 0.75,
+            'text-anchor': 'middle', 'dominant-baseline': 'central',
+            fill: '#fff', 'pointer-events': 'none', 'font-weight': 'bold',
+        });
+        etiquette.textContent = nomsStands[i] || String(i + 1);
+        svg.appendChild(etiquette);
     });
 
     obstacles.forEach((o, i) => {
@@ -321,6 +343,57 @@ function dessiner2D() {
         }
         svg.appendChild(g);
     });
+}
+
+/** Télécharge le plan 2D en PDF (les emplacements affichés sont envoyés au serveur). */
+function telechargerPlanPdf() {
+    const c = cfg();
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ route('marche.zones.plan-pdf', array_merge(['zone' => $zone->id], $mairieParam)) }}';
+
+    const champs = {
+        _token:   '{{ csrf_token() }}',
+        longueur: c.longueur,
+        largeur:  c.largeur,
+    };
+    for (const [nom, valeur] of Object.entries(champs)) {
+        const i = document.createElement('input');
+        i.type = 'hidden'; i.name = nom; i.value = valeur;
+        form.appendChild(i);
+    }
+
+    stands.forEach((s, idx) => {
+        const donnees = { x: s.x, y: s.y, w: s.w, d: s.d, rot: s.rot, nom: nomsStands[idx] || '' };
+        for (const [cle, valeur] of Object.entries(donnees)) {
+            const i = document.createElement('input');
+            i.type = 'hidden'; i.name = `stands[${idx}][${cle}]`; i.value = valeur;
+            form.appendChild(i);
+        }
+    });
+
+    obstacles.forEach((o, idx) => {
+        for (const [cle, valeur] of Object.entries({ type: o.type, x: o.x, y: o.y })) {
+            const i = document.createElement('input');
+            i.type = 'hidden'; i.name = `obstacles[${idx}][${cle}]`; i.value = valeur;
+            form.appendChild(i);
+        }
+    });
+
+    document.body.appendChild(form);
+    form.submit();
+    form.remove();
+}
+
+/** Nommer un emplacement : référence ou nom de l'exposant. */
+function nommerStand(i) {
+    const actuel = nomsStands[i] || '';
+    const saisi  = prompt('{{ __('Référence ou nom de l\'exposant pour l\'emplacement') }} ' + (i + 1) + ' :', actuel);
+    if (saisi === null) return;                       // annulé
+    const valeur = saisi.trim().substring(0, 24);
+    if (valeur === '') delete nomsStands[i];
+    else nomsStands[i] = valeur;
+    dessiner2D();
 }
 
 function supprimerObstacle(i) {
@@ -626,6 +699,7 @@ function sauverConfig() {
             allee:        c.allee,
             degagement:   c.degagement,
             obstacles:    obstacles,
+            noms:         nomsStands,
         }),
     }).then(r => {
         const msg = document.getElementById('cfgMsg');

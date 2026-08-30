@@ -73,7 +73,7 @@ class PenseBeteTest extends TestCase
 
         $this->artisan('mgds:envoyer-rappels')->assertSuccessful();
 
-        Mail::assertSent(RappelCalendrier::class, 1);
+        Mail::assertQueued(RappelCalendrier::class, 1);
         $this->assertSame(1, Rappel::where('envoye', true)->count());
     }
 
@@ -93,7 +93,7 @@ class PenseBeteTest extends TestCase
 
         $this->artisan('mgds:envoyer-rappels')->assertSuccessful();
 
-        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\NoteRappel::class, 1);
+        \Illuminate\Support\Facades\Mail::assertQueued(\App\Mail\NoteRappel::class, 1);
         $this->assertSame(1, Note::where('notifiee', true)->count());
     }
 

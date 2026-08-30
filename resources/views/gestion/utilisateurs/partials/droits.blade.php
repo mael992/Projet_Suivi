@@ -33,7 +33,10 @@
             <thead class="table-dark">
                 <tr>
                     @foreach(Referentiel::DROITS as $cle => $label)
-                        <th style="font-weight:600;">{{ __($label) }}</th>
+                        <th style="font-weight:600;">
+                            <span style="font-size:18px;display:block;line-height:1.2;">{{ Referentiel::droitIcone($cle) }}</span>
+                            {{ __($label) }}
+                        </th>
                     @endforeach
                 </tr>
             </thead>

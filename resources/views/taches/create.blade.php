@@ -68,6 +68,30 @@
                 <textarea name="description_instruction" rows="4" class="form-control">{{ old('description_instruction') }}</textarea>
             </div>
 
+            {{-- Confidentialité absolue --}}
+            <div class="mb-3 border rounded p-2" style="background:#fbf7ef;">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="confidentiel" value="1" id="confidentiel"
+                           @checked(old('confidentiel')) onchange="majConfidents()">
+                    <label class="form-check-label fw-semibold" for="confidentiel">
+                        🔒 {{ __('Confidentiel : seules les personnes choisies verront cette tâche') }}
+                    </label>
+                </div>
+                <div id="blocConfidents" class="mt-2 d-none">
+                    <label class="form-label mb-1" style="font-size:13px;">{{ __('Personnes autorisées') }}</label>
+                    <select name="confidents[]" id="confidentsSelect" class="form-select" multiple size="6">
+                        @foreach($confidentsPossibles as $u)
+                            <option value="{{ $u->id }}" @selected(in_array($u->id, old('confidents', [])))>
+                                {{ $u->username }} — {{ $u->service_label }} ({{ $u->fonction ?: $u->grade_label }})
+                            </option>
+                        @endforeach
+                    </select>
+                    <small class="text-muted">
+                        {{ __('Maintenez Ctrl (ou ⌘) pour en sélectionner plusieurs. Le créateur et le responsable y ont toujours accès ; personne d\'autre, pas même la direction.') }}
+                    </small>
+                </div>
+            </div>
+
             <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-primary">{{ __('Créer la tâche') }}</button>
                 <a href="{{ route('dashboard') }}" class="btn btn-outline-secondary">{{ __('Annuler') }}</a>
@@ -98,5 +122,12 @@ function filtrerUsers() {
 
 document.querySelector('[name=mairie_id]')?.addEventListener('change', filtrerUsers);
 filtrerUsers();
+
+// Confidentialité : la liste des personnes autorisées n'apparaît que si la case est cochée
+function majConfidents() {
+    const coche = document.getElementById('confidentiel').checked;
+    document.getElementById('blocConfidents').classList.toggle('d-none', !coche);
+}
+majConfidents();
 </script>
 @endsection

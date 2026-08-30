@@ -91,7 +91,7 @@ class MessagerieTest extends TestCase
         $this->assertSame($autre->id . '-1', Ticket::where('sujet', 'Chez le voisin')->first()->reference);
 
         // Le maire (visibilité globale) est prévenu même sans service coché
-        \Illuminate\Support\Facades\Mail::assertSent(
+        \Illuminate\Support\Facades\Mail::assertQueued(
             \App\Mail\NouveauMessageTicket::class,
             fn ($mail) => $mail->hasTo('maire@mairie.fr')
         );

@@ -37,8 +37,8 @@ class AbonnementEmailTest extends TestCase
 
         $this->artisan('mgds:notifier-abonnements')->assertSuccessful();
 
-        Mail::assertSent(AbonnementDernierJour::class);
-        Mail::assertNotSent(AbonnementExpire::class);
+        Mail::assertQueued(AbonnementDernierJour::class);
+        Mail::assertNotQueued(AbonnementExpire::class);
     }
 
     public function test_email_expire_envoye_le_lendemain(): void
@@ -54,8 +54,8 @@ class AbonnementEmailTest extends TestCase
 
         $this->artisan('mgds:notifier-abonnements')->assertSuccessful();
 
-        Mail::assertSent(AbonnementExpire::class);
-        Mail::assertNotSent(AbonnementDernierJour::class);
+        Mail::assertQueued(AbonnementExpire::class);
+        Mail::assertNotQueued(AbonnementDernierJour::class);
     }
 
     public function test_aucun_email_pour_les_autres_dates(): void
@@ -67,6 +67,6 @@ class AbonnementEmailTest extends TestCase
 
         $this->artisan('mgds:notifier-abonnements')->assertSuccessful();
 
-        Mail::assertNothingSent();
+        Mail::assertNothingQueued();
     }
 }

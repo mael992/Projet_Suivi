@@ -18,6 +18,13 @@
         <div class="alert alert-danger mb-3">{{ $errors->first() }}</div>
     @endif
 
+    @if($tache->confidentiel)
+        <div class="alert alert-warning py-2 mb-3" style="font-size:13px;">
+            🔒 <strong>{{ __('Tâche confidentielle') }}</strong> —
+            {{ __('seules les personnes désignées y ont accès, y compris au sein de la direction.') }}
+        </div>
+    @endif
+
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h1 class="h4 mb-0">Tâche {{ $tache->reference }}</h1>
         <div class="d-flex gap-2">

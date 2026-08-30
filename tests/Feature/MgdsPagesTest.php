@@ -90,6 +90,45 @@ class MgdsPagesTest extends TestCase
         $this->actingAs($chef)->get('/marche/ville')->assertForbidden();
     }
 
+    public function test_tache_confidentielle_invisible_meme_pour_la_direction(): void
+    {
+        $dgs = User::factory()->create([
+            'mairie_id' => $this->mairie->id,
+            'service'   => 2,
+            'grade'     => Referentiel::GRADE_DGS,
+        ]);
+        $dirCab = User::factory()->create([
+            'mairie_id' => $this->mairie->id,
+            'service'   => 1,
+            'grade'     => Referentiel::GRADE_DIR_CABINET,
+        ]);
+        $employe = $this->employe();
+
+        // La DGS crée une tâche confidentielle réservée à un employé
+        $tache = Tache::create([
+            'mairie_id'    => $this->mairie->id,
+            'reference'    => '2-1',
+            'service'      => 2,
+            'user_id'      => $employe->id,
+            'created_by'   => $dgs->id,
+            'statut'       => 'ouvert',
+            'date_butoir'  => now()->addWeek()->toDateString(),
+            'confidentiel' => true,
+            'confidents'   => [$employe->id],
+        ]);
+
+        // Visible par la créatrice et la personne désignée
+        $this->assertTrue(Tache::visiblesPar($dgs)->whereKey($tache->id)->exists());
+        $this->assertTrue(Tache::visiblesPar($employe)->whereKey($tache->id)->exists());
+
+        // Invisible pour le Directeur de Cabinet et pour l'admin du site
+        $this->assertFalse(Tache::visiblesPar($dirCab)->whereKey($tache->id)->exists());
+        $this->assertFalse(Tache::visiblesPar(User::factory()->admin()->create())->whereKey($tache->id)->exists());
+
+        $this->actingAs($dirCab)->get("/taches/{$tache->id}")->assertForbidden();
+        $this->actingAs($employe)->get("/taches/{$tache->id}")->assertOk();
+    }
+
     public function test_gestion_is_forbidden_for_employe(): void
     {
         $this->actingAs($this->employe())
@@ -268,7 +307,7 @@ class MgdsPagesTest extends TestCase
 
         $this->artisan('mgds:rappeler-taches')->assertSuccessful();
 
-        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\TacheEcheance::class, 1);
+        \Illuminate\Support\Facades\Mail::assertQueued(\App\Mail\TacheEcheance::class, 1);
     }
 
     public function test_le_responsable_peut_changer_le_substitut(): void

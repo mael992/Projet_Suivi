@@ -73,8 +73,9 @@ class TacheController extends Controller
         abort_unless($user->peutGererTaches(), 403);
 
         return view('taches.create', [
-            'mairies'      => $user->isAdmin() ? Mairie::orderBy('nom')->get() : collect(),
-            'usersService' => $this->usersParService($user->isAdmin() ? null : $user->mairie_id),
+            'mairies'            => $user->isAdmin() ? Mairie::orderBy('nom')->get() : collect(),
+            'usersService'       => $this->usersParService($user->isAdmin() ? null : $user->mairie_id),
+            'confidentsPossibles' => $this->confidentsPossibles($user),
         ]);
     }
 
@@ -91,6 +92,9 @@ class TacheController extends Controller
             'photo_avant'             => 'nullable|image|max:8192',
             'photo_apres'             => 'nullable|image|max:8192',
             'description_instruction' => 'nullable|string|max:5000',
+            'confidentiel'            => 'nullable|boolean',
+            'confidents'              => 'nullable|array',
+            'confidents.*'            => 'exists:users,id',
         ]);
 
         $mairieId = $user->isAdmin() ? (int) $data['mairie_id'] : $user->mairie_id;
@@ -108,6 +112,11 @@ class TacheController extends Controller
             'statut'                  => Referentiel::STATUT_OUVERT,
             'date_butoir'             => $data['date_butoir'],
             'description_instruction' => $data['description_instruction'] ?? null,
+            'confidentiel'            => $request->boolean('confidentiel'),
+            // Le responsable est toujours autorisé sur une tâche confidentielle
+            'confidents'              => $request->boolean('confidentiel')
+                ? array_values(array_unique(array_map('intval', array_merge($data['confidents'] ?? [], [(int) $data['user_id']]))))
+                : null,
         ]);
         $tache->mairie_id = $mairieId;
         $tache->reference = Tache::genererReference($mairieId, (int) $data['service']);
@@ -398,6 +407,16 @@ class TacheController extends Controller
     private function autoriserCreateur(Tache $tache): void
     {
         abort_unless($tache->peutEtreGereePar(auth()->user()), 403);
+    }
+
+    /** Personnes pouvant être désignées sur une tâche confidentielle */
+    private function confidentsPossibles(User $user)
+    {
+        return User::where('role', 'user')
+            ->when(! $user->isAdmin(), fn ($q) => $q->where('mairie_id', $user->mairie_id))
+            ->where('id', '!=', $user->id)
+            ->orderBy('nom')->orderBy('prenom')
+            ->get();
     }
 
     /** Employés du service de la tâche (candidats à la substitution) */

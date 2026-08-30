@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Marche\Concerns\ResolveMairie;
 use App\Models\MarcheZone;
 use App\Services\ActivityLogger;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -160,6 +161,8 @@ class ZoneController extends Controller
             'taille_stand'         => 'required|numeric|min:1|max:12',
             'allee'                => 'required|numeric|min:2|max:30',
             'degagement'           => 'required|numeric|min:0|max:15',
+            'noms'                 => 'nullable|array',
+            'noms.*'               => 'nullable|string|max:24',
             'obstacles'            => 'array',
             'obstacles.*.type'     => 'required|in:arbre,fontaine,poteau,temporaire',
             'obstacles.*.x'        => 'required|numeric|min:0',
@@ -177,12 +180,44 @@ class ZoneController extends Controller
                 'allee'        => (float) $data['allee'],
                 'degagement'   => (float) $data['degagement'],
                 'obstacles'    => array_values($data['obstacles'] ?? []),
+                'noms'         => $data['noms'] ?? [],
             ],
         ]);
 
         ActivityLogger::log('MARCHE', 'UPDATE', "Configuration du marché enregistrée : zone {$zone->nom}");
 
         return response()->json(['ok' => true]);
+    }
+
+    /** Export PDF du plan 2D (les emplacements sont calculés côté navigateur). */
+    public function planPdf(Request $request, MarcheZone $zone)
+    {
+        $this->verifierZone($request, $zone);
+
+        $data = $request->validate([
+            'stands'          => 'required|array',
+            'stands.*.x'      => 'required|numeric',
+            'stands.*.y'      => 'required|numeric',
+            'stands.*.w'      => 'required|numeric',
+            'stands.*.d'      => 'required|numeric',
+            'stands.*.rot'    => 'required|numeric',
+            'stands.*.nom'    => 'nullable|string|max:24',
+            'obstacles'       => 'nullable|array',
+            'longueur'        => 'required|numeric',
+            'largeur'         => 'required|numeric',
+        ]);
+
+        $pdf = Pdf::loadView('pdf.marche-plan', [
+            'zone'      => $zone,
+            'mairie'    => $zone->mairie,
+            'stands'    => $data['stands'],
+            'obstacles' => $data['obstacles'] ?? [],
+            'longueur'  => (float) $data['longueur'],
+            'largeur'   => (float) $data['largeur'],
+            'genereLe'  => now(),
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download('Plan_' . \Illuminate\Support\Str::slug($zone->nom) . '_' . now()->format('Y-m-d') . '.pdf');
     }
 
     // ── Helpers ──────────────────────────────────────────────────

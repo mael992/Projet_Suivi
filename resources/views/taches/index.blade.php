@@ -171,7 +171,12 @@
                         $peutCloturerLigne = $tache->peutEtreClotureePar($u);
                     @endphp
                     <tr @if($enAttentePourMoi) class="table-warning" title="{{ __('Nouvelle tâche en attente de votre prise en charge') }}" @endif>
-                        <td class="fw-semibold">{{ $tache->reference }}</td>
+                        <td class="fw-semibold">
+                            {{ $tache->reference }}
+                            @if($tache->confidentiel)
+                                <span title="{{ __('Tâche confidentielle') }}">🔒</span>
+                            @endif
+                        </td>
                         @if(auth()->user()->isAdmin())<td>{{ $tache->mairie?->nom ?? '—' }}</td>@endif
                         <td>{{ $tache->created_at->format('d/m/Y') }}</td>
                         <td>

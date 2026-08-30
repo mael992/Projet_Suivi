@@ -76,6 +76,20 @@ class Referentiel
         'taches_gestion'        => 'Tableau des suivis — gestion',
     ];
 
+    // Logo de l'application correspondant à chaque droit (mêmes icônes que le hub)
+    public const DROITS_ICONES = [
+        'gestion_utilisateurs'  => '👥',
+        'contacts_modification' => '📇',
+        'contacts_lecture'      => '📇',
+        'marche_gestion'        => '🛍️',
+        'taches_gestion'        => '📊',
+    ];
+
+    public static function droitIcone(?string $droit): string
+    {
+        return self::DROITS_ICONES[$droit] ?? '🔧';
+    }
+
     // Valeur explicite « aucun droit » (distincte de null = droit par défaut du grade)
     public const DROIT_AUCUN = 'aucun';
 
