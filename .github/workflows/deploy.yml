@@ -27,26 +27,48 @@ jobs:
             User ${{ secrets.SSH_USER }}
             IdentityFile ~/.ssh/deploy_key
             StrictHostKeyChecking no
+            ConnectTimeout 30
+            ServerAliveInterval 15
+            ServerAliveCountMax 4
             ProxyCommand cloudflared access ssh --hostname %h
           EOF
 
       # Le code vit sur l'hote (bind-monte dans le conteneur) ; seules les
       # commandes PHP tournent dans le conteneur web du stack MGDS.
+      # Le tunnel cloudflared coupe parfois la connexion (« websocket: bad
+      # handshake ») avant même le debut du deploiement. Toutes les etapes
+      # ci-dessous etant rejouables, on retente jusqu'a 3 fois.
       - name: 🚀 Deploy
         run: |
-          ssh deploy "
-            cd ${{ secrets.DEPLOY_PATH }} &&
-            git -C app fetch origin main &&
-            git -C app reset --hard origin/main &&
-            docker compose exec -T -u 1000:1000 -e COMPOSER_HOME=/tmp/composer web \
-              composer install --no-dev --optimize-autoloader --no-interaction &&
-            docker compose exec -T web php artisan migrate --force &&
-            (docker compose exec -T web php artisan storage:link || true) &&
-            docker compose exec -T web php artisan config:cache &&
-            docker compose exec -T web php artisan route:cache &&
-            docker compose exec -T web php artisan view:cache &&
-            docker compose restart scheduler queue
-          "
+          deploiement() {
+            ssh deploy "
+              cd ${{ secrets.DEPLOY_PATH }} &&
+              git -C app fetch origin main &&
+              git -C app reset --hard origin/main &&
+              docker compose exec -T -u 1000:1000 -e COMPOSER_HOME=/tmp/composer web \
+                composer install --no-dev --optimize-autoloader --no-interaction &&
+              docker compose exec -T web php artisan migrate --force &&
+              (docker compose exec -T web php artisan storage:link || true) &&
+              docker compose exec -T web php artisan config:cache &&
+              docker compose exec -T web php artisan route:cache &&
+              docker compose exec -T web php artisan view:cache &&
+              docker compose restart scheduler queue
+            "
+          }
+
+          for tentative in 1 2 3; do
+            echo "▶ Tentative de deploiement $tentative/3"
+            if deploiement; then
+              echo "✅ Deploiement reussi (tentative $tentative)"
+              exit 0
+            fi
+            echo "⚠ Echec de la tentative $tentative (tunnel indisponible ?)"
+            # Pause avant de retenter (le && seul ferait echouer le script sous « bash -e »)
+            if [ "$tentative" -lt 3 ]; then sleep 20; fi
+          done
+
+          echo "❌ Deploiement impossible apres 3 tentatives"
+          exit 1
 
       - name: ✅ Verifier que le site repond
         run: |
