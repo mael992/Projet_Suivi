@@ -38,7 +38,10 @@ class UserController extends Controller
 
     public function create()
     {
-        return view('gestion.utilisateurs.create', ['mairie' => $this->mairie()]);
+        return view('gestion.utilisateurs.create', [
+            'mairie'           => $this->mairie(),
+            'binomesPossibles' => $this->binomesPossibles(),
+        ]);
     }
 
     public function store(Request $request)
@@ -55,6 +58,11 @@ class UserController extends Controller
             'communication'       => 'nullable|array',
             'communication.*'     => 'string|in:inconnu,' . implode(',', array_keys(Referentiel::SERVICES)),
             'voit_tous_messages'  => 'nullable|boolean',
+            'binome_id'           => 'nullable|exists:users,id',
+            'absent'              => 'nullable|boolean',
+            'absent_du'           => 'nullable|date',
+            'absent_au'           => 'nullable|date|after_or_equal:absent_du',
+            'absence_motif'       => 'nullable|string|max:100',
             'email'               => 'nullable|email|unique:users,email',
             'telephone_indicatif' => 'nullable|string|max:8',
             'telephone'           => 'nullable|string|max:20',
@@ -82,6 +90,11 @@ class UserController extends Controller
             'fonction'                 => (int) $data['grade'] === Referentiel::GRADE_EMPLOYE ? ($data['fonction'] ?? null) : null,
             'communication'            => array_values(array_unique($data['communication'] ?? [])),
             'voit_tous_messages'       => $request->boolean('voit_tous_messages'),
+            'binome_id'                => $data['binome_id'] ?? null,
+            'absent'                   => $request->boolean('absent'),
+            'absent_du'                => $data['absent_du'] ?? null,
+            'absent_au'                => $data['absent_au'] ?? null,
+            'absence_motif'            => $data['absence_motif'] ?? null,
             'reference'                => User::genererReference($mairie->id, (int) $data['service']),
             'telephone_indicatif'      => $data['telephone_indicatif'] ?: '+33',
             'telephone'                => $data['telephone'] ?: null,
@@ -98,7 +111,11 @@ class UserController extends Controller
     {
         $this->verifierMairie($user);
 
-        return view('gestion.utilisateurs.edit', ['user' => $user, 'mairie' => $this->mairie()]);
+        return view('gestion.utilisateurs.edit', [
+            'user'             => $user,
+            'mairie'           => $this->mairie(),
+            'binomesPossibles' => $this->binomesPossibles($user->id),
+        ]);
     }
 
     public function update(Request $request, User $user)
@@ -115,6 +132,11 @@ class UserController extends Controller
             'communication'       => 'nullable|array',
             'communication.*'     => 'string|in:inconnu,' . implode(',', array_keys(Referentiel::SERVICES)),
             'voit_tous_messages'  => 'nullable|boolean',
+            'binome_id'           => 'nullable|exists:users,id',
+            'absent'              => 'nullable|boolean',
+            'absent_du'           => 'nullable|date',
+            'absent_au'           => 'nullable|date|after_or_equal:absent_du',
+            'absence_motif'       => 'nullable|string|max:100',
             'email'               => 'nullable|email|unique:users,email,' . $user->id,
             'telephone_indicatif' => 'nullable|string|max:8',
             'telephone'           => 'nullable|string|max:20',
@@ -136,6 +158,11 @@ class UserController extends Controller
         $user->fonction = (int) $data['grade'] === Referentiel::GRADE_EMPLOYE ? ($data['fonction'] ?? null) : null;
         $user->communication      = array_values(array_unique($data['communication'] ?? []));
         $user->voit_tous_messages = $request->boolean('voit_tous_messages');
+        $user->binome_id          = ($data['binome_id'] ?? null) == $user->id ? null : ($data['binome_id'] ?? null);
+        $user->absent             = $request->boolean('absent');
+        $user->absent_du          = $data['absent_du'] ?? null;
+        $user->absent_au          = $data['absent_au'] ?? null;
+        $user->absence_motif      = $data['absence_motif'] ?? null;
         $user->email    = $data['email'] ?: null;
         $user->telephone_indicatif = $data['telephone_indicatif'] ?: '+33';
         $user->telephone           = $data['telephone'] ?: null;
@@ -203,6 +230,16 @@ class UserController extends Controller
     }
 
     // ── Helpers ──────────────────────────────────────────────────
+
+    /** Collègues de la mairie pouvant servir de binôme. */
+    private function binomesPossibles(?int $sauf = null)
+    {
+        return User::where('mairie_id', $this->mairie()->id)
+            ->where('role', 'user')
+            ->when($sauf, fn ($q) => $q->where('id', '!=', $sauf))
+            ->orderBy('nom')->orderBy('prenom')
+            ->get();
+    }
 
     private function mairie()
     {

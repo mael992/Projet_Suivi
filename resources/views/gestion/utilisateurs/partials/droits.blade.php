@@ -55,6 +55,58 @@
     <small class="text-muted">{{ __('Si aucune case n\'est cochée, le droit par défaut du statut est appliqué.') }}</small>
 </div>
 
+{{-- ── Absence & binôme ── --}}
+<div class="col-12">
+    <label class="form-label fw-semibold mb-1">🤝 {{ __('Binôme & absence') }}</label>
+    <p class="text-muted mb-2" style="font-size:12px;">
+        {{ __('Pendant une absence (congés, arrêt…), le binôme voit et peut traiter les tâches de cette personne.') }}
+    </p>
+    <div class="border rounded p-2">
+        <div class="row g-2">
+            <div class="col-md-6">
+                <label class="form-label mb-1" style="font-size:12px;">{{ __('Binôme (remplaçant)') }}</label>
+                <select name="binome_id" class="form-select form-select-sm">
+                    <option value="">— {{ __('Aucun') }} —</option>
+                    @foreach($binomesPossibles ?? [] as $b)
+                        <option value="{{ $b->id }}" @selected(old('binome_id', $user->binome_id ?? null) == $b->id)>
+                            {{ $b->username }} ({{ $b->service_label }})
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-6 d-flex align-items-end">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="absent" value="1" id="absent"
+                           @checked(old('absent', $user->absent ?? false)) onchange="majAbsence()">
+                    <label class="form-check-label fw-semibold" for="absent" style="font-size:13px;">
+                        🚪 {{ __('Actuellement absent(e)') }}
+                    </label>
+                </div>
+            </div>
+            <div class="col-12 d-none" id="blocAbsence">
+                <div class="row g-2">
+                    <div class="col-md-4">
+                        <label class="form-label mb-1" style="font-size:12px;">{{ __('Du') }}</label>
+                        <input type="date" name="absent_du" class="form-control form-control-sm"
+                               value="{{ old('absent_du', isset($user) ? $user->absent_du?->format('Y-m-d') : null) }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label mb-1" style="font-size:12px;">{{ __('Au') }}</label>
+                        <input type="date" name="absent_au" class="form-control form-control-sm"
+                               value="{{ old('absent_au', isset($user) ? $user->absent_au?->format('Y-m-d') : null) }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label mb-1" style="font-size:12px;">{{ __('Motif') }}</label>
+                        <input type="text" name="absence_motif" maxlength="100" class="form-control form-control-sm"
+                               value="{{ old('absence_motif', $user->absence_motif ?? '') }}"
+                               placeholder="{{ __('congés, arrêt maladie…') }}">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 {{-- ── Droit communication extérieur (messages « Contacter votre Mairie ») ── --}}
 @php
     $catsUser = isset($user) ? $user->categoriesCommunication() : [];
@@ -196,6 +248,11 @@
     }
     majFonction();
     majDroit();       // le champ caché reflète les cases affichées
+    window.majAbsence = function () {
+        const coche = document.getElementById('absent')?.checked;
+        document.getElementById('blocAbsence')?.classList.toggle('d-none', !coche);
+    };
+    majAbsence();
     initialise = true; // à partir d'ici, changer de statut applique les défauts
 })();
 </script>

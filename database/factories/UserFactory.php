@@ -26,6 +26,9 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'role'     => 'user',
+            // Comptes de test : CGU déjà acceptées (le parcours d'acceptation
+            // est vérifié par son propre test)
+            'cgu_acceptees_at' => now(),
             'remember_token' => Str::random(10),
         ];
     }

@@ -28,6 +28,12 @@ class User extends Authenticatable
         'droit',
         'communication',
         'voit_tous_messages',
+        'cgu_acceptees_at',
+        'binome_id',
+        'absent',
+        'absent_du',
+        'absent_au',
+        'absence_motif',
         'fonction',
         'reference',
         'telephone_indicatif',
@@ -49,6 +55,10 @@ class User extends Authenticatable
             'grade'                    => 'integer',
             'communication'            => 'array',
             'voit_tous_messages'       => 'boolean',
+            'cgu_acceptees_at'         => 'datetime',
+            'absent'                   => 'boolean',
+            'absent_du'                => 'date',
+            'absent_au'                => 'date',
         ];
     }
 
@@ -135,6 +145,42 @@ class User extends Authenticatable
         $categorie = $service !== null ? (string) $service : 'inconnu';
 
         return in_array($categorie, $this->categoriesCommunication(), true);
+    }
+
+    /** Binôme : personne qui reprend le travail pendant une absence. */
+    public function binome()
+    {
+        return $this->belongsTo(User::class, 'binome_id');
+    }
+
+    /** Personnes dont cet utilisateur est le binôme. */
+    public function remplaces()
+    {
+        return $this->hasMany(User::class, 'binome_id');
+    }
+
+    /** Absence en cours aujourd'hui (dates incluses). */
+    public function estAbsent(): bool
+    {
+        if (! $this->absent) {
+            return false;
+        }
+
+        $auj = now()->startOfDay();
+
+        return (! $this->absent_du || $this->absent_du->lte($auj))
+            && (! $this->absent_au || $this->absent_au->gte($auj));
+    }
+
+    /** Ids des personnes actuellement absentes que cet utilisateur remplace. */
+    public function idsRemplaces(): array
+    {
+        return $this->remplaces()
+            ->where('absent', true)
+            ->get()
+            ->filter(fn ($u) => $u->estAbsent())
+            ->pluck('id')
+            ->all();
     }
 
     /** Maire, Directeur de Cabinet ou DGS : « mini-admins » de leur mairie */

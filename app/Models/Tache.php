@@ -128,9 +128,14 @@ class Tache extends Model
             return false;
         }
 
-        // Le responsable garde toujours l'accès, même après substitution
+        // Le responsable garde toujours l'accès, même après substitution ;
+        // le binôme prend le relais quand la personne est absente.
+        $remplaces = $user->idsRemplaces();
+
         return $user->id === $this->user_id
-            || ($this->prise_en_charge === 'substitution' && $user->id === $this->substitut_id);
+            || ($this->prise_en_charge === 'substitution' && $user->id === $this->substitut_id)
+            || in_array($this->user_id, $remplaces, true)
+            || ($this->prise_en_charge === 'substitution' && in_array($this->substitut_id, $remplaces, true));
     }
 
     // ── Scopes de visibilité ─────────────────────────────────────
@@ -175,10 +180,18 @@ class Tache extends Model
             return $query->where('service', $user->service);
         }
 
-        return $query->where(function (Builder $q) use ($user) {
+        // Le binôme reprend les tâches des personnes qu'il remplace pendant leur absence
+        $remplaces = $user->idsRemplaces();
+
+        return $query->where(function (Builder $q) use ($user, $remplaces) {
             $q->where('user_id', $user->id)
               ->orWhere('substitut_id', $user->id)
               ->orWhere('created_by', $user->id);
+
+            if ($remplaces) {
+                $q->orWhereIn('user_id', $remplaces)
+                  ->orWhereIn('substitut_id', $remplaces);
+            }
         });
     }
 

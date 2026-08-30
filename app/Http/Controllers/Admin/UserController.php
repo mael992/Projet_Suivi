@@ -33,7 +33,10 @@ class UserController extends Controller
 
     public function create()
     {
-        return view('admin.users.create', ['mairies' => Mairie::orderBy('nom')->get()]);
+        return view('admin.users.create', [
+            'mairies'          => Mairie::orderBy('nom')->get(),
+            'binomesPossibles' => collect(), // choisi ensuite dans la gestion de la mairie
+        ]);
     }
 
     public function store(Request $request)
@@ -50,6 +53,11 @@ class UserController extends Controller
             'communication'       => 'nullable|array',
             'communication.*'     => 'string|in:inconnu,' . implode(',', array_keys(Referentiel::SERVICES)),
             'voit_tous_messages'  => 'nullable|boolean',
+            'binome_id'           => 'nullable|exists:users,id',
+            'absent'              => 'nullable|boolean',
+            'absent_du'           => 'nullable|date',
+            'absent_au'           => 'nullable|date|after_or_equal:absent_du',
+            'absence_motif'       => 'nullable|string|max:100',
             'email'               => 'nullable|email|unique:users,email',
             'telephone_indicatif' => 'nullable|string|max:8',
             'telephone'           => 'nullable|string|max:20',
@@ -79,6 +87,11 @@ class UserController extends Controller
             'fonction'                 => (! $estAdmin && (int) $data['grade'] === Referentiel::GRADE_EMPLOYE) ? ($data['fonction'] ?? null) : null,
             'communication'            => $estAdmin ? null : array_values(array_unique($data['communication'] ?? [])),
             'voit_tous_messages'       => ! $estAdmin && $request->boolean('voit_tous_messages'),
+            'binome_id'                => $estAdmin ? null : ($data['binome_id'] ?? null),
+            'absent'                   => ! $estAdmin && $request->boolean('absent'),
+            'absent_du'                => $data['absent_du'] ?? null,
+            'absent_au'                => $data['absent_au'] ?? null,
+            'absence_motif'            => $data['absence_motif'] ?? null,
             'reference'                => $estAdmin ? null : User::genererReference((int) $data['mairie_id'], (int) $data['service']),
             'telephone_indicatif'      => $data['telephone_indicatif'] ?: '+33',
             'telephone'                => $data['telephone'] ?: null,
@@ -95,7 +108,14 @@ class UserController extends Controller
 
     public function edit(User $user)
     {
-        return view('admin.users.edit', ['user' => $user, 'mairies' => Mairie::orderBy('nom')->get()]);
+        return view('admin.users.edit', [
+            'user'             => $user,
+            'mairies'          => Mairie::orderBy('nom')->get(),
+            'binomesPossibles' => $user->mairie_id
+                ? User::where('mairie_id', $user->mairie_id)->where('role', 'user')
+                    ->where('id', '!=', $user->id)->orderBy('nom')->get()
+                : collect(),
+        ]);
     }
 
     public function update(Request $request, User $user)
@@ -112,6 +132,11 @@ class UserController extends Controller
             'communication'       => 'nullable|array',
             'communication.*'     => 'string|in:inconnu,' . implode(',', array_keys(Referentiel::SERVICES)),
             'voit_tous_messages'  => 'nullable|boolean',
+            'binome_id'           => 'nullable|exists:users,id',
+            'absent'              => 'nullable|boolean',
+            'absent_du'           => 'nullable|date',
+            'absent_au'           => 'nullable|date|after_or_equal:absent_du',
+            'absence_motif'       => 'nullable|string|max:100',
             'email'               => 'nullable|email|unique:users,email,' . $user->id,
             'telephone_indicatif' => 'nullable|string|max:8',
             'telephone'           => 'nullable|string|max:20',
@@ -140,6 +165,11 @@ class UserController extends Controller
             'fonction'            => (! $estAdmin && (int) $data['grade'] === Referentiel::GRADE_EMPLOYE) ? ($data['fonction'] ?? null) : null,
             'communication'       => $estAdmin ? null : array_values(array_unique($data['communication'] ?? [])),
             'voit_tous_messages'  => ! $estAdmin && $request->boolean('voit_tous_messages'),
+            'binome_id'           => $estAdmin ? null : ($data['binome_id'] ?? null),
+            'absent'              => ! $estAdmin && $request->boolean('absent'),
+            'absent_du'           => $data['absent_du'] ?? null,
+            'absent_au'           => $data['absent_au'] ?? null,
+            'absence_motif'       => $data['absence_motif'] ?? null,
             'telephone_indicatif' => $data['telephone_indicatif'] ?: '+33',
             'telephone'           => $data['telephone'] ?: null,
         ]);

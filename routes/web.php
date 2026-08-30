@@ -27,6 +27,18 @@ Route::get('/infos',      [PageController::class, 'infos'])->name('infos');
 Route::get('/nouveautes', [PageController::class, 'nouveautes'])->name('nouveautes');
 Route::get('/contact',    [PageController::class, 'contact'])->name('contact');
 
+// Conditions générales d'utilisation (consultables par tous)
+Route::get('/cgu', fn () => view('cgu'))->name('cgu');
+Route::post('/cgu', function (\Illuminate\Http\Request $request) {
+    $request->validate(['cgu' => 'accepted'], [
+        'cgu.accepted' => 'Vous devez prendre connaissance des conditions générales d\'utilisation.',
+    ]);
+
+    $request->user()->update(['cgu_acceptees_at' => now()]);
+
+    return redirect()->route('apps')->with('success', 'Merci, vos conditions d\'utilisation sont enregistrées.');
+})->middleware('auth')->name('cgu.accepter');
+
 // Page publique « Contacter votre Mairie » (formulaire → ticket)
 Route::get('/contacter-mairie',  [\App\Http\Controllers\PublicContactController::class, 'create'])->name('contact.mairie');
 Route::post('/contacter-mairie', [\App\Http\Controllers\PublicContactController::class, 'store'])->name('contact.mairie.store');
