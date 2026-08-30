@@ -18,4 +18,8 @@
         <a class="nav-link {{ request()->routeIs('admin.messages.*') ? 'active' : '' }}"
            href="{{ route('admin.messages.index') }}">{{ __('Message Support') }}</a>
     </li>
+    <li class="nav-item">
+        <a class="nav-link {{ request()->routeIs('admin.donnees.*') ? 'active' : '' }}"
+           href="{{ route('admin.donnees.index') }}">🗄️ {{ __('Données (RGPD)') }}</a>
+    </li>
 </ul>

@@ -10,6 +10,7 @@ class Mairie extends Model
         'nom',
         'code_postal',
         'afficher_contact',
+        'marche_inscription_ouverte',
         'email',
         'telephone_indicatif',
         'telephone',
@@ -22,6 +23,7 @@ class Mairie extends Model
         return [
             'date_fin_abonnement' => 'date',
             'afficher_contact'    => 'boolean',
+            'marche_inscription_ouverte' => 'boolean',
         ];
     }
 

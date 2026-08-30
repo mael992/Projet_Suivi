@@ -27,6 +27,11 @@ Route::get('/infos',      [PageController::class, 'infos'])->name('infos');
 Route::get('/nouveautes', [PageController::class, 'nouveautes'])->name('nouveautes');
 Route::get('/contact',    [PageController::class, 'contact'])->name('contact');
 
+// Marché côté public : demande d'inscription des commerçants + plan par code
+Route::get('/marche-exposants',       [\App\Http\Controllers\MarchePublicController::class, 'index'])->name('marche.public');
+Route::post('/marche-exposants',      [\App\Http\Controllers\MarchePublicController::class, 'store'])->name('marche.public.store');
+Route::post('/marche-exposants/plan', [\App\Http\Controllers\MarchePublicController::class, 'plan'])->name('marche.public.plan');
+
 // Conditions générales d'utilisation (consultables par tous)
 Route::get('/cgu', fn () => view('cgu'))->name('cgu');
 Route::post('/cgu', function (\Illuminate\Http\Request $request) {
@@ -100,6 +105,14 @@ Route::middleware('auth')->group(function () {
         Route::post('/axes/{axe}/emplacements', [PlanController::class, 'storeEmplacement'])->name('emplacements.store');
         Route::put('/emplacements/{emplacement}', [PlanController::class, 'updateEmplacement'])->name('emplacements.update');
         Route::delete('/emplacements/{emplacement}', [PlanController::class, 'destroyEmplacement'])->name('emplacements.destroy');
+
+        // 🤝 Demandes des commerçants & codes d'accès au plan
+        Route::get('/demandes', [\App\Http\Controllers\Marche\DemandeController::class, 'index'])->name('demandes');
+        Route::post('/demandes/bascule', [\App\Http\Controllers\Marche\DemandeController::class, 'basculerInscriptions'])->name('demandes.bascule');
+        Route::post('/demandes/{demande}/accepter', [\App\Http\Controllers\Marche\DemandeController::class, 'accepter'])->name('demandes.accepter');
+        Route::post('/demandes/{demande}/refuser', [\App\Http\Controllers\Marche\DemandeController::class, 'refuser'])->name('demandes.refuser');
+        Route::post('/codes', [\App\Http\Controllers\Marche\DemandeController::class, 'genererCode'])->name('codes.store');
+        Route::delete('/codes/{code}', [\App\Http\Controllers\Marche\DemandeController::class, 'supprimerCode'])->name('codes.destroy');
 
         // 🏦 Registre des commerçants
         Route::get('/registre', [RegistreController::class, 'index'])->name('registre');
@@ -181,4 +194,9 @@ Route::middleware(['auth', 'admin'])->group(function () {
 
     // Messages (à venir — sera programmé plus tard)
     Route::get('/admin/messages', fn () => view('admin.messages.index'))->name('admin.messages.index');
+
+    // RGPD : export complet et destruction attestée des données d'une mairie
+    Route::get('/admin/donnees', [\App\Http\Controllers\Admin\DonneesController::class, 'index'])->name('admin.donnees.index');
+    Route::get('/admin/donnees/{mairie}/export', [\App\Http\Controllers\Admin\DonneesController::class, 'exporter'])->name('admin.donnees.export');
+    Route::post('/admin/donnees/{mairie}/detruire', [\App\Http\Controllers\Admin\DonneesController::class, 'detruire'])->name('admin.donnees.detruire');
 });

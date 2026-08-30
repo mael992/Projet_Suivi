@@ -13,6 +13,10 @@
             <a class="nav-link {{ request()->routeIs('marche.registre') ? 'active' : '' }}"
                href="{{ route('marche.registre', request()->only('mairie')) }}">🏦 Registre</a>
         </li>
+        <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('marche.demandes') ? 'active' : '' }}"
+               href="{{ route('marche.demandes', request()->only('mairie')) }}">🤝 {{ __('Demandes & codes') }}</a>
+        </li>
     </ul>
 
     {{-- Sélecteur de mairie (admins uniquement) --}}
