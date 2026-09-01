@@ -35,6 +35,10 @@ jobs:
 
       # Le code vit sur l'hote (bind-monte dans le conteneur) ; seules les
       # commandes PHP tournent dans le conteneur web du stack MGDS.
+      # IMPORTANT : artisan tourne en 1000:1000 (et non en root), sinon les
+      # fichiers ecrits dans storage/ (logs, vues compilees, caches)
+      # appartiennent a root et PHP-FPM (www-data) ne peut plus les ecrire :
+      # le site renvoie alors une erreur 500 des qu'une ecriture est tentee.
       # Le tunnel cloudflared coupe parfois la connexion (« websocket: bad
       # handshake ») avant même le debut du deploiement. Toutes les etapes
       # ci-dessous etant rejouables, on retente jusqu'a 3 fois.
@@ -47,11 +51,11 @@ jobs:
               git -C app reset --hard origin/main &&
               docker compose exec -T -u 1000:1000 -e COMPOSER_HOME=/tmp/composer web \
                 composer install --no-dev --optimize-autoloader --no-interaction &&
-              docker compose exec -T web php artisan migrate --force &&
-              (docker compose exec -T web php artisan storage:link || true) &&
-              docker compose exec -T web php artisan config:cache &&
-              docker compose exec -T web php artisan route:cache &&
-              docker compose exec -T web php artisan view:cache &&
+              docker compose exec -T -u 1000:1000 -e HOME=/tmp web php artisan migrate --force &&
+              (docker compose exec -T -u 1000:1000 -e HOME=/tmp web php artisan storage:link || true) &&
+              docker compose exec -T -u 1000:1000 -e HOME=/tmp web php artisan config:cache &&
+              docker compose exec -T -u 1000:1000 -e HOME=/tmp web php artisan route:cache &&
+              docker compose exec -T -u 1000:1000 -e HOME=/tmp web php artisan view:cache &&
               docker compose restart scheduler queue
             "
           }
