@@ -26,14 +26,18 @@ class MessagerieController extends Controller
         $admin = $user->isAdmin();
 
         $dossier = $request->input('dossier', Ticket::STATUT_RECEPTION);
-        if (! array_key_exists($dossier, Ticket::STATUTS)) {
+        if (! array_key_exists($dossier, Ticket::STATUTS) && $dossier !== Ticket::DOSSIER_TRANSFERE) {
             $dossier = Ticket::STATUT_RECEPTION;
         }
 
         $requete = Ticket::with(['messages.auteur', 'mairie'])
             ->where('type', 'externe')
-            ->visiblesPar($user)
-            ->where('statut', $dossier);
+            ->visiblesPar($user);
+
+        // « Transféré » n'est pas un statut : c'est un tri transversal
+        $dossier === Ticket::DOSSIER_TRANSFERE
+            ? $requete->whereNotNull('transfere_at')
+            : $requete->where('statut', $dossier);
 
         // Recherche : sujet, e-mail, nom, prénom, référence
         if ($request->filled('q')) {
@@ -173,8 +177,9 @@ class MessagerieController extends Controller
     }
 
     /**
-     * Transfert « facteur » : le destinataire redistribue la demande à un
-     * service ou à une personne. Il en garde la visibilité et le suivi.
+     * Transfert « facteur » : le destinataire redistribue la demande à un ou
+     * plusieurs services et/ou à une ou plusieurs personnes, en une seule
+     * fois. Il en garde la visibilité et le suivi.
      */
     public function transferer(Request $request, Ticket $ticket)
     {
@@ -182,54 +187,57 @@ class MessagerieController extends Controller
         $user = auth()->user();
 
         $data = $request->validate([
-            'cible'   => 'required|in:service,personne',
-            'service' => 'required_if:cible,service|nullable|integer',
-            'user_id' => 'required_if:cible,personne|nullable|exists:users,id',
+            'services'   => 'nullable|array',
+            'services.*' => 'integer',
+            'users'      => 'nullable|array',
+            'users.*'    => 'integer|exists:users,id',
         ]);
 
-        if ($data['cible'] === 'personne') {
-            $destinataire = \App\Models\User::findOrFail($data['user_id']);
+        $services = array_values(array_unique(array_map('intval', $data['services'] ?? [])));
+        $userIds  = array_values(array_unique(array_map('intval', $data['users'] ?? [])));
+
+        if (! $services && ! $userIds) {
+            return back()->withErrors(['transfert' => 'Choisissez au moins un service ou une personne.']);
+        }
+
+        // Les services doivent exister dans cette mairie…
+        $connus = $ticket->mairie->libellesServices();
+        foreach ($services as $service) {
+            abort_unless(array_key_exists($service, $connus), 422);
+        }
+
+        // …et les personnes appartenir à cette mairie
+        $destinataires = \App\Models\User::whereIn('id', $userIds)->get();
+        foreach ($destinataires as $destinataire) {
             abort_unless($destinataire->mairie_id === $ticket->mairie_id, 403);
+        }
 
-            $ticket->update([
-                'transfere_service' => null,
-                'transfere_user_id' => $destinataire->id,
-                'transfere_par'     => $user->id,
-                'transfere_at'      => now(),
-                'statut'            => Ticket::STATUT_RECEPTION,
-            ]);
+        $ticket->update([
+            'transfere_services' => $services ?: null,
+            'transfere_users'    => $userIds ?: null,
+            'transfere_par'      => $user->id,
+            'transfere_at'       => now(),
+            'statut'             => Ticket::STATUT_RECEPTION,
+        ]);
 
-            $vers = $destinataire->username;
-
-            if ($destinataire->email) {
-                try {
-                    Mail::to($destinataire->email)->send(new NouveauMessageTicket($ticket, pourCitoyen: false));
-                } catch (\Exception $e) {
-                    report($e);
-                }
-            }
-        } else {
-            $service = (int) $data['service'];
-            abort_unless(array_key_exists($service, $ticket->mairie->libellesServices()), 422);
-
-            $ticket->update([
-                'transfere_service' => $service,
-                'transfere_user_id' => null,
-                'transfere_par'     => $user->id,
-                'transfere_at'      => now(),
-                'statut'            => Ticket::STATUT_RECEPTION,
-            ]);
-
-            $vers = $ticket->mairie->libelleService($service);
-
+        // Un même agent peut être visé nominativement ET via son service :
+        // on ne le prévient qu'une fois.
+        $aPrevenir = $destinataires->all();
+        foreach ($services as $service) {
             foreach ($ticket->mairie->destinatairesCommunication($service) as $agent) {
-                try {
-                    Mail::to($agent->email)->send(new NouveauMessageTicket($ticket, pourCitoyen: false));
-                } catch (\Exception $e) {
-                    report($e);
-                }
+                $aPrevenir[] = $agent;
             }
         }
+
+        foreach (collect($aPrevenir)->filter->email->unique('id') as $agent) {
+            try {
+                Mail::to($agent->email)->send(new NouveauMessageTicket($ticket, pourCitoyen: false));
+            } catch (\Exception $e) {
+                report($e);
+            }
+        }
+
+        $vers = $ticket->fresh()->libelleTransfert();
 
         ActivityLogger::log('MESSAGERIE', 'TRANSFERT', "Ticket {$ticket->reference} transféré vers « {$vers} » par {$user->username}");
 
@@ -240,12 +248,10 @@ class MessagerieController extends Controller
 
     private function verifierAgent(Ticket $ticket): void
     {
-        $user = auth()->user();
-        abort_if($user->isAdmin(), 403); // admin en lecture seule
-        abort_unless($user->mairie_id === $ticket->mairie_id, 403);
-        // Agir sur un message : être destinataire du service, ou disposer de
-        // la visibilité globale sur les messages de la mairie
-        abort_unless($user->voitTousLesMessages() || $user->recoitCommunication($ticket->service), 403);
+        // Qui voit la demande peut la traiter : destinataire du service,
+        // destinataire d'un transfert, « facteur » qui l'a transmise, ou
+        // visibilité globale. L'admin reste en lecture seule.
+        abort_unless($ticket->peutEtreGerePar(auth()->user()), 403);
     }
 
     private function notifierCitoyen(Ticket $ticket, bool $cloture = false): void

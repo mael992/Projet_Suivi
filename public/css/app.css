@@ -191,6 +191,29 @@ img {
     font-weight: 600;
 }
 
+/* Transfert : orange clair, pour distinguer d'un coup d'oeil une demande
+   qui vous a ete transmise d'une demande recue directement (bleu). */
+.bulle-notif-transfert {
+    background: #f8c471;
+    color: #6b4b12;
+}
+.badge-transfert {
+    display: inline-block;
+    padding: 1px 7px;
+    background: #fdebd0;
+    color: #8a5a10;
+    border: 1px solid #f5cba7;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.alerte-transfert {
+    background: #fdf2e2;
+    border: 1px solid #f5cba7;
+    color: #7a4f10;
+}
+
 /* Flash discret quand une zone vient d'être rafraîchie automatiquement */
 .zone-rafraichie {
     animation: zoneRafraichie 1.6s ease-out;

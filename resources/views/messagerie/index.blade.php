@@ -48,17 +48,28 @@
                         {{ __('Dossiers') }}
                     </div>
                     <div class="list-group list-group-flush">
-                        @foreach(Ticket::STATUTS as $cle => $label)
+                        @php
+                            // « Transféré » vient après les quatre dossiers : ce n'est pas
+                            // un statut mais un tri, d'où sa pastille orange clair.
+                            $dossiers = Ticket::STATUTS + [Ticket::DOSSIER_TRANSFERE => 'Transféré'];
+                            $icones   = [
+                                'reception' => '📥', 'reponse' => '↩️', 'cloture' => '🔒',
+                                'reouverture_demandee' => '🔓', Ticket::DOSSIER_TRANSFERE => '🔁',
+                            ];
+                        @endphp
+                        @foreach($dossiers as $cle => $label)
                             @php
-                                $icones = ['reception' => '📥', 'reponse' => '↩️', 'cloture' => '🔒', 'reouverture_demandee' => '🔓'];
-                                $notif  = in_array($cle, [Ticket::STATUT_RECEPTION, Ticket::STATUT_REOUVERTURE], true);
+                                $notif     = in_array($cle, [Ticket::STATUT_RECEPTION, Ticket::STATUT_REOUVERTURE], true);
+                                $transfert = $cle === Ticket::DOSSIER_TRANSFERE;
                             @endphp
                             <a href="{{ route('messagerie.index', array_merge(request()->only('mairie', 'q', 'tri'), ['dossier' => $cle])) }}"
                                class="list-group-item list-group-item-action d-flex justify-content-between align-items-center {{ $dossier === $cle ? 'active' : '' }}"
                                style="font-size:14px;">
                                 <span>{{ $icones[$cle] }} {{ __($label) }}</span>
                                 @if(($compteurs[$cle] ?? 0) > 0)
-                                    @if($notif)
+                                    @if($transfert)
+                                        <span class="bulle-notif bulle-notif-transfert">{{ $compteurs[$cle] }}</span>
+                                    @elseif($notif)
                                         <span class="bulle-notif">{{ $compteurs[$cle] }}</span>
                                     @else
                                         <span class="compte-total">{{ $compteurs[$cle] }}</span>
@@ -126,8 +137,23 @@
                                     <td class="fw-semibold">{{ $ticket->reference }}</td>
                                     @if($admin)<td style="font-size:13px;">{{ $ticket->mairie?->nom }}</td>@endif
                                     <td>{{ $ticket->nom_complet }}</td>
-                                    <td style="font-size:13px;">{{ $ticket->sujet }}</td>
-                                    <td style="font-size:13px;">{{ $ticket->service_label }}</td>
+                                    <td style="font-size:13px;">
+                                        {{ $ticket->sujet }}
+                                        @if($ticket->estTransfere())
+                                            <span class="badge-transfert ms-1">🔁 {{ __('Transféré') }}</span>
+                                        @endif
+                                    </td>
+                                    <td style="font-size:13px;">
+                                        @if($ticket->estTransfere())
+                                            {{ $ticket->libelleTransfert() }}
+                                            <div class="text-muted" style="font-size:11px;">
+                                                @if($ticket->facteur){{ __('par') }} {{ $ticket->facteur->username }} · @endif
+                                                {{ $ticket->transfere_at->format('d/m/Y') }}
+                                            </div>
+                                        @else
+                                            {{ $ticket->service_label }}
+                                        @endif
+                                    </td>
                                     <td style="font-size:13px;">
                                         {{ $ticket->created_at->format('d/m/Y') }}
                                         <div class="text-muted" style="font-size:11px;">
@@ -143,8 +169,6 @@
                                                     data-bs-toggle="modal" data-bs-target="#transfert{{ $ticket->id }}">
                                                 {{ $ticket->estTransfere() ? '🔁 ' . __('Retransférer') : '🔁 ' . __('Transférer') }}
                                             </button>
-                                        @elseif($ticket->estTransfere())
-                                            <span class="badge bg-secondary">{{ __('Transféré') }}</span>
                                         @endif
                                     </td>
                                 </tr>
@@ -179,42 +203,56 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
+                    @php
+                        $svcCoches  = $ticket->servicesTransfert();
+                        $userCoches = $ticket->idsTransfert();
+                    @endphp
+
                     @if($ticket->estTransfere())
                         <div class="alert alert-info py-2" style="font-size:13px;">
                             {{ __('Déjà transférée à') }}
-                            <strong>{{ $ticket->destinataireTransfert?->username ?? $ticket->mairie->libelleService($ticket->transfere_service) }}</strong>
+                            <strong>{{ $ticket->libelleTransfert() }}</strong>
                             {{ __('le') }} {{ $ticket->transfere_at->format('d/m/Y H:i') }}
                             @if($ticket->facteur) {{ __('par') }} {{ $ticket->facteur->username }} @endif
                         </div>
                     @endif
 
-                    <div class="mb-2">
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="cible" value="service"
-                                   id="cibleService{{ $ticket->id }}" checked
-                                   onchange="majCible({{ $ticket->id }})">
-                            <label class="form-check-label" for="cibleService{{ $ticket->id }}">🏢 {{ __('Vers un service') }}</label>
-                        </div>
-                        <select name="service" class="form-select form-select-sm mt-1" id="selService{{ $ticket->id }}">
+                    <p class="text-muted mb-2" style="font-size:12px;">
+                        {{ __('Cochez autant de services et de personnes que nécessaire : la demande arrive chez chacun d\'eux.') }}
+                    </p>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold mb-1" style="font-size:13px;">🏢 {{ __('Vers un ou plusieurs services') }}</label>
+                        <div class="border rounded p-2 row g-1" style="max-height:170px;overflow-y:auto;">
                             @foreach($ticket->mairie->libellesServices() as $num => $label)
-                                <option value="{{ $num }}" @selected($ticket->transfere_service === $num)>{{ $label }}</option>
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="services[]" value="{{ $num }}"
+                                               id="svc{{ $ticket->id }}_{{ $num }}" @checked(in_array($num, $svcCoches, true))>
+                                        <label class="form-check-label" for="svc{{ $ticket->id }}_{{ $num }}" style="font-size:12px;">{{ $label }}</label>
+                                    </div>
+                                </div>
                             @endforeach
-                        </select>
+                        </div>
                     </div>
 
                     <div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="cible" value="personne"
-                                   id="ciblePersonne{{ $ticket->id }}" onchange="majCible({{ $ticket->id }})">
-                            <label class="form-check-label" for="ciblePersonne{{ $ticket->id }}">👤 {{ __('Vers une personne') }}</label>
+                        <label class="form-label fw-semibold mb-1" style="font-size:13px;">👤 {{ __('Vers une ou plusieurs personnes') }}</label>
+                        <div class="border rounded p-2 row g-1" style="max-height:170px;overflow-y:auto;">
+                            @forelse($agentsMairie[$ticket->mairie_id] ?? [] as $agent)
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="users[]" value="{{ $agent->id }}"
+                                               id="usr{{ $ticket->id }}_{{ $agent->id }}" @checked(in_array($agent->id, $userCoches, true))>
+                                        <label class="form-check-label" for="usr{{ $ticket->id }}_{{ $agent->id }}" style="font-size:12px;">
+                                            {{ $agent->username }} — {{ $agent->service_label }}
+                                        </label>
+                                    </div>
+                                </div>
+                            @empty
+                                <div class="col-12 text-muted" style="font-size:12px;">{{ __('Aucun collègue enregistré.') }}</div>
+                            @endforelse
                         </div>
-                        <select name="user_id" class="form-select form-select-sm mt-1 d-none" id="selPersonne{{ $ticket->id }}">
-                            @foreach($agentsMairie[$ticket->mairie_id] ?? [] as $agent)
-                                <option value="{{ $agent->id }}" @selected($ticket->transfere_user_id === $agent->id)>
-                                    {{ $agent->username }} — {{ $agent->service_label }}
-                                </option>
-                            @endforeach
-                        </select>
                     </div>
 
                     <p class="text-muted mt-2 mb-0" style="font-size:12px;">
@@ -229,14 +267,6 @@
         </div>
     </div>
     @endforeach
-
-    <script>
-    function majCible(id) {
-        const versService = document.getElementById('cibleService' + id).checked;
-        document.getElementById('selService' + id).classList.toggle('d-none', ! versService);
-        document.getElementById('selPersonne' + id).classList.toggle('d-none', versService);
-    }
-    </script>
 @endif
 
 {{-- ── Modales des tickets (fil de discussion) ── --}}
@@ -258,6 +288,15 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" style="background:#f4f6f9;">
+                @if($ticket->estTransfere())
+                    <div class="alerte-transfert py-2 px-3 mb-3 rounded" style="font-size:13px;">
+                        🔁 <strong>{{ __('Demande transférée') }}</strong>
+                        @if($ticket->facteur) {{ __('par') }} {{ $ticket->facteur->username }} @endif
+                        {{ __('le') }} {{ $ticket->transfere_at->format('d/m/Y H:i') }}
+                        {{ __('à') }} <strong>{{ $ticket->libelleTransfert() }}</strong>.
+                    </div>
+                @endif
+
                 @if($ticket->statut === Ticket::STATUT_REOUVERTURE)
                     <div class="alert alert-warning py-2" style="font-size:13px;">
                         🔓 <strong>{{ __('Demande de réouverture') }}</strong>
@@ -335,8 +374,12 @@
                                 <button type="submit" class="btn btn-primary ms-auto">{{ __('Envoyer') }}</button>
                             </div>
                         </form>
+                        {{-- @js et non {{ }} : l'apostrophe de « L'habitant » était réécrite en
+                             &#039;, que le navigateur redécodait en ' au milieu du texte JavaScript.
+                             La confirmation ne s'affichait pas et la conversation se clôturait
+                             directement, sans demander l'avis de l'agent. --}}
                         <form method="POST" action="{{ route('messagerie.cloturer', $ticket) }}" class="mt-2"
-                              onsubmit="return confirm('{{ __('Clôturer cette conversation ? L\'habitant pourra demander sa réouverture pendant 15 jours.') }}')">
+                              onsubmit="return confirm(@js(__('Clôturer cette conversation ? L\'habitant pourra demander sa réouverture pendant 15 jours.')))">
                             @csrf
                             <button class="btn btn-outline-dark btn-sm">🔒 {{ __('Clôturer la conversation') }}</button>
                         </form>

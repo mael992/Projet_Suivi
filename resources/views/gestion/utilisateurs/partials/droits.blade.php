@@ -109,44 +109,23 @@
 
 {{-- ── Droit communication extérieur (messages « Contacter votre Mairie ») ── --}}
 @php
-    $catsUser = isset($user) ? $user->categoriesCommunication() : [];
-    $catsOld  = old('communication', $catsUser);
+    $catsOld = old('communication', isset($user) ? $user->categoriesCommunication() : []);
 @endphp
 <div class="col-12">
     <label class="form-label fw-semibold mb-1">📨 {{ __('Droit communication extérieur') }}</label>
     <p class="text-muted mb-2" style="font-size:12px;">
-        {{ __('Services dont cette personne reçoit les messages envoyés via « Contacter votre Mairie ». Si aucun agent ne reçoit un service, il n\'est pas proposé aux habitants.') }}
+        {{ __('L\'habitant ne choisit plus de service : toutes les demandes arrivent au même endroit, et la mairie les oriente ensuite par transfert.') }}
     </p>
     <div class="border rounded p-2">
-        {{-- Visibilité globale : lire tous les messages sans être destinataire --}}
-        <div class="form-check mb-2 pb-2 border-bottom">
-            <input class="form-check-input" type="checkbox" name="voit_tous_messages" value="1" id="voitTousMessages"
-                   @checked(old('voit_tous_messages', isset($user) ? $user->voitTousLesMessages() : false))>
-            <label class="form-check-label fw-semibold" for="voitTousMessages" style="font-size:13px;">
-                👁 {{ __('Visibilité sur tous les messages de la mairie') }}
-            </label>
-            <div class="text-muted" style="font-size:11px;">
-                {{ __('Permet de lire et de traiter tous les messages, sans faire apparaître de service supplémentaire sur la page publique.') }}
-            </div>
-        </div>
-
-        <div class="form-check mb-1">
+        <div class="form-check">
             <input class="form-check-input" type="checkbox" name="communication[]" value="inconnu" id="com_inconnu"
                    @checked(in_array('inconnu', $catsOld, true))>
             <label class="form-check-label fw-semibold" for="com_inconnu" style="font-size:13px;">
-                🤷 {{ __('Je ne sais pas') }} ({{ __('demandes générales') }})
+                📥 {{ __('Réceptionner les messages extérieurs') }}
             </label>
-        </div>
-        <div class="row g-1">
-            @foreach(Referentiel::servicesPour(auth()->user()->mairie) as $num => $label)
-                <div class="col-md-6">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" name="communication[]" value="{{ $num }}" id="com_{{ $num }}"
-                               @checked(in_array((string) $num, $catsOld, true))>
-                        <label class="form-check-label" for="com_{{ $num }}" style="font-size:12px;">{{ $label }}</label>
-                    </div>
-                </div>
-            @endforeach
+            <div class="text-muted" style="font-size:11px;">
+                {{ __('Cette personne reçoit les demandes envoyées via « Contacter votre Mairie » et peut les transférer au bon service.') }}
+            </div>
         </div>
     </div>
 </div>

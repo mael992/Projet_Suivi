@@ -21,8 +21,9 @@ class PublicContactController extends Controller
     {
         // L'habitant choisit uniquement sa commune : c'est la mairie qui
         // oriente ensuite la demande vers le bon service (« facteur »).
+        // Toutes les mairies inscrites sont proposées.
         return view('contact.mairie', [
-            'mairies' => Mairie::where('afficher_contact', true)->orderBy('nom')->get(),
+            'mairies' => Mairie::orderBy('nom')->get(),
         ]);
     }
 
@@ -42,7 +43,7 @@ class PublicContactController extends Controller
             'photos.*'            => 'image|max:8192',
         ]);
 
-        $mairie = Mairie::where('id', $data['mairie_id'])->where('afficher_contact', true)->firstOrFail();
+        $mairie = Mairie::findOrFail($data['mairie_id']);
 
         $photos = [];
         foreach ($request->file('photos', []) as $photo) {

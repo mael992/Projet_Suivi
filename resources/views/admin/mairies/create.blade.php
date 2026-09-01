@@ -48,14 +48,6 @@
                     <input type="date" name="date_fin_abonnement" value="{{ old('date_fin_abonnement') }}" class="form-control" required>
                     <small class="text-muted">Date incluse : ce jour-là, les utilisateurs peuvent encore se connecter.</small>
                 </div>
-                <div class="col-12">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" name="afficher_contact" id="afficher_contact" value="1" @checked(old('afficher_contact', true))>
-                        <label class="form-check-label" for="afficher_contact">
-                            Figurer dans la liste « Contacter votre Mairie » (page publique)
-                        </label>
-                    </div>
-                </div>
             </div>
 
             <div class="d-flex gap-2 mt-4">

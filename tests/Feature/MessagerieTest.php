@@ -21,7 +21,6 @@ class MessagerieTest extends TestCase
         $this->mairie = Mairie::create([
             'nom'                 => 'Mairie Test',
             'code_postal'         => '00000',
-            'afficher_contact'    => true,
             'email'               => 'test@mairie.fr',
             'date_fin_abonnement' => now()->addYear()->toDateString(),
         ]);
@@ -69,7 +68,6 @@ class MessagerieTest extends TestCase
         $autre = Mairie::create([
             'nom'                 => 'Mairie Testroro',
             'code_postal'         => '26230',
-            'afficher_contact'    => true,
             'email'               => 'roro@mairie.fr',
             'date_fin_abonnement' => now()->addYear()->toDateString(),
         ]);
@@ -134,12 +132,11 @@ class MessagerieTest extends TestCase
 
         // Transfert nominatif
         $this->actingAs($facteur)->post("/messagerie/tickets/{$ticket->id}/transferer", [
-            'cible'   => 'personne',
-            'user_id' => $agent->id,
+            'users' => [$agent->id],
         ])->assertRedirect();
 
         $ticket->refresh();
-        $this->assertSame($agent->id, $ticket->transfere_user_id);
+        $this->assertSame([$agent->id], $ticket->idsTransfert());
         $this->assertSame($facteur->id, $ticket->transfere_par);
 
         // L'agent voit désormais la demande, le facteur la garde sous les yeux
@@ -154,11 +151,145 @@ class MessagerieTest extends TestCase
 
         // Transfert vers un service
         $this->actingAs($facteur)->post("/messagerie/tickets/{$ticket->id}/transferer", [
-            'cible'   => 'service',
-            'service' => 12,
+            'services' => [12],
         ])->assertRedirect();
 
-        $this->assertSame(12, $ticket->fresh()->transfere_service);
+        $this->assertSame([12], $ticket->fresh()->servicesTransfert());
+    }
+
+    /**
+     * Régression : le destinataire d'un transfert nominatif voyait la demande
+     * mais recevait une erreur 403 en tentant de la clôturer ou d'y répondre,
+     * parce qu'il n'était pas destinataire du service d'origine — service que
+     * l'habitant ne choisit d'ailleurs plus.
+     */
+    public function test_destinataire_d_un_transfert_peut_repondre_et_cloturer(): void
+    {
+        \Illuminate\Support\Facades\Mail::fake();
+
+        $facteur = User::factory()->create([
+            'mairie_id'     => $this->mairie->id,
+            'grade'         => \App\Support\Referentiel::GRADE_EMPLOYE,
+            'communication' => ['inconnu'],
+        ]);
+        // Ne réceptionne rien : il n'a la demande que par le transfert
+        $agent = User::factory()->create([
+            'mairie_id'     => $this->mairie->id,
+            'service'       => 12,
+            'grade'         => \App\Support\Referentiel::GRADE_EMPLOYE,
+            'communication' => [],
+        ]);
+
+        $ticket = Ticket::create([
+            'mairie_id' => $this->mairie->id,
+            'reference' => $this->mairie->id . '-1',
+            'service'   => null,
+            'nom'       => 'Dupont', 'prenom' => 'Marie',
+            'telephone' => '0612345678', 'email' => 'marie@example.fr',
+            'sujet'     => 'Trou dans la route', 'statut' => Ticket::STATUT_RECEPTION,
+        ]);
+
+        // Avant transfert : ni visible, ni traitable
+        $this->assertFalse($ticket->peutEtreGerePar($agent));
+        $this->actingAs($agent)->post("/messagerie/tickets/{$ticket->id}/cloturer")->assertForbidden();
+
+        $this->actingAs($facteur)->post("/messagerie/tickets/{$ticket->id}/transferer", [
+            'users' => [$agent->id],
+        ])->assertRedirect();
+
+        // Après transfert : il répond et clôture sans erreur 403
+        $agent->refresh();
+        $this->assertTrue($ticket->fresh()->peutEtreGerePar($agent));
+
+        $this->actingAs($agent)->post("/messagerie/tickets/{$ticket->id}/repondre", [
+            'corps' => 'Nous intervenons cette semaine.',
+        ])->assertRedirect();
+
+        $this->actingAs($agent)->post("/messagerie/tickets/{$ticket->id}/cloturer")->assertRedirect();
+        $this->assertSame(Ticket::STATUT_CLOTURE, $ticket->fresh()->statut);
+
+        // Le « facteur » qui a transmis garde lui aussi la main
+        $this->assertTrue($ticket->fresh()->peutEtreGerePar($facteur->fresh()));
+    }
+
+    public function test_transfert_vers_plusieurs_services_et_plusieurs_personnes(): void
+    {
+        \Illuminate\Support\Facades\Mail::fake();
+
+        $facteur = User::factory()->create([
+            'mairie_id'     => $this->mairie->id,
+            'grade'         => \App\Support\Referentiel::GRADE_EMPLOYE,
+            'communication' => ['inconnu'],
+        ]);
+        $agentA = User::factory()->create([
+            'mairie_id' => $this->mairie->id, 'service' => 12,
+            'grade'     => \App\Support\Referentiel::GRADE_EMPLOYE, 'communication' => [],
+            'email'     => 'a@mairie.fr',
+        ]);
+        $agentB = User::factory()->create([
+            'mairie_id' => $this->mairie->id, 'service' => 13,
+            'grade'     => \App\Support\Referentiel::GRADE_EMPLOYE, 'communication' => [],
+            'email'     => 'b@mairie.fr',
+        ]);
+
+        $ticket = Ticket::create([
+            'mairie_id' => $this->mairie->id,
+            'reference' => $this->mairie->id . '-1',
+            'nom'       => 'Dupont', 'prenom' => 'Marie',
+            'telephone' => '0612345678', 'email' => 'marie@example.fr',
+            'sujet'     => 'Fuite d\'eau', 'statut' => Ticket::STATUT_RECEPTION,
+        ]);
+
+        $this->actingAs($facteur)->post("/messagerie/tickets/{$ticket->id}/transferer", [
+            'services' => [12, 13],
+            'users'    => [$agentA->id, $agentB->id],
+        ])->assertRedirect();
+
+        $ticket->refresh();
+        $this->assertSame([12, 13], $ticket->servicesTransfert());
+        $this->assertSame([$agentA->id, $agentB->id], $ticket->idsTransfert());
+
+        // Les deux destinataires voient la demande et peuvent la traiter
+        foreach ([$agentA, $agentB] as $agent) {
+            $this->assertTrue(Ticket::visiblesPar($agent->fresh())->whereKey($ticket->id)->exists());
+            $this->assertTrue($ticket->peutEtreGerePar($agent->fresh()));
+        }
+
+        // Chacun est prévenu une seule fois, malgré service + nominatif
+        foreach (['a@mairie.fr', 'b@mairie.fr'] as $adresse) {
+            \Illuminate\Support\Facades\Mail::assertQueued(
+                \App\Mail\NouveauMessageTicket::class,
+                fn ($mail) => $mail->hasTo($adresse)
+            );
+        }
+
+        // Le dossier « Transféré » les regroupe, tous statuts confondus
+        $this->assertSame(1, Ticket::compteursPour($facteur->fresh())[Ticket::DOSSIER_TRANSFERE]);
+        $this->actingAs($facteur)->get('/messagerie?dossier=' . Ticket::DOSSIER_TRANSFERE)
+            ->assertOk()
+            ->assertSee($ticket->reference);
+    }
+
+    public function test_transfert_sans_destinataire_refuse(): void
+    {
+        $facteur = User::factory()->create([
+            'mairie_id'     => $this->mairie->id,
+            'grade'         => \App\Support\Referentiel::GRADE_EMPLOYE,
+            'communication' => ['inconnu'],
+        ]);
+
+        $ticket = Ticket::create([
+            'mairie_id' => $this->mairie->id,
+            'reference' => $this->mairie->id . '-1',
+            'nom'       => 'Dupont', 'prenom' => 'Marie',
+            'telephone' => '0612345678', 'email' => 'marie@example.fr',
+            'sujet'     => 'Sans cible', 'statut' => Ticket::STATUT_RECEPTION,
+        ]);
+
+        $this->actingAs($facteur)->post("/messagerie/tickets/{$ticket->id}/transferer", [])
+            ->assertSessionHasErrors('transfert');
+
+        $this->assertFalse($ticket->fresh()->estTransfere());
     }
 
     public function test_champs_vides_ou_un_caractere_refuses(): void

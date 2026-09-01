@@ -32,7 +32,6 @@ class MairieController extends Controller
         $data = $request->validate([
             'nom'                 => 'required|string|max:255|unique:mairies,nom',
             'code_postal'         => 'required|digits:5',
-            'afficher_contact'    => 'nullable|boolean',
             'email'               => 'required|email',
             'telephone_indicatif' => 'nullable|string|max:8',
             'telephone'           => 'nullable|string|max:20',
@@ -40,7 +39,6 @@ class MairieController extends Controller
         ]);
 
         $data['telephone_indicatif'] = $data['telephone_indicatif'] ?: '+33';
-        $data['afficher_contact']    = $request->boolean('afficher_contact');
 
         $mairie = Mairie::create($data);
 
@@ -72,7 +70,6 @@ class MairieController extends Controller
         $data = $request->validate([
             'nom'                 => 'required|string|max:255|unique:mairies,nom,' . $mairie->id,
             'code_postal'         => 'required|digits:5',
-            'afficher_contact'    => 'nullable|boolean',
             'email'               => 'required|email',
             'telephone_indicatif' => 'nullable|string|max:8',
             'telephone'           => 'nullable|string|max:20',
@@ -82,7 +79,6 @@ class MairieController extends Controller
         $ancienneDate = $mairie->date_fin_abonnement?->format('d/m/Y');
 
         $data['telephone_indicatif'] = $data['telephone_indicatif'] ?: '+33';
-        $data['afficher_contact']    = $request->boolean('afficher_contact');
 
         $mairie->update($data);
 

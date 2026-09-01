@@ -21,6 +21,13 @@ class Ticket extends Model
         self::STATUT_REOUVERTURE => 'Réouverture demandée',
     ];
 
+    /**
+     * Dossier « Transféré » : ce n'est pas un statut mais un tri. Une demande
+     * transférée garde son statut réel (Réception, Réponse, Clôturé…) ; ce
+     * dossier la fait simplement apparaître à part pour la repérer d'un œil.
+     */
+    public const DOSSIER_TRANSFERE = 'transfere';
+
     /** Délai pendant lequel une réouverture peut être demandée (jours). */
     public const JOURS_REOUVERTURE = 15;
 
@@ -31,7 +38,7 @@ class Ticket extends Model
         'mairie_id', 'reference', 'type', 'service',
         'nom', 'prenom', 'telephone_indicatif', 'telephone', 'email',
         'sujet', 'photos', 'statut', 'confidentiel', 'confidents',
-        'transfere_service', 'transfere_user_id', 'transfere_par', 'transfere_at',
+        'transfere_services', 'transfere_users', 'transfere_par', 'transfere_at',
         'cloture_at', 'cloture_par', 'reouverture_demandee_at', 'reouverture_motif',
     ];
 
@@ -42,7 +49,8 @@ class Ticket extends Model
             'photos'                  => 'array',
             'confidentiel'            => 'boolean',
             'confidents'              => 'array',
-            'transfere_service'       => 'integer',
+            'transfere_services'      => 'array',
+            'transfere_users'         => 'array',
             'transfere_at'            => 'datetime',
             'cloture_at'              => 'datetime',
             'reouverture_demandee_at' => 'datetime',
@@ -59,12 +67,6 @@ class Ticket extends Model
         return $this->hasMany(TicketMessage::class)->orderBy('created_at');
     }
 
-    /** Personne à qui la demande a été transférée. */
-    public function destinataireTransfert()
-    {
-        return $this->belongsTo(User::class, 'transfere_user_id');
-    }
-
     /** Le « facteur » : personne qui a transféré la demande. */
     public function facteur()
     {
@@ -74,6 +76,38 @@ class Ticket extends Model
     public function estTransfere(): bool
     {
         return $this->transfere_at !== null;
+    }
+
+    /** Numéros des services destinataires du transfert. */
+    public function servicesTransfert(): array
+    {
+        return array_map('intval', $this->transfere_services ?? []);
+    }
+
+    /** Identifiants des personnes destinataires du transfert. */
+    public function idsTransfert(): array
+    {
+        return array_map('intval', $this->transfere_users ?? []);
+    }
+
+    /** Personnes à qui la demande a été transférée. */
+    public function destinatairesTransfert()
+    {
+        $ids = $this->idsTransfert();
+
+        return $ids ? User::whereIn('id', $ids)->orderBy('nom')->orderBy('prenom')->get() : collect();
+    }
+
+    /** Récapitulatif « vers qui » : services et personnes, en clair. */
+    public function libelleTransfert(): string
+    {
+        $cibles = array_map(fn ($s) => $this->mairie?->libelleService($s) ?? (string) $s, $this->servicesTransfert());
+
+        foreach ($this->destinatairesTransfert() as $agent) {
+            $cibles[] = $agent->username;
+        }
+
+        return implode(', ', $cibles);
     }
 
     // ── Libellés ─────────────────────────────────────────────────
@@ -191,14 +225,16 @@ class Ticket extends Model
             if ($numServices) {
                 $q->whereIn('service', $numServices);
                 // Demandes transférées vers un service que l'utilisateur reçoit
-                $q->orWhereIn('transfere_service', $numServices);
+                foreach ($numServices as $s) {
+                    $q->orWhereJsonContains('transfere_services', (int) $s);
+                }
             }
             if ($inconnu) {
                 $q->orWhereNull('service');
             }
 
             // Transfert nominatif, et le « facteur » garde la main sur ce qu'il a transféré
-            $q->orWhere('transfere_user_id', $user->id)
+            $q->orWhereJsonContains('transfere_users', $user->id)
               ->orWhere('transfere_par', $user->id);
 
             if (! $numServices && ! $inconnu) {
@@ -206,6 +242,25 @@ class Ticket extends Model
                 $q->orWhereRaw('1 = 0');
             }
         });
+    }
+
+    /**
+     * Droit d'agir (répondre, clôturer, transférer, traiter une réouverture).
+     *
+     * Règle : qui voit la demande peut la traiter. Auparavant on exigeait
+     * d'être destinataire du SERVICE d'origine ; depuis que l'habitant ne
+     * choisit plus de service, une demande transférée nominativement
+     * n'appartenait à aucun service et son destinataire recevait une
+     * erreur 403 alors qu'il la voyait dans sa liste.
+     */
+    public function peutEtreGerePar(User $user): bool
+    {
+        if ($user->isAdmin()) {
+            return false; // l'admin reste en lecture seule
+        }
+
+        return $user->mairie_id === $this->mairie_id
+            && static::whereKey($this->id)->visiblesPar($user)->exists();
     }
 
     /** Compteurs de notification par dossier (Réception + Réouverture demandée). */
@@ -218,6 +273,8 @@ class Ticket extends Model
             self::STATUT_REPONSE     => (clone $base)->where('statut', self::STATUT_REPONSE)->count(),
             self::STATUT_CLOTURE     => (clone $base)->where('statut', self::STATUT_CLOTURE)->count(),
             self::STATUT_REOUVERTURE => (clone $base)->where('statut', self::STATUT_REOUVERTURE)->count(),
+            // Dossier transversal : les demandes transférées, tous statuts confondus
+            self::DOSSIER_TRANSFERE  => (clone $base)->whereNotNull('transfere_at')->count(),
         ];
     }
 

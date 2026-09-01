@@ -9,7 +9,6 @@ class Mairie extends Model
     protected $fillable = [
         'nom',
         'code_postal',
-        'afficher_contact',
         'marche_inscription_ouverte',
         'email',
         'telephone_indicatif',
@@ -22,7 +21,6 @@ class Mairie extends Model
     {
         return [
             'date_fin_abonnement' => 'date',
-            'afficher_contact'    => 'boolean',
             'marche_inscription_ouverte' => 'boolean',
         ];
     }
@@ -172,24 +170,6 @@ class Mairie extends Model
         }
 
         return $agents->filter(fn ($u) => $u->voitTousLesMessages())->values();
-    }
-
-    /** Services (clés) proposés sur « Contacter votre Mairie » : au moins un destinataire. */
-    public function servicesContactables(): array
-    {
-        $users    = $this->users()->where('role', 'user')->get();
-        $services = [];
-
-        foreach (array_keys(\App\Support\Referentiel::SERVICES) as $s) {
-            foreach ($users as $u) {
-                if ($u->recoitCommunication($s)) {
-                    $services[] = $s;
-                    break;
-                }
-            }
-        }
-
-        return $services;
     }
 
     /**

@@ -119,23 +119,30 @@ class User extends Authenticatable
     }
 
     /**
-     * Catégories de messages externes que l'utilisateur reçoit (services +
-     * « inconnu »). null = défaut : la direction reçoit tout, les autres rien.
+     * Catégories de messages externes que l'utilisateur reçoit. L'habitant ne
+     * choisit plus de service sur « Contacter votre Mairie » : toutes les
+     * demandes arrivent sans service, d'où l'unique catégorie « inconnu »
+     * pilotée par la case « Réceptionner les messages extérieurs ».
      */
     public function categoriesCommunication(): array
     {
-        // Aucun service coché par défaut : un service n'apparaît sur
-        // « Contacter votre Mairie » que si quelqu'un doit y répondre.
         return $this->communication ?? [];
+    }
+
+    /** Reçoit les messages extérieurs arrivant sur « Contacter votre Mairie ». */
+    public function receptionneMessagesExternes(): bool
+    {
+        return in_array('inconnu', $this->categoriesCommunication(), true);
     }
 
     /**
      * Visibilité en lecture sur TOUS les messages de la mairie, sans être
-     * destinataire (par défaut : Maire, Directeur de Cabinet, DGS).
+     * destinataire. La direction (Maire, Directeur de Cabinet, DGS) en
+     * dispose d'office : c'est un statut, pas une case à cocher.
      */
     public function voitTousLesMessages(): bool
     {
-        return $this->voit_tous_messages ?? $this->estDirection();
+        return $this->estDirection() || (bool) $this->voit_tous_messages;
     }
 
     /** L'utilisateur reçoit-il les messages du service donné (null = « Je ne sais pas ») ? */

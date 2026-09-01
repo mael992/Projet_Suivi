@@ -55,9 +55,9 @@ class UserController extends Controller
             'grade'               => 'required|integer|in:' . implode(',', array_keys(Referentiel::GRADES)),
             'droit'               => 'nullable|in:' . implode(',', array_merge(array_keys(Referentiel::DROITS), [Referentiel::DROIT_AUCUN])),
             'fonction'            => 'nullable|string|max:150',
+            // Case unique « Réceptionner les messages extérieurs »
             'communication'       => 'nullable|array',
-            'communication.*'     => 'string|in:inconnu,' . implode(',', array_keys(Referentiel::SERVICES)),
-            'voit_tous_messages'  => 'nullable|boolean',
+            'communication.*'     => 'string|in:inconnu',
             'binome_id'           => 'nullable|exists:users,id',
             'absent'              => 'nullable|boolean',
             'absent_du'           => 'nullable|date',
@@ -89,7 +89,6 @@ class UserController extends Controller
             'droit'                    => ($data['droit'] ?? '') === '' ? Referentiel::DROIT_AUCUN : $data['droit'],
             'fonction'                 => (int) $data['grade'] === Referentiel::GRADE_EMPLOYE ? ($data['fonction'] ?? null) : null,
             'communication'            => array_values(array_unique($data['communication'] ?? [])),
-            'voit_tous_messages'       => $request->boolean('voit_tous_messages'),
             'binome_id'                => $data['binome_id'] ?? null,
             'absent'                   => $request->boolean('absent'),
             'absent_du'                => $data['absent_du'] ?? null,
@@ -129,9 +128,9 @@ class UserController extends Controller
             'grade'               => 'required|integer|in:' . implode(',', array_keys(Referentiel::GRADES)),
             'droit'               => 'nullable|in:' . implode(',', array_merge(array_keys(Referentiel::DROITS), [Referentiel::DROIT_AUCUN])),
             'fonction'            => 'nullable|string|max:150',
+            // Case unique « Réceptionner les messages extérieurs »
             'communication'       => 'nullable|array',
-            'communication.*'     => 'string|in:inconnu,' . implode(',', array_keys(Referentiel::SERVICES)),
-            'voit_tous_messages'  => 'nullable|boolean',
+            'communication.*'     => 'string|in:inconnu',
             'binome_id'           => 'nullable|exists:users,id',
             'absent'              => 'nullable|boolean',
             'absent_du'           => 'nullable|date',
@@ -157,7 +156,6 @@ class UserController extends Controller
         $user->droit    = ($data['droit'] ?? '') === '' ? Referentiel::DROIT_AUCUN : $data['droit'];
         $user->fonction = (int) $data['grade'] === Referentiel::GRADE_EMPLOYE ? ($data['fonction'] ?? null) : null;
         $user->communication      = array_values(array_unique($data['communication'] ?? []));
-        $user->voit_tous_messages = $request->boolean('voit_tous_messages');
         $user->binome_id          = ($data['binome_id'] ?? null) == $user->id ? null : ($data['binome_id'] ?? null);
         $user->absent             = $request->boolean('absent');
         $user->absent_du          = $data['absent_du'] ?? null;
