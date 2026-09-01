@@ -8,7 +8,8 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Schedule::command('tickets:cleanup')->daily();
+// (l'ancienne tâche « tickets:cleanup », héritée du squelette PlanEx, a été
+// retirée : la commande n'existe pas dans MGDS et échouait chaque nuit)
 
 // ── File d'attente des e-mails ──────────────────────────────────
 // Les mails partent en arrière-plan (pages instantanées) ; ce worker vide
