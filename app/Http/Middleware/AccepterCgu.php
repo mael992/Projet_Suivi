@@ -16,7 +16,17 @@ class AccepterCgu
     {
         $user = $request->user();
 
-        $routesLibres = ['cgu', 'cgu.accepter', 'logout', 'lang.switch', 'password.change', 'password.update'];
+        // Le changement de mot de passe imposé passe AVANT les CGU : sans cette
+        // exception, les deux middlewares se renvoient la balle indéfiniment.
+        if ($user && $user->must_change_password) {
+            return $next($request);
+        }
+
+        $routesLibres = [
+            'cgu', 'cgu.accepter', 'logout', 'lang.switch',
+            'password.force-change', 'password.force-change.update',
+            'password.request', 'password.email', 'password.reset', 'password.store', 'password.update',
+        ];
 
         if ($user && ! $user->cgu_acceptees_at && ! $request->routeIs(...$routesLibres)) {
             return redirect()->route('cgu');

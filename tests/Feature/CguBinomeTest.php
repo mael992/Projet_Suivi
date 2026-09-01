@@ -47,6 +47,28 @@ class CguBinomeTest extends TestCase
         $this->actingAs($user->fresh())->get('/apps')->assertOk();
     }
 
+    public function test_changement_de_mot_de_passe_impose_passe_avant_les_cgu(): void
+    {
+        // Cas réel : mot de passe provisoire ET CGU non acceptées.
+        // Sans priorité, les deux middlewares se renvoyaient la balle.
+        $user = User::factory()->create([
+            'mairie_id'                => $this->mairie->id,
+            'cgu_acceptees_at'         => null,
+            'must_change_password'     => true,
+            'temp_password_expires_at' => now()->addDay(),
+        ]);
+
+        // La page de changement de mot de passe s'affiche (pas de redirection vers les CGU)
+        $this->actingAs($user)->get('/password/change-required')->assertOk();
+
+        // Toute autre page mène bien au changement de mot de passe, pas aux CGU
+        $this->actingAs($user)->get('/apps')->assertRedirect(route('password.force-change'));
+
+        // Une fois le mot de passe changé, les CGU reprennent la main
+        $user->update(['must_change_password' => false]);
+        $this->actingAs($user->fresh())->get('/apps')->assertRedirect(route('cgu'));
+    }
+
     public function test_binome_reprend_les_taches_pendant_absence(): void
     {
         $titulaire = User::factory()->create([
