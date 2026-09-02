@@ -33,6 +33,8 @@ return [
     'auth_forgot_password' => 'Mot de passe oublié ?',
     'auth_forgot_desc'     => 'Mot de passe oublié ? Pas de problème. Renseignez votre adresse e-mail et nous vous enverrons un lien de réinitialisation.',
     'auth_send_reset_link' => 'Envoyer le lien',
+    'auth_temp_password_btn'  => 'Recevoir un mot de passe provisoire',
+    'auth_temp_password_help' => 'Vous recevrez un mot de passe utilisable une seule fois. Tant que vous ne l\'utilisez pas, votre mot de passe habituel reste valable.',
 
     // ════════════════════════════════════════════════════════
     // BOUTONS & COMMUNS
@@ -204,6 +206,8 @@ return [
     'force_change_btn'         => 'Valider et continuer',
     'password_changed_success' => 'Mot de passe mis à jour avec succès. Bienvenue !',
     'temp_password_expired'    => 'Votre mot de passe provisoire a expiré (48h dépassées). Veuillez contacter l\'administrateur pour en obtenir un nouveau.',
+    'temp_password_sent'       => 'Si un compte correspond à cette adresse, un mot de passe provisoire vient d\'y être envoyé.',
+    'temp_password_used'       => 'Connexion avec un mot de passe provisoire : choisissez maintenant votre nouveau mot de passe.',
 
     // Courrier PDF
     'btn_courrier'             => 'Télécharger le courrier d\'identifiants (PDF)',

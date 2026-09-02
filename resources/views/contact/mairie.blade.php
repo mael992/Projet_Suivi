@@ -33,15 +33,23 @@
                 <div class="row g-3">
                     <div class="col-12">
                         <label class="form-label fw-semibold">{{ __('Votre ville ou village') }} *</label>
-                        <select name="mairie_id" id="mairieSelect" class="form-select" required>
+                        <select name="mairie_id" id="mairieSelect" class="form-select" required
+                                @disabled($mairies->isEmpty())>
                             <option value="">— {{ __('Sélectionnez') }} —</option>
                             @foreach($mairies as $m)
                                 <option value="{{ $m->id }}" @selected(old('mairie_id') == $m->id)>{{ $m->nom }} ({{ $m->code_postal }})</option>
                             @endforeach
                         </select>
-                        <small class="text-muted">
-                            {{ __('Votre demande sera orientée vers le bon service par la mairie : vous n\'avez rien d\'autre à choisir.') }}
-                        </small>
+                        @error('mairie_id')<div class="text-danger" style="font-size:13px;">{{ $message }}</div>@enderror
+                        @if($mairies->isEmpty())
+                            <small class="text-danger">
+                                {{ __('Aucune mairie ne reçoit de demandes en ligne pour le moment.') }}
+                            </small>
+                        @else
+                            <small class="text-muted">
+                                {{ __('Votre demande sera orientée vers le bon service par la mairie : vous n\'avez rien d\'autre à choisir.') }}
+                            </small>
+                        @endif
                     </div>
 
                     <div class="col-md-6">

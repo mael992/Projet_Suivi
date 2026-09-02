@@ -13,6 +13,17 @@ class ForcePasswordChange
     {
         $user = auth()->user();
 
+        // Connexion via un mot de passe provisoire libre-service : le
+        // changement est exigé pour cette session seulement. Si la personne
+        // repart sans le faire, son mot de passe habituel reste intact.
+        if ($user && ! $user->must_change_password && $request->session()->get('mdp_provisoire_utilise')) {
+            if (! $request->routeIs('password.force-change', 'password.force-change.update', 'logout')) {
+                return redirect()->route('password.force-change');
+            }
+
+            return $next($request);
+        }
+
         if ($user && $user->must_change_password) {
 
             // Mot de passe provisoire expiré → déconnexion forcée

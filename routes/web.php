@@ -91,6 +91,15 @@ Route::middleware('auth')->group(function () {
         Route::post('/zones/{zone}/config', [ZoneController::class, 'saveConfig'])->name('zones.config');
         Route::post('/zones/{zone}/plan-pdf', [ZoneController::class, 'planPdf'])->name('zones.plan-pdf');
 
+        // 📋 Option 2 : marchés datés → endroits → plan (comparaison en cours)
+        Route::get('/liste',                       [\App\Http\Controllers\Marche\MarcheListeController::class, 'index'])->name('liste.index');
+        Route::post('/liste',                      [\App\Http\Controllers\Marche\MarcheListeController::class, 'store'])->name('liste.store');
+        Route::get('/liste/{marche}',              [\App\Http\Controllers\Marche\MarcheListeController::class, 'show'])->name('liste.show');
+        Route::put('/liste/{marche}',              [\App\Http\Controllers\Marche\MarcheListeController::class, 'update'])->name('liste.update');
+        Route::delete('/liste/{marche}',           [\App\Http\Controllers\Marche\MarcheListeController::class, 'destroy'])->name('liste.destroy');
+        Route::post('/liste/{marche}/endroits',    [\App\Http\Controllers\Marche\MarcheListeController::class, 'storeEndroit'])->name('liste.endroits.store');
+        Route::delete('/liste/{marche}/endroits/{zone}', [\App\Http\Controllers\Marche\MarcheListeController::class, 'detacherEndroit'])->name('liste.endroits.detach');
+
         // 🗺️ Plan 2D daté
         Route::get('/plan', [PlanController::class, 'index'])->name('plan');
         Route::post('/plans', [PlanController::class, 'storePlan'])->name('plans.store');
@@ -170,6 +179,12 @@ Route::middleware(['auth', 'gestion'])->prefix('gestion')->name('gestion.')->gro
     Route::get('/services',  [\App\Http\Controllers\Gestion\ServiceController::class, 'index'])->name('services.index');
     Route::put('/services',  [\App\Http\Controllers\Gestion\ServiceController::class, 'update'])->name('services.update');
     Route::post('/services', [\App\Http\Controllers\Gestion\ServiceController::class, 'store'])->name('services.store');
+
+    // Absences des agents (le binôme reste réglé sur le compte)
+    Route::get('/absences',                 [\App\Http\Controllers\Gestion\AbsenceController::class, 'index'])->name('absences.index');
+    Route::post('/absences',                [\App\Http\Controllers\Gestion\AbsenceController::class, 'store'])->name('absences.store');
+    Route::delete('/absences/{absence}',    [\App\Http\Controllers\Gestion\AbsenceController::class, 'destroy'])->name('absences.destroy');
+    Route::get('/absences/{absence}/justificatif', [\App\Http\Controllers\Gestion\AbsenceController::class, 'justificatif'])->name('absences.justificatif');
 
     // Avancement des tâches de travail
     Route::get('/avancement', [AvancementController::class, 'index'])->name('avancement');

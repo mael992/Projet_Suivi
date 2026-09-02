@@ -22,6 +22,15 @@
         <div class="alert alert-danger mb-3">{{ $errors->first() }}</div>
     @endif
 
+    <div class="alert alert-info d-flex justify-content-between align-items-center flex-wrap gap-2 py-2">
+        <span style="font-size:13px;">
+            🧪 {{ __('Présentation « option 1 » — une autre est proposée à la comparaison.') }}
+        </span>
+        <a href="{{ route('marche.liste.index', $mairieParam) }}" class="btn btn-sm btn-outline-dark">
+            📋 {{ __('Voir l\'option 2 (marchés datés)') }}
+        </a>
+    </div>
+
     <p class="text-muted mb-3" style="font-size:14px;">
         {{ __('Placez vos zones de marché (place, rue, trottoir…) sur la vue aérienne de la ville, puis cliquez sur une zone pour préparer son marché.') }}
     </p>

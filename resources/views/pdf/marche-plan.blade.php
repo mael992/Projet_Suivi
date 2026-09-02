@@ -3,19 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <style>
-    body   { font-family: DejaVu Sans, sans-serif; font-size: 11px; color: #111; margin: 0; padding: 14px 18px; }
-    h1     { font-size: 16px; margin: 0 0 2px; color: #1d3a63; }
-    .sub   { color: #666; font-size: 10px; margin-bottom: 8px; }
-    .plan  { position: relative; border: 2px solid #8f8a7e; background: #e9e5da; }
+    /* Écritures volontairement grandes : le plan est lu sur papier, souvent debout */
+    body   { font-family: DejaVu Sans, sans-serif; font-size: 14px; color: #111; margin: 0; padding: 14px 18px; }
+    h1     { font-size: 21px; margin: 0 0 3px; color: #1d3a63; }
+    .sub   { color: #555; font-size: 13px; margin-bottom: 10px; }
+    /* Fond retiré : le plan reste lisible et n'assombrit pas l'impression */
+    .plan  { position: relative; border: 2px solid #8f8a7e; background: #fff; }
     .stand { position: absolute; background: #b08d4a; border: 1px solid #12294a; color: #fff;
-             font-size: 6px; text-align: center; overflow: hidden; }
+             font-size: 10px; font-weight: bold; text-align: center; overflow: hidden; }
     .stand-nomme { background: #8a6a3b; }
     .obst  { position: absolute; border: 1px dashed #c94f46; border-radius: 50%;
-             background: rgba(201,79,70,0.12); text-align: center; font-size: 7px; color: #7a2e2e; }
-    .legende { margin-top: 8px; font-size: 9px; color: #444; }
-    table  { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 9px; }
-    th     { background: #1d3a63; color: #fff; text-align: left; padding: 3px 5px; }
-    td     { border-bottom: 1px solid #ddd; padding: 3px 5px; }
+             background: rgba(201,79,70,0.12); text-align: center; font-size: 11px;
+             font-weight: bold; color: #7a2e2e; }
+    .legende { margin-top: 10px; font-size: 12px; color: #333; }
+    table  { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+    th     { background: #1d3a63; color: #fff; text-align: left; padding: 5px 7px; }
+    td     { border-bottom: 1px solid #ddd; padding: 5px 7px; }
 </style>
 </head>
 <body>

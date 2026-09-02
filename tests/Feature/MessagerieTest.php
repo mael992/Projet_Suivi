@@ -14,6 +14,9 @@ class MessagerieTest extends TestCase
 
     private Mairie $mairie;
 
+    /** Agent de $mairie qui réceptionne les demandes extérieures. */
+    private User $facteur;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -23,6 +26,20 @@ class MessagerieTest extends TestCase
             'code_postal'         => '00000',
             'email'               => 'test@mairie.fr',
             'date_fin_abonnement' => now()->addYear()->toDateString(),
+        ]);
+
+        // Sans personne autorisée à réceptionner, la mairie n'apparaît pas
+        // sur la page publique : le parcours habitant en a donc toujours une.
+        $this->facteur = $this->receptionniste($this->mairie);
+    }
+
+    /** Agent cochant « Réceptionner les messages extérieurs ». */
+    private function receptionniste(Mairie $mairie): User
+    {
+        return User::factory()->create([
+            'mairie_id'     => $mairie->id,
+            'grade'         => \App\Support\Referentiel::GRADE_EMPLOYE,
+            'communication' => ['inconnu'],
         ]);
     }
 
@@ -55,8 +72,7 @@ class MessagerieTest extends TestCase
     {
         \Illuminate\Support\Facades\Mail::fake();
 
-        // Une personne qui voit tous les messages mais n'a aucun service coché :
-        // elle doit quand même être prévenue (filet de sécurité)
+        // La direction voit tous les messages sans être destinataire
         $maire = User::factory()->create([
             'mairie_id'          => $this->mairie->id,
             'grade'              => \App\Support\Referentiel::GRADE_MAIRE,
@@ -71,6 +87,7 @@ class MessagerieTest extends TestCase
             'email'               => 'roro@mairie.fr',
             'date_fin_abonnement' => now()->addYear()->toDateString(),
         ]);
+        $this->receptionniste($autre);
 
         $envoyer = fn (Mairie $m, string $sujet) => $this->post('/contacter-mairie', [
             'mairie_id' => $m->id,
@@ -88,14 +105,36 @@ class MessagerieTest extends TestCase
         $this->assertSame($this->mairie->id . '-2', Ticket::where('sujet', 'Deuxième')->first()->reference);
         $this->assertSame($autre->id . '-1', Ticket::where('sujet', 'Chez le voisin')->first()->reference);
 
-        // Le maire (visibilité globale) est prévenu même sans service coché
+        // L'agent qui réceptionne est prévenu par e-mail
         \Illuminate\Support\Facades\Mail::assertQueued(
             \App\Mail\NouveauMessageTicket::class,
-            fn ($mail) => $mail->hasTo('maire@mairie.fr')
+            fn ($mail) => $mail->hasTo($this->facteur->email)
         );
 
-        // Il voit les messages de sa mairie, pas ceux de la voisine
+        // Le maire voit les messages de sa mairie, pas ceux de la voisine
         $this->assertSame(2, Ticket::visiblesPar($maire)->count());
+    }
+
+    /**
+     * Filet de sécurité : si plus personne n'est coché pour réceptionner
+     * (case décochée après coup), les messages déjà arrivés remontent à la
+     * direction plutôt que de se perdre.
+     */
+    public function test_sans_receptionniste_les_messages_remontent_a_la_direction(): void
+    {
+        $maire = User::factory()->create([
+            'mairie_id'          => $this->mairie->id,
+            'grade'              => \App\Support\Referentiel::GRADE_MAIRE,
+            'email'              => 'maire@mairie.fr',
+            'communication'      => [],
+            'voit_tous_messages' => true,
+        ]);
+
+        $this->facteur->update(['communication' => []]);
+
+        $destinataires = $this->mairie->fresh()->destinatairesCommunication(null);
+
+        $this->assertSame([$maire->id], $destinataires->pluck('id')->all());
     }
 
     public function test_transfert_facteur_vers_service_et_personne(): void
@@ -419,5 +458,47 @@ class MessagerieTest extends TestCase
         $this->actingAs($admin)->post("/messagerie/tickets/{$ticket->id}/repondre", [
             'corps' => 'Interdit',
         ])->assertForbidden();
+    }
+
+    /**
+     * Une mairie n'apparaît sur « Contacter votre Mairie » que si quelqu'un
+     * peut recevoir la demande ET que son abonnement est valide.
+     */
+    public function test_mairie_listee_seulement_si_reception_et_abonnement_valides(): void
+    {
+        // Personne pour réceptionner
+        $sansAgent = Mairie::create([
+            'nom'                 => 'Mairie Sans Agent',
+            'code_postal'         => '11111',
+            'email'               => 'sansagent@mairie.fr',
+            'date_fin_abonnement' => now()->addYear()->toDateString(),
+        ]);
+
+        // Quelqu'un réceptionne, mais l'abonnement est terminé
+        $expiree = Mairie::create([
+            'nom'                 => 'Mairie Expiree',
+            'code_postal'         => '22222',
+            'email'               => 'expiree@mairie.fr',
+            'date_fin_abonnement' => now()->subDay()->toDateString(),
+        ]);
+        $this->receptionniste($expiree);
+
+        $reponse = $this->get('/contacter-mairie');
+        $reponse->assertOk()
+            ->assertSee('Mairie Test')
+            ->assertDontSee('Mairie Sans Agent')
+            ->assertDontSee('Mairie Expiree');
+
+        // Et un envoi forgé sur ces mairies est refusé
+        foreach ([$sansAgent, $expiree] as $mairie) {
+            $this->post('/contacter-mairie', [
+                'mairie_id' => $mairie->id,
+                'nom'       => 'Dupont', 'prenom' => 'Marie',
+                'telephone' => '0612345678', 'email' => 'marie@example.fr',
+                'sujet'     => 'Test', 'message' => 'Bonjour, ceci est un test.',
+            ])->assertSessionHasErrors('mairie_id');
+        }
+
+        $this->assertSame(0, Ticket::count());
     }
 }

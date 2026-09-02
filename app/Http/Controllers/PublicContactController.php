@@ -21,9 +21,10 @@ class PublicContactController extends Controller
     {
         // L'habitant choisit uniquement sa commune : c'est la mairie qui
         // oriente ensuite la demande vers le bon service (« facteur »).
-        // Toutes les mairies inscrites sont proposées.
+        // Une mairie n'est proposée que si quelqu'un peut réellement lui
+        // répondre (réception autorisée + abonnement valide).
         return view('contact.mairie', [
-            'mairies' => Mairie::orderBy('nom')->get(),
+            'mairies' => Mairie::joignables(),
         ]);
     }
 
@@ -43,7 +44,15 @@ class PublicContactController extends Controller
             'photos.*'            => 'image|max:8192',
         ]);
 
-        $mairie = Mairie::findOrFail($data['mairie_id']);
+        $mairie = Mairie::with('users')->findOrFail($data['mairie_id']);
+
+        // Formulaire resté ouvert pendant que la mairie se retirait, ou envoi
+        // forgé : sans destinataire ni abonnement valide, la demande se perdrait.
+        if (! $mairie->joignablePubliquement()) {
+            return back()
+                ->withErrors(['mairie_id' => __('Cette mairie ne reçoit pas de demandes en ligne pour le moment.')])
+                ->withInput();
+        }
 
         $photos = [];
         foreach ($request->file('photos', []) as $photo) {

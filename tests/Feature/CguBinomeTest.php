@@ -99,10 +99,12 @@ class CguBinomeTest extends TestCase
         $this->assertFalse(Tache::visiblesPar($binome->fresh())->whereKey($tache->id)->exists());
 
         // Absence en cours → le binôme voit la tâche et peut la clôturer
-        $titulaire->update([
-            'absent'    => true,
-            'absent_du' => now()->subDay()->toDateString(),
-            'absent_au' => now()->addWeek()->toDateString(),
+        \App\Models\Absence::create([
+            'mairie_id'  => $this->mairie->id,
+            'user_id'    => $titulaire->id,
+            'motif'      => 'vacances',
+            'date_debut' => now()->subDay()->toDateString(),
+            'date_fin'   => now()->addWeek()->toDateString(),
         ]);
 
         $binome->refresh();

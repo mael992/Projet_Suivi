@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Auth\ForcePasswordChangeController;
+use App\Http\Controllers\Auth\MotDePasseProvisoireController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
@@ -27,6 +28,11 @@ Route::middleware('guest')->group(function () {
 
     Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
         ->name('password.email');
+
+    // « Recevoir un mot de passe provisoire » : n'écrase pas le mot de passe actuel
+    Route::post('forgot-password/provisoire', [MotDePasseProvisoireController::class, 'store'])
+        ->middleware('throttle:6,1')
+        ->name('password.provisoire');
 
     Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])
         ->name('password.reset');

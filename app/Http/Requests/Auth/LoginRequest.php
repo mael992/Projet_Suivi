@@ -51,14 +51,37 @@ class LoginRequest extends FormRequest
         $credentials = $this->only('username', 'password');
 
         if (! Auth::attempt($credentials, $this->boolean('remember'))) {
-            RateLimiter::hit($this->throttleKey());
+            // Second essai : le mot de passe provisoire reçu par e-mail. Il
+            // s'ajoute au mot de passe habituel sans l'avoir remplacé.
+            if (! $this->connecterAvecPasswordProvisoire($user)) {
+                RateLimiter::hit($this->throttleKey());
 
-            throw ValidationException::withMessages([
-                'username' => trans('auth.failed'),
-            ]);
+                throw ValidationException::withMessages([
+                    'username' => trans('auth.failed'),
+                ]);
+            }
         }
 
         RateLimiter::clear($this->throttleKey());
+    }
+
+    /**
+     * Connexion par mot de passe provisoire : usage unique, et le mot de
+     * passe habituel reste inchangé tant que la personne n'en a pas choisi
+     * un nouveau (d'où le drapeau de session plutôt qu'en base).
+     */
+    private function connecterAvecPasswordProvisoire(?User $user): bool
+    {
+        if (! $user || ! $user->passwordProvisoireCorrespond($this->string('password')->toString())) {
+            return false;
+        }
+
+        $user->consommerPasswordProvisoire();
+
+        Auth::login($user);
+        $this->session()->put('mdp_provisoire_utilise', true);
+
+        return true;
     }
 
     /**

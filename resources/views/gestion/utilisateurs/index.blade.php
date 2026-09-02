@@ -31,6 +31,7 @@
         </div>
         <div class="d-flex gap-2">
             <a href="{{ route('gestion.services.index') }}" class="btn btn-outline-dark">🏢 {{ __('Services de la mairie') }}</a>
+            <a href="{{ route('gestion.absences.index') }}" class="btn btn-outline-dark">🗓️ {{ __('Absences') }}</a>
             <a href="{{ route('gestion.utilisateurs.create') }}" class="btn btn-primary">{{ __('+ Ajouter') }}</a>
         </div>
     </div>

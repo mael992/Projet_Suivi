@@ -81,7 +81,7 @@ class MgdsPagesTest extends TestCase
             'mairie_id' => $this->mairie->id,
             'service'   => 1,
             'grade'     => Referentiel::GRADE_DIR_CABINET,
-            'droit'     => Referentiel::DROIT_AUCUN,
+            'droits'    => [],
         ]);
 
         $this->assertFalse($chef->aDroit('marche_gestion'));

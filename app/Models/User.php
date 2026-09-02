@@ -6,6 +6,7 @@ use App\Support\Referentiel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class User extends Authenticatable
@@ -25,15 +26,11 @@ class User extends Authenticatable
         'mairie_id',
         'service',
         'grade',
-        'droit',
+        'droits',
         'communication',
         'voit_tous_messages',
         'cgu_acceptees_at',
         'binome_id',
-        'absent',
-        'absent_du',
-        'absent_au',
-        'absence_motif',
         'fonction',
         'reference',
         'telephone_indicatif',
@@ -42,6 +39,7 @@ class User extends Authenticatable
 
     protected $hidden = [
         'password',
+        'password_provisoire',
         'remember_token',
     ];
 
@@ -50,15 +48,14 @@ class User extends Authenticatable
         return [
             'password'                 => 'hashed',
             'temp_password_expires_at' => 'datetime',
+            'password_provisoire_expires_at' => 'datetime',
             'must_change_password'     => 'boolean',
             'service'                  => 'integer',
             'grade'                    => 'integer',
             'communication'            => 'array',
+            'droits'                   => 'array',
             'voit_tous_messages'       => 'boolean',
             'cgu_acceptees_at'         => 'datetime',
-            'absent'                   => 'boolean',
-            'absent_du'                => 'date',
-            'absent_au'                => 'date',
         ];
     }
 
@@ -82,28 +79,28 @@ class User extends Authenticatable
     }
 
     /**
-     * Droit d'application le plus fort de l'utilisateur :
-     *  - null           → droit par défaut du grade
-     *  - 'aucun'        → aucun droit (explicitement retiré)
-     *  - clé de droit   → ce droit et tous les plus faibles
+     * Droits réellement cochés sur la fiche, sans les droits impliqués :
+     *  - null → droits par défaut du grade
+     *  - []   → aucun droit (explicitement retiré)
      */
-    public function droitActuel(): string
+    public function droitsCoches(): array
     {
-        if ($this->droit === null) {
-            return Referentiel::droitDefaut($this->grade);
-        }
+        return $this->droits ?? Referentiel::droitsDefaut($this->grade);
+    }
 
-        return $this->droit === Referentiel::DROIT_AUCUN ? '' : $this->droit;
+    /** Droits effectifs : les cases cochées, plus ce qu'elles impliquent. */
+    public function droitsActuels(): array
+    {
+        return Referentiel::expanserDroits($this->droitsCoches());
     }
 
     /**
-     * Système hiérarchique : posséder un droit donne tous les droits
-     * plus faibles (situés à sa droite dans Referentiel::DROITS).
+     * Chaque droit est indépendant : seules les implications déclarées dans
+     * Referentiel::DROITS_IMPLIQUES en accordent d'autres.
      */
     public function aDroit(string $droit): bool
     {
-        return $this->isAdmin()
-            || Referentiel::rangDroit($this->droitActuel()) <= Referentiel::rangDroit($droit);
+        return $this->isAdmin() || in_array($droit, $this->droitsActuels(), true);
     }
 
     /** Peuvent créer / modifier / supprimer des tâches */
@@ -166,26 +163,29 @@ class User extends Authenticatable
         return $this->hasMany(User::class, 'binome_id');
     }
 
-    /** Absence en cours aujourd'hui (dates incluses). */
+    /** Absences déclarées pour cette personne (passées, en cours, à venir). */
+    public function absences()
+    {
+        return $this->hasMany(Absence::class);
+    }
+
+    /** Absence couvrant aujourd'hui (dates incluses). */
     public function estAbsent(): bool
     {
-        if (! $this->absent) {
-            return false;
-        }
+        return $this->absences()->enCours()->exists();
+    }
 
-        $auj = now()->startOfDay();
-
-        return (! $this->absent_du || $this->absent_du->lte($auj))
-            && (! $this->absent_au || $this->absent_au->gte($auj));
+    /** L'absence du jour, pour afficher le motif et la période. */
+    public function absenceEnCours(): ?Absence
+    {
+        return $this->absences()->enCours()->orderBy('date_debut')->first();
     }
 
     /** Ids des personnes actuellement absentes que cet utilisateur remplace. */
     public function idsRemplaces(): array
     {
         return $this->remplaces()
-            ->where('absent', true)
-            ->get()
-            ->filter(fn ($u) => $u->estAbsent())
+            ->whereHas('absences', fn ($q) => $q->enCours())
             ->pluck('id')
             ->all();
     }
@@ -246,6 +246,55 @@ class User extends Authenticatable
     {
         return $this->temp_password_expires_at !== null
             && $this->temp_password_expires_at->isPast();
+    }
+
+    // ── Mot de passe provisoire en libre-service ─────────────────
+
+    /** Durée de validité du mot de passe provisoire envoyé par e-mail. */
+    public const HEURES_PASSWORD_PROVISOIRE = 2;
+
+    /**
+     * Génère un mot de passe provisoire, le stocke haché et renvoie sa
+     * version en clair (à envoyer par e-mail, jamais conservée).
+     *
+     * Le mot de passe habituel n'est PAS modifié : si la personne ignore
+     * l'e-mail, elle continue de se connecter comme avant et le provisoire
+     * cesse simplement de fonctionner.
+     */
+    public function genererPasswordProvisoire(): string
+    {
+        $clair = Str::password(12, symbols: false, spaces: false);
+
+        $this->forceFill([
+            'password_provisoire'            => Hash::make($clair),
+            'password_provisoire_expires_at' => now()->addHours(self::HEURES_PASSWORD_PROVISOIRE),
+        ])->save();
+
+        return $clair;
+    }
+
+    /** Un mot de passe provisoire est-il en cours de validité ? */
+    public function passwordProvisoireActif(): bool
+    {
+        return $this->password_provisoire !== null
+            && $this->password_provisoire_expires_at !== null
+            && $this->password_provisoire_expires_at->isFuture();
+    }
+
+    /** Le mot de passe saisi correspond-il au provisoire encore valide ? */
+    public function passwordProvisoireCorrespond(string $clair): bool
+    {
+        return $this->passwordProvisoireActif()
+            && Hash::check($clair, $this->password_provisoire);
+    }
+
+    /** Usage unique : le provisoire est effacé dès qu'il a servi (ou expiré). */
+    public function consommerPasswordProvisoire(): void
+    {
+        $this->forceFill([
+            'password_provisoire'            => null,
+            'password_provisoire_expires_at' => null,
+        ])->save();
     }
 
     // ── Génération automatique ───────────────────────────────────

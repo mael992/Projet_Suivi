@@ -53,16 +53,13 @@ class UserController extends Controller
             'nom'                 => 'required|string|max:100',
             'service'             => 'required|integer|in:' . implode(',', array_keys(Referentiel::SERVICES)),
             'grade'               => 'required|integer|in:' . implode(',', array_keys(Referentiel::GRADES)),
-            'droit'               => 'nullable|in:' . implode(',', array_merge(array_keys(Referentiel::DROITS), [Referentiel::DROIT_AUCUN])),
+            'droits'              => 'nullable|array',
+            'droits.*'            => 'string|in:' . implode(',', array_keys(Referentiel::DROITS)),
             'fonction'            => 'nullable|string|max:150',
             // Case unique « Réceptionner les messages extérieurs »
             'communication'       => 'nullable|array',
             'communication.*'     => 'string|in:inconnu',
             'binome_id'           => 'nullable|exists:users,id',
-            'absent'              => 'nullable|boolean',
-            'absent_du'           => 'nullable|date',
-            'absent_au'           => 'nullable|date|after_or_equal:absent_du',
-            'absence_motif'       => 'nullable|string|max:100',
             'email'               => 'nullable|email|unique:users,email',
             'telephone_indicatif' => 'nullable|string|max:8',
             'telephone'           => 'nullable|string|max:20',
@@ -77,7 +74,7 @@ class UserController extends Controller
             'prenom'                   => $data['prenom'],
             'nom'                      => $data['nom'],
             'username'                 => User::genererUsername($data['prenom'], $data['nom']),
-            'email'                    => $data['email'] ?: null,
+            'email'                    => ($data['email'] ?? null) ?: null,
             'password'                 => Hash::make($data['password']),
             'temp_password'            => $data['password'],
             'temp_password_expires_at' => now()->addHours(48),
@@ -86,17 +83,13 @@ class UserController extends Controller
             'mairie_id'                => $mairie->id,
             'service'                  => (int) $data['service'],
             'grade'                    => (int) $data['grade'],
-            'droit'                    => ($data['droit'] ?? '') === '' ? Referentiel::DROIT_AUCUN : $data['droit'],
+            'droits'                   => array_values(array_unique($data['droits'] ?? [])),
             'fonction'                 => (int) $data['grade'] === Referentiel::GRADE_EMPLOYE ? ($data['fonction'] ?? null) : null,
             'communication'            => array_values(array_unique($data['communication'] ?? [])),
             'binome_id'                => $data['binome_id'] ?? null,
-            'absent'                   => $request->boolean('absent'),
-            'absent_du'                => $data['absent_du'] ?? null,
-            'absent_au'                => $data['absent_au'] ?? null,
-            'absence_motif'            => $data['absence_motif'] ?? null,
             'reference'                => User::genererReference($mairie->id, (int) $data['service']),
-            'telephone_indicatif'      => $data['telephone_indicatif'] ?: '+33',
-            'telephone'                => $data['telephone'] ?: null,
+            'telephone_indicatif'      => ($data['telephone_indicatif'] ?? null) ?: '+33',
+            'telephone'                => ($data['telephone'] ?? null) ?: null,
         ]);
 
         ActivityLogger::user('CREATE', "Utilisateur créé : \"{$user->username}\" (mairie : {$mairie->nom}, service : {$user->service_label}, grade : {$user->grade_label})");
@@ -126,16 +119,13 @@ class UserController extends Controller
             'nom'                 => 'required|string|max:100',
             'service'             => 'required|integer|in:' . implode(',', array_keys(Referentiel::SERVICES)),
             'grade'               => 'required|integer|in:' . implode(',', array_keys(Referentiel::GRADES)),
-            'droit'               => 'nullable|in:' . implode(',', array_merge(array_keys(Referentiel::DROITS), [Referentiel::DROIT_AUCUN])),
+            'droits'              => 'nullable|array',
+            'droits.*'            => 'string|in:' . implode(',', array_keys(Referentiel::DROITS)),
             'fonction'            => 'nullable|string|max:150',
             // Case unique « Réceptionner les messages extérieurs »
             'communication'       => 'nullable|array',
             'communication.*'     => 'string|in:inconnu',
             'binome_id'           => 'nullable|exists:users,id',
-            'absent'              => 'nullable|boolean',
-            'absent_du'           => 'nullable|date',
-            'absent_au'           => 'nullable|date|after_or_equal:absent_du',
-            'absence_motif'       => 'nullable|string|max:100',
             'email'               => 'nullable|email|unique:users,email,' . $user->id,
             'telephone_indicatif' => 'nullable|string|max:8',
             'telephone'           => 'nullable|string|max:20',
@@ -153,17 +143,13 @@ class UserController extends Controller
         $user->nom     = $data['nom'];
         $user->service  = (int) $data['service'];
         $user->grade    = (int) $data['grade'];
-        $user->droit    = ($data['droit'] ?? '') === '' ? Referentiel::DROIT_AUCUN : $data['droit'];
+        $user->droits   = array_values(array_unique($data['droits'] ?? []));
         $user->fonction = (int) $data['grade'] === Referentiel::GRADE_EMPLOYE ? ($data['fonction'] ?? null) : null;
         $user->communication      = array_values(array_unique($data['communication'] ?? []));
         $user->binome_id          = ($data['binome_id'] ?? null) == $user->id ? null : ($data['binome_id'] ?? null);
-        $user->absent             = $request->boolean('absent');
-        $user->absent_du          = $data['absent_du'] ?? null;
-        $user->absent_au          = $data['absent_au'] ?? null;
-        $user->absence_motif      = $data['absence_motif'] ?? null;
-        $user->email    = $data['email'] ?: null;
-        $user->telephone_indicatif = $data['telephone_indicatif'] ?: '+33';
-        $user->telephone           = $data['telephone'] ?: null;
+        $user->email    = ($data['email'] ?? null) ?: null;
+        $user->telephone_indicatif = ($data['telephone_indicatif'] ?? null) ?: '+33';
+        $user->telephone           = ($data['telephone'] ?? null) ?: null;
 
         if ($nomChange) {
             $user->username = User::genererUsername($data['prenom'], $data['nom'], $user->id);

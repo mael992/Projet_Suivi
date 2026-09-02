@@ -173,6 +173,40 @@ class Mairie extends Model
     }
 
     /**
+     * Personnes autorisées à réceptionner les demandes arrivant par
+     * « Contacter votre Mairie » (case « Réceptionner les messages extérieurs »).
+     */
+    public function receptionnistesExternes()
+    {
+        return $this->users
+            ->where('role', 'user')
+            ->filter(fn ($u) => $u->receptionneMessagesExternes())
+            ->values();
+    }
+
+    /**
+     * La mairie apparaît-elle dans la liste de « Contacter votre Mairie » ?
+     * Plus aucun interrupteur administrateur : la présence est déduite de
+     * deux conditions, sinon la demande n'aurait personne pour la traiter.
+     *  - au moins une personne autorisée à réceptionner les messages extérieurs ;
+     *  - un abonnement encore valide.
+     */
+    public function joignablePubliquement(): bool
+    {
+        return ! $this->abonnementExpire() && $this->receptionnistesExternes()->isNotEmpty();
+    }
+
+    /** Mairies proposées sur la page publique, triées par nom. */
+    public static function joignables()
+    {
+        return static::with('users')
+            ->orderBy('nom')
+            ->get()
+            ->filter(fn (self $m) => $m->joignablePubliquement())
+            ->values();
+    }
+
+    /**
      * Destinataires des emails d'abonnement : les personnes qui dirigent
      * la mairie (Maire, Directeur de Cabinet, DGS) + les observateurs
      * + l'adresse de la mairie elle-même.

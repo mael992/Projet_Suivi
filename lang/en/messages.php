@@ -33,6 +33,8 @@ return [
     'auth_forgot_password' => 'Forgot your password?',
     'auth_forgot_desc'     => 'Forgot your password? No problem. Enter your email address and we will send you a reset link.',
     'auth_send_reset_link' => 'Send Reset Link',
+    'auth_temp_password_btn'  => 'Get a temporary password',
+    'auth_temp_password_help' => 'You will receive a single-use password. As long as you do not use it, your usual password stays valid.',
 
     // ════════════════════════════════════════════════════════
     // BUTTONS & COMMON
@@ -203,6 +205,9 @@ return [
     'force_change_confirm'     => 'Confirm password',
     'force_change_btn'         => 'Save and continue',
     'password_changed_success' => 'Password updated successfully. Welcome!',
+    'temp_password_expired'    => 'Your temporary password has expired. Please ask your administrator for a new one.',
+    'temp_password_sent'       => 'If an account matches this address, a temporary password has just been sent to it.',
+    'temp_password_used'       => 'Signed in with a temporary password: please choose your new password now.',
 
     // Credentials PDF
     'btn_courrier'             => 'Download credentials letter (PDF)',

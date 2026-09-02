@@ -28,6 +28,10 @@ class ForcePasswordChangeController extends Controller
         $user->must_change_password       = false;
         $user->save();
 
+        // Le provisoire libre-service a joué son rôle
+        $user->consommerPasswordProvisoire();
+        $request->session()->forget('mdp_provisoire_utilise');
+
         ActivityLogger::auth('PASSWORD_CHANGED', 'Mot de passe provisoire remplacé avec succès');
 
         return redirect()->intended(

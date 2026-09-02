@@ -222,12 +222,6 @@ class ZoneController extends Controller
 
     // ── Helpers ──────────────────────────────────────────────────
 
-    private function mairiesPourSelecteur()
-    {
-        return auth()->user()->isAdmin()
-            ? \App\Models\Mairie::orderBy('nom')->get(['id', 'nom'])
-            : collect();
-    }
 
     private function verifierZone(Request $request, MarcheZone $zone): void
     {
@@ -235,8 +229,4 @@ class ZoneController extends Controller
         abort_if($zone->mairie_id !== $mairie->id, 403);
     }
 
-    private function paramMairie(Request $request): array
-    {
-        return $request->filled('mairie') ? ['mairie' => $request->input('mairie')] : [];
-    }
 }

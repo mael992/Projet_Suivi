@@ -116,7 +116,7 @@ class GuideAide
                     "Réponse : la mairie a répondu au dernier message.",
                     "Clôturé : la conversation est fermée ; elle reste consultable 6 mois.",
                     "Réouverture demandée : l'habitant demande la réouverture ; vous acceptez ou refusez.",
-                    "Vous ne recevez que les services cochés dans votre « Droit communication extérieur » (réglé par votre mairie).",
+                    "Vous ne recevez ces demandes que si la case « Réceptionner les messages extérieurs » est cochée sur votre compte (réglée par votre mairie).",
                 ],
                 'astuces' => [
                     "Les messages envoyés ne peuvent être ni modifiés ni supprimés.",

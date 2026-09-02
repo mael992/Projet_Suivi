@@ -2,8 +2,8 @@
     use App\Support\Referentiel;
 
     /** @var \App\Models\User|null $user */
-    $droitActuel = old('droit', isset($user) ? $user->droitActuel() : '');
-    $rangActuel  = $droitActuel !== '' ? Referentiel::rangDroit($droitActuel) : null;
+    // Cases réellement cochées ; les droits impliqués sont recalculés en JS
+    $droitsCoches = old('droits', isset($user) ? $user->droitsCoches() : []);
 
     // Grades autorisés par service (couplage du formulaire)
     $gradesParService = [];
@@ -21,13 +21,12 @@
     <small class="text-muted">{{ __('Rôle affiché sur la Fiche Contact quand la personne n\'est ni Maire, ni Directeur de Cabinet, ni DGS.') }}</small>
 </div>
 
-{{-- ── Droits d'application (du plus fort au plus faible) ── --}}
+{{-- ── Droits d'application (une case par application) ── --}}
 <div class="col-12">
     <label class="form-label fw-semibold mb-1">{{ __('Droits d\'application') }}</label>
     <p class="text-muted mb-2" style="font-size:12px;">
-        {{ __('Du plus élevé (gauche) au plus faible (droite) : cocher un droit donne automatiquement tous les droits situés à sa droite.') }}
+        {{ __('Chaque application se coche indépendamment. Deux exceptions : « Gestion des utilisateurs » donne accès à tout, et « modification » donne la « lecture » de la même application.') }}
     </p>
-    <input type="hidden" name="droit" id="droitInput" value="{{ $droitActuel }}">
     <div class="table-responsive">
         <table class="table table-bordered table-sm mb-1 text-center align-middle" style="font-size:12px;">
             <thead class="table-dark">
@@ -42,68 +41,39 @@
             </thead>
             <tbody>
                 <tr>
-                    @foreach(array_keys(Referentiel::DROITS) as $i => $cle)
+                    @foreach(array_keys(Referentiel::DROITS) as $cle)
                         <td>
-                            <input type="checkbox" class="form-check-input droit-case" data-rang="{{ $i }}" data-cle="{{ $cle }}"
-                                   @checked($rangActuel !== null && $i >= $rangActuel)>
+                            <input type="checkbox" class="form-check-input droit-case" name="droits[]"
+                                   value="{{ $cle }}" data-cle="{{ $cle }}"
+                                   @checked(in_array($cle, $droitsCoches, true))>
                         </td>
                     @endforeach
                 </tr>
             </tbody>
         </table>
     </div>
-    <small class="text-muted">{{ __('Si aucune case n\'est cochée, le droit par défaut du statut est appliqué.') }}</small>
+    <small class="text-muted">{{ __('Une case grisée est accordée automatiquement par une autre : décochez celle qui la donne pour la retirer. Aucune case cochée = aucun accès aux applications.') }}</small>
 </div>
 
-{{-- ── Absence & binôme ── --}}
+{{-- ── Binôme (l'absence se déclare désormais sur sa propre page) ── --}}
 <div class="col-12">
-    <label class="form-label fw-semibold mb-1">🤝 {{ __('Binôme & absence') }}</label>
+    <label class="form-label fw-semibold mb-1">🤝 {{ __('Binôme') }}</label>
     <p class="text-muted mb-2" style="font-size:12px;">
         {{ __('Pendant une absence (congés, arrêt…), le binôme voit et peut traiter les tâches de cette personne.') }}
+        @if(\Illuminate\Support\Facades\Route::has('gestion.absences.index'))
+            <a href="{{ route('gestion.absences.index') }}">{{ __('Déclarer une absence →') }}</a>
+        @endif
     </p>
     <div class="border rounded p-2">
-        <div class="row g-2">
-            <div class="col-md-6">
-                <label class="form-label mb-1" style="font-size:12px;">{{ __('Binôme (remplaçant)') }}</label>
-                <select name="binome_id" class="form-select form-select-sm">
-                    <option value="">— {{ __('Aucun') }} —</option>
-                    @foreach($binomesPossibles ?? [] as $b)
-                        <option value="{{ $b->id }}" @selected(old('binome_id', $user->binome_id ?? null) == $b->id)>
-                            {{ $b->username }} ({{ $b->service_label }})
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="col-md-6 d-flex align-items-end">
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="absent" value="1" id="absent"
-                           @checked(old('absent', $user->absent ?? false)) onchange="majAbsence()">
-                    <label class="form-check-label fw-semibold" for="absent" style="font-size:13px;">
-                        🚪 {{ __('Actuellement absent(e)') }}
-                    </label>
-                </div>
-            </div>
-            <div class="col-12 d-none" id="blocAbsence">
-                <div class="row g-2">
-                    <div class="col-md-4">
-                        <label class="form-label mb-1" style="font-size:12px;">{{ __('Du') }}</label>
-                        <input type="date" name="absent_du" class="form-control form-control-sm"
-                               value="{{ old('absent_du', isset($user) ? $user->absent_du?->format('Y-m-d') : null) }}">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label mb-1" style="font-size:12px;">{{ __('Au') }}</label>
-                        <input type="date" name="absent_au" class="form-control form-control-sm"
-                               value="{{ old('absent_au', isset($user) ? $user->absent_au?->format('Y-m-d') : null) }}">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label mb-1" style="font-size:12px;">{{ __('Motif') }}</label>
-                        <input type="text" name="absence_motif" maxlength="100" class="form-control form-control-sm"
-                               value="{{ old('absence_motif', $user->absence_motif ?? '') }}"
-                               placeholder="{{ __('congés, arrêt maladie…') }}">
-                    </div>
-                </div>
-            </div>
-        </div>
+        <label class="form-label mb-1" style="font-size:12px;">{{ __('Binôme (remplaçant)') }}</label>
+        <select name="binome_id" class="form-select form-select-sm">
+            <option value="">— {{ __('Aucun') }} —</option>
+            @foreach($binomesPossibles ?? [] as $b)
+                <option value="{{ $b->id }}" @selected(old('binome_id', $user->binome_id ?? null) == $b->id)>
+                    {{ $b->username }} ({{ $b->service_label }})
+                </option>
+            @endforeach
+        </select>
     </div>
 </div>
 
@@ -133,7 +103,6 @@
 <script>
 (function () {
     const cases      = Array.from(document.querySelectorAll('.droit-case'));
-    const droitInput = document.getElementById('droitInput');
     const serviceSel = document.querySelector('select[name=service]');
     const gradeSel   = document.querySelector('select[name=grade]');
 
@@ -141,34 +110,49 @@
     const GRADES_PAR_SERVICE = @json($gradesParService);
     const GRADE_EMPLOYE      = {{ Referentiel::GRADE_EMPLOYE }};
 
-    // Droit par défaut de chaque statut (Maire/Dir Cabinet/DGS = tout coché, Employé = rien)
-    const DEFAUTS = { 1: 'gestion_utilisateurs', 2: 'gestion_utilisateurs', 3: 'gestion_utilisateurs', 4: '' };
+    // Droits accordés automatiquement par un droit coché (même liste qu'en PHP)
+    const IMPLIQUES = @json(Referentiel::DROITS_IMPLIQUES);
+
+    // Droits par défaut de chaque statut (direction = accès complet, employé = rien)
+    const DEFAUTS = { 1: ['gestion_utilisateurs'], 2: ['gestion_utilisateurs'], 3: ['gestion_utilisateurs'], 4: [] };
 
     const gradeInitial = gradeSel ? gradeSel.value : '';
 
-    function appliquerCascade(rang, coche) {
+    /**
+     * Une case accordée par une autre est cochée et verrouillée : on la
+     * retire en décochant celle qui la donne, pas directement.
+     * Les cases verrouillées ne sont pas envoyées — le serveur réapplique
+     * les mêmes implications.
+     */
+    // Cases explicitement choisies ; les cases accordées automatiquement
+    // n'y figurent pas et ne sont pas envoyées (le serveur les recalcule).
+    const choisis = new Set(cases.filter(c => c.checked).map(c => c.dataset.cle));
+
+    function rendre() {
+        const forces = new Set();
+        choisis.forEach(cle => (IMPLIQUES[cle] || []).forEach(x => forces.add(x)));
+        // Un droit devenu implicite n'a plus besoin d'être coché explicitement
+        forces.forEach(cle => choisis.delete(cle));
+
         cases.forEach(c => {
-            const r = parseInt(c.dataset.rang, 10);
-            if (coche  && r >= rang) c.checked = true;
-            if (!coche && r <= rang) c.checked = false;
+            const force = forces.has(c.dataset.cle);
+            c.disabled  = force;
+            c.checked   = force || choisis.has(c.dataset.cle);
+            c.closest('td')?.classList.toggle('table-secondary', force);
         });
-        majDroit();
     }
 
-    function majDroit() {
-        const premier = cases.find(c => c.checked);
-        droitInput.value = premier ? premier.dataset.cle : '';
+    function cocherDroits(cles) {
+        choisis.clear();
+        cles.forEach(cle => choisis.add(cle));
+        rendre();
     }
 
-    function cocherDepuisCle(cle) {
-        cases.forEach(c => c.checked = false);
-        const cible = cases.find(c => c.dataset.cle === cle);
-        if (cible) appliquerCascade(parseInt(cible.dataset.rang, 10), true);
-        else majDroit();
-    }
-
-    cases.forEach(c => c.addEventListener('change', () =>
-        appliquerCascade(parseInt(c.dataset.rang, 10), c.checked)));
+    cases.forEach(c => c.addEventListener('change', () => {
+        if (c.checked) choisis.add(c.dataset.cle);
+        else           choisis.delete(c.dataset.cle);
+        rendre();
+    }));
 
     // Statut visible = employé → champ Fonction affiché
     function majFonction() {
@@ -184,7 +168,7 @@
     function onGradeChange() {
         majFonction();
         if (initialise) {
-            cocherDepuisCle(DEFAUTS[parseInt(gradeSel?.value || '0', 10)] || '');
+            cocherDroits(DEFAUTS[parseInt(gradeSel?.value || '0', 10)] || []);
         }
     }
 
@@ -226,12 +210,7 @@
         }
     }
     majFonction();
-    majDroit();       // le champ caché reflète les cases affichées
-    window.majAbsence = function () {
-        const coche = document.getElementById('absent')?.checked;
-        document.getElementById('blocAbsence')?.classList.toggle('d-none', !coche);
-    };
-    majAbsence();
+    rendre();         // verrouille les cases accordées automatiquement
     initialise = true; // à partir d'ici, changer de statut applique les défauts
 })();
 </script>

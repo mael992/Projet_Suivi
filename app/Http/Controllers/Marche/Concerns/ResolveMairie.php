@@ -37,4 +37,18 @@ trait ResolveMairie
     {
         abort_unless(auth()->user()->aDroit('marche_gestion'), 403);
     }
+
+    /** Sélecteur de mairie : réservé aux admins, vide pour les autres. */
+    protected function mairiesPourSelecteur()
+    {
+        return auth()->user()->isAdmin()
+            ? Mairie::orderBy('nom')->get(['id', 'nom'])
+            : collect();
+    }
+
+    /** Conserve ?mairie= d'une redirection à l'autre. */
+    protected function paramMairie(Request $request): array
+    {
+        return $request->filled('mairie') ? ['mairie' => $request->input('mairie')] : [];
+    }
 }

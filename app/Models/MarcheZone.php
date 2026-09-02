@@ -29,6 +29,7 @@ class MarcheZone extends Model
 
     protected $fillable = [
         'mairie_id',
+        'marche_id',
         'nom',
         'type',
         'pos_x',
@@ -60,6 +61,12 @@ class MarcheZone extends Model
     public function mairie()
     {
         return $this->belongsTo(Mairie::class);
+    }
+
+    /** Marche de rattachement (navigation « option 2 »), null sinon. */
+    public function marche()
+    {
+        return $this->belongsTo(Marche::class);
     }
 
     public function getTypeLabelAttribute(): string

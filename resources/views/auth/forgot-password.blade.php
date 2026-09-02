@@ -15,7 +15,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('password.email') }}">
+    <form method="POST" action="{{ route('password.email') }}" id="formMotDePasse">
         @csrf
 
         <div class="mb-4">
@@ -34,6 +34,16 @@
                 onmouseout="this.style.background='var(--brand)'">
             {{ __('messages.auth_send_reset_link') }}
         </button>
+
+        {{-- Même adresse, autre destination : un mot de passe provisoire à usage unique --}}
+        <button type="submit" class="btn w-100 fw-semibold py-2 mt-2"
+                formaction="{{ route('password.provisoire') }}"
+                style="background:transparent;color:var(--brand);border:1px solid var(--brand);border-radius:var(--radius);font-size:15px;">
+            🔐 {{ __('messages.auth_temp_password_btn') }}
+        </button>
+        <p class="text-muted mt-2 mb-0" style="font-size:12px;">
+            {{ __('messages.auth_temp_password_help') }}
+        </p>
     </form>
 
     <div class="text-center mt-3">

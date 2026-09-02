@@ -65,9 +65,9 @@ class Referentiel
         self::GRADE_DGS,
     ];
 
-    // ── Droits d'application (du plus fort au plus faible) ───────
-    // Système hiérarchique : posséder un droit donne automatiquement
-    // tous les droits situés à sa droite dans cette liste.
+    // ── Droits d'application ─────────────────────────────────────
+    // Chaque droit se coche indépendamment (l'ordre ci-dessous ne sert
+    // qu'à l'affichage). Voir DROITS_IMPLIQUES pour les seules cascades.
     public const DROITS = [
         'gestion_utilisateurs'  => 'Gestion des utilisateurs',
         'contacts_modification' => 'Fiche Contact — modification',
@@ -90,29 +90,78 @@ class Referentiel
         return self::DROITS_ICONES[$droit] ?? '🔧';
     }
 
-    // Valeur explicite « aucun droit » (distincte de null = droit par défaut du grade)
-    public const DROIT_AUCUN = 'aucun';
+    /**
+     * Droits automatiquement accordés par un droit coché.
+     *
+     * Deux règles seulement, et la seconde ne sort jamais de son application :
+     *  - « Gestion des utilisateurs » donne accès à tout ;
+     *  - « modification » implique la « lecture » de la même application.
+     *
+     * Une case cochée sur le Marché n'ouvre donc rien sur le Tableau des
+     * suivis, et pouvoir écrire dans les fiches contact n'autorise pas à
+     * créer des tâches.
+     */
+    public const DROITS_IMPLIQUES = [
+        'gestion_utilisateurs'  => [
+            'contacts_modification',
+            'contacts_lecture',
+            'marche_gestion',
+            'taches_gestion',
+        ],
+        'contacts_modification' => ['contacts_lecture'],
+    ];
 
-    /** Position du droit dans la hiérarchie (0 = le plus fort). */
-    public static function rangDroit(?string $droit): int
+    /**
+     * Droits cochés + droits impliqués, dans l'ordre du référentiel.
+     * Les clés inconnues sont ignorées.
+     */
+    public static function expanserDroits(array $droits): array
     {
-        $rang = array_search($droit, array_keys(self::DROITS), true);
+        $accordes = [];
 
-        return $rang === false ? PHP_INT_MAX : $rang;
+        foreach ($droits as $droit) {
+            if (! isset(self::DROITS[$droit])) {
+                continue;
+            }
+
+            $accordes[$droit] = true;
+
+            foreach (self::DROITS_IMPLIQUES[$droit] ?? [] as $implique) {
+                $accordes[$implique] = true;
+            }
+        }
+
+        return array_values(array_intersect(array_keys(self::DROITS), array_keys($accordes)));
     }
 
     /**
-     * Droit par défaut selon le grade (modifiable ensuite par utilisateur).
+     * Droits par défaut selon le grade (modifiables ensuite par utilisateur).
      * Un employé n'a aucun droit d'application par défaut : il voit
      * simplement ses propres tâches (droit de base, non géré ici).
      */
-    public static function droitDefaut(?int $grade): string
+    public static function droitsDefaut(?int $grade): array
     {
-        // Maire, Directeur de Cabinet et DGS : tous les droits cochés par défaut.
+        // Maire, Directeur de Cabinet et DGS : accès complet par défaut.
         return match ($grade) {
-            self::GRADE_MAIRE, self::GRADE_DIR_CABINET, self::GRADE_DGS => 'gestion_utilisateurs',
-            default                                                     => '',
+            self::GRADE_MAIRE, self::GRADE_DIR_CABINET, self::GRADE_DGS => ['gestion_utilisateurs'],
+            default                                                     => [],
         };
+    }
+
+    // ── Motifs d'absence ─────────────────────────────────────────
+    public const MOTIFS_ABSENCE = [
+        'signalee'      => 'Absence signalée',
+        'non_justifiee' => 'Absence non justifiée',
+        'arret_travail' => 'Arrêt de travail',
+        'arret_maladie' => 'Arrêt maladie',
+        'vacances'      => 'Vacances',
+        'rendez_vous'   => 'Rendez-vous',
+        'formation'     => 'Formation',
+    ];
+
+    public static function motifAbsenceLabel(?string $motif): string
+    {
+        return self::MOTIFS_ABSENCE[$motif] ?? '—';
     }
 
     // ── Statuts des tâches ───────────────────────────────────────
