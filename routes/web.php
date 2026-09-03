@@ -56,6 +56,17 @@ Route::post('/mon-ticket/{ticket}/reouverture', [\App\Http\Controllers\PublicCon
 // ── ESPACE CONNECTÉ ──────────────────────────────────────────
 Route::middleware('auth')->group(function () {
 
+    // 🕒 Planning : grille des heures côté mairie, signature côté agent
+    Route::prefix('planning')->name('planning.')->group(function () {
+        Route::get('/',                    [\App\Http\Controllers\PlanningController::class, 'index'])->name('index');
+        Route::post('/',                   [\App\Http\Controllers\PlanningController::class, 'store'])->name('store');
+        Route::get('/{planning}',          [\App\Http\Controllers\PlanningController::class, 'show'])->name('show');
+        Route::put('/{planning}',          [\App\Http\Controllers\PlanningController::class, 'update'])->name('update');
+        Route::delete('/{planning}',       [\App\Http\Controllers\PlanningController::class, 'destroy'])->name('destroy');
+        Route::post('/{planning}/signer',  [\App\Http\Controllers\PlanningController::class, 'signer'])->name('signer');
+        Route::get('/{planning}/pdf',      [\App\Http\Controllers\PlanningController::class, 'pdf'])->name('pdf');
+    });
+
     // Hub : gestionnaire des applications de MGDS
     Route::get('/apps', fn () => view('apps'))->name('apps');
 

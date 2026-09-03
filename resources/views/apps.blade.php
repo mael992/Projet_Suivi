@@ -88,6 +88,33 @@
         </div>
         @endif
 
+        {{-- 🕒 Planning : tout agent d'une mairie y accède, au moins pour signer --}}
+        @if(!$user->isAdmin() && $mairie)
+        <div class="col-12 col-md-6 app-tile" data-app="planning heures semaine horaires repos signature absences">
+            <div class="card shadow-sm h-100">
+                <div class="card-body d-flex flex-column">
+                    <a href="{{ route('planning.index') }}" class="text-decoration-none text-reset d-flex align-items-center gap-3 mb-3">
+                        <span style="font-size:44px;line-height:1;">🕒</span>
+                        <span>
+                            <span class="h5 d-block mb-1" style="color:var(--brand);">{{ __('Planning') }}</span>
+                            <span class="text-muted" style="font-size:13px;">
+                                {{ $user->aDroit('planning_gestion')
+                                    ? __('Heures de la semaine par agent, absences reportées automatiquement')
+                                    : __('Vos heures de la semaine, à vérifier et à signer') }}
+                            </span>
+                        </span>
+                    </a>
+                    <div class="mt-auto d-flex gap-2 flex-wrap">
+                        <a href="{{ route('planning.index') }}" class="badge text-decoration-none" style="background:var(--brand);">🕒 {{ __('Semaines') }}</a>
+                        @if($user->peutGererMairie())
+                            <a href="{{ route('gestion.absences.index') }}" class="badge bg-dark text-decoration-none">🗓️ {{ __('Absences') }}</a>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
+
         {{-- 📇 {{ __('Fiche Contact') }} (droit contacts, ou admin = toutes les mairies) --}}
         @if($user->isAdmin() || ($mairie && $user->aDroit('contacts_lecture')))
         <div class="col-12 col-md-6 app-tile" data-app="fiche contact contacts annuaire standard telephone email mairie">

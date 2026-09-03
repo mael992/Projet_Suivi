@@ -74,6 +74,7 @@ class Referentiel
         'contacts_lecture'      => 'Fiche Contact — lecture',
         'marche_gestion'        => 'Marché — gestion',
         'taches_gestion'        => 'Tableau des suivis — gestion',
+        'planning_gestion'      => 'Planning — gestion',
     ];
 
     // Logo de l'application correspondant à chaque droit (mêmes icônes que le hub)
@@ -83,6 +84,7 @@ class Referentiel
         'contacts_lecture'      => '📇',
         'marche_gestion'        => '🛍️',
         'taches_gestion'        => '📊',
+        'planning_gestion'      => '🕒',
     ];
 
     public static function droitIcone(?string $droit): string
@@ -107,6 +109,7 @@ class Referentiel
             'contacts_lecture',
             'marche_gestion',
             'taches_gestion',
+            'planning_gestion',
         ],
         'contacts_modification' => ['contacts_lecture'],
     ];

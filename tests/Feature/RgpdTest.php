@@ -58,6 +58,37 @@ class RgpdTest extends TestCase
         $this->assertStringContainsString($extension, $reponse->headers->get('Content-Disposition'));
     }
 
+    public function test_la_destruction_efface_aussi_les_justificatifs_d_absence(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('local');
+
+        $agent = \App\Models\User::factory()->create([
+            'mairie_id' => $this->mairie->id,
+            'grade'     => \App\Support\Referentiel::GRADE_EMPLOYE,
+        ]);
+        $chemin = \Illuminate\Http\UploadedFile::fake()
+            ->create('arret.pdf', 10, 'application/pdf')
+            ->store('justificatifs', 'local');
+
+        \App\Models\Absence::create([
+            'mairie_id'    => $this->mairie->id,
+            'user_id'      => $agent->id,
+            'motif'        => 'arret_maladie',
+            'date_debut'   => now()->toDateString(),
+            'date_fin'     => now()->addDay()->toDateString(),
+            'justificatif' => $chemin,
+        ]);
+
+        \Illuminate\Support\Facades\Storage::disk('local')->assertExists($chemin);
+
+        $this->actingAs(\App\Models\User::factory()->admin()->create())
+            ->post("/admin/donnees/{$this->mairie->id}/detruire", ['confirmation' => $this->mairie->nom])
+            ->assertOk();
+
+        \Illuminate\Support\Facades\Storage::disk('local')->assertMissing($chemin);
+        $this->assertSame(0, \App\Models\Absence::count());
+    }
+
     public function test_destruction_exige_le_nom_exact_et_fournit_une_attestation(): void
     {
         // Mauvais nom → rien n'est supprimé

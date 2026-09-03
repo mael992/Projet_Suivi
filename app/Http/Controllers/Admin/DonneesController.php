@@ -7,6 +7,7 @@ use App\Models\Mairie;
 use App\Services\ActivityLogger;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use ZipArchive;
 
@@ -103,6 +104,10 @@ class DonneesController extends Controller
         foreach ($this->fichiers($mairie) as $relatif) {
             @unlink(storage_path('app/public/' . $relatif));
         }
+        // Les justificatifs d'absence vivent sur le disque privé, pas public
+        foreach ($this->fichiersPrives($mairie) as $relatif) {
+            Storage::disk('local')->delete($relatif);
+        }
         $mairie->delete();
 
         ActivityLogger::log('RGPD', 'DESTRUCTION', "Destruction définitive des données de la mairie « {$nomMairie} » ({$codePostal})");
@@ -133,6 +138,12 @@ class DonneesController extends Controller
             'demandes_marche'   => $ids('marche_demandes')->get()->all(),
             'tickets'           => $ids('tickets')->get()->all(),
             'messages_tickets'  => \DB::table('ticket_messages')->whereIn('ticket_id', $ticketIds)->get()->all(),
+            'absences'          => $ids('absences')->get()->all(),
+            'marches'           => $ids('marches')->get()->all(),
+            'plannings'         => $ids('plannings')->get()->all(),
+            'lignes_planning'   => \DB::table('planning_lignes')
+                ->whereIn('planning_id', \DB::table('plannings')->where('mairie_id', $mairie->id)->pluck('id'))
+                ->get()->all(),
         ];
     }
 
@@ -164,6 +175,15 @@ class DonneesController extends Controller
         }
 
         return array_values(array_filter(array_unique($fichiers)));
+    }
+
+    /** Fichiers de la mairie stockés hors du disque public (justificatifs d'absence). */
+    private function fichiersPrives(Mairie $mairie): array
+    {
+        return \DB::table('absences')->where('mairie_id', $mairie->id)
+            ->whereNotNull('justificatif')
+            ->pluck('justificatif')
+            ->unique()->values()->all();
     }
 
     private function lisezMoi(Mairie $mairie, array $donnees): string
