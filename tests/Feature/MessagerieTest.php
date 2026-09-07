@@ -137,6 +137,119 @@ class MessagerieTest extends TestCase
         $this->assertSame([$maire->id], $destinataires->pluck('id')->all());
     }
 
+    /**
+     * Après transfert, la demande quitte la Réception du « facteur » : elle
+     * ne vit plus que dans « Transféré », côté facteur, et dans les dossiers
+     * de travail du destinataire.
+     */
+    public function test_apres_transfert_la_demande_quitte_la_reception_du_facteur(): void
+    {
+        \Illuminate\Support\Facades\Mail::fake();
+
+        $agent = User::factory()->create([
+            'mairie_id'     => $this->mairie->id,
+            'grade'         => \App\Support\Referentiel::GRADE_EMPLOYE,
+            'communication' => [],
+        ]);
+
+        $ticket = Ticket::create([
+            'mairie_id' => $this->mairie->id,
+            'reference' => $this->mairie->id . '-1',
+            'nom'       => 'Dupont', 'prenom' => 'Marie',
+            'telephone' => '0612345678', 'email' => 'marie@example.fr',
+            'sujet'     => 'Trou dans la route', 'statut' => Ticket::STATUT_RECEPTION,
+        ]);
+
+        // Avant transfert : la demande est bien dans la Réception du facteur
+        $enReception = fn (User $u) => Ticket::visiblesPar($u)->dossiersDeTravail($u)
+            ->where('statut', Ticket::STATUT_RECEPTION)->whereKey($ticket->id)->exists();
+
+        $this->assertTrue($enReception($this->facteur));
+
+        $this->actingAs($this->facteur)->post("/messagerie/tickets/{$ticket->id}/transferer", [
+            'users' => [$agent->id],
+        ])->assertRedirect();
+
+        // Le facteur ne l'a plus en Réception, mais la garde dans « Transféré »
+        $this->assertFalse($enReception($this->facteur->fresh()));
+        $this->assertTrue(
+            Ticket::visiblesPar($this->facteur->fresh())->dossierTransfere()->whereKey($ticket->id)->exists()
+        );
+
+        // Le destinataire, lui, l'a bien en Réception
+        $this->assertTrue($enReception($agent->fresh()));
+    }
+
+    /** S'il s'inclut dans le transfert, le facteur la garde des deux côtés. */
+    public function test_le_facteur_qui_s_auto_selectionne_garde_la_demande_en_reception(): void
+    {
+        \Illuminate\Support\Facades\Mail::fake();
+
+        $agent = User::factory()->create([
+            'mairie_id'     => $this->mairie->id,
+            'grade'         => \App\Support\Referentiel::GRADE_EMPLOYE,
+            'communication' => [],
+        ]);
+
+        $ticket = Ticket::create([
+            'mairie_id' => $this->mairie->id,
+            'reference' => $this->mairie->id . '-1',
+            'nom'       => 'Dupont', 'prenom' => 'Marie',
+            'telephone' => '0612345678', 'email' => 'marie@example.fr',
+            'sujet'     => 'Trou dans la route', 'statut' => Ticket::STATUT_RECEPTION,
+        ]);
+
+        $this->actingAs($this->facteur)->post("/messagerie/tickets/{$ticket->id}/transferer", [
+            'users' => [$agent->id, $this->facteur->id],
+        ])->assertRedirect();
+
+        $facteur = $this->facteur->fresh();
+
+        $this->assertTrue(
+            Ticket::visiblesPar($facteur)->dossiersDeTravail($facteur)
+                ->where('statut', Ticket::STATUT_RECEPTION)->whereKey($ticket->id)->exists()
+        );
+        $this->assertTrue(
+            Ticket::visiblesPar($facteur)->dossierTransfere()->whereKey($ticket->id)->exists()
+        );
+    }
+
+    /** Une demande clôturée sort du dossier « Transféré ». */
+    public function test_la_cloture_retire_la_demande_du_dossier_transfere(): void
+    {
+        \Illuminate\Support\Facades\Mail::fake();
+
+        $agent = User::factory()->create([
+            'mairie_id'     => $this->mairie->id,
+            'grade'         => \App\Support\Referentiel::GRADE_EMPLOYE,
+            'communication' => [],
+        ]);
+
+        $ticket = Ticket::create([
+            'mairie_id' => $this->mairie->id,
+            'reference' => $this->mairie->id . '-1',
+            'nom'       => 'Dupont', 'prenom' => 'Marie',
+            'telephone' => '0612345678', 'email' => 'marie@example.fr',
+            'sujet'     => 'Trou dans la route', 'statut' => Ticket::STATUT_RECEPTION,
+        ]);
+
+        $this->actingAs($this->facteur)->post("/messagerie/tickets/{$ticket->id}/transferer", [
+            'users' => [$agent->id],
+        ])->assertRedirect();
+
+        $this->assertTrue(Ticket::dossierTransfere()->whereKey($ticket->id)->exists());
+
+        // Le destinataire clôture
+        $this->actingAs($agent)->post("/messagerie/tickets/{$ticket->id}/cloturer")->assertRedirect();
+
+        $this->assertSame(Ticket::STATUT_CLOTURE, $ticket->fresh()->statut);
+        $this->assertFalse(Ticket::dossierTransfere()->whereKey($ticket->id)->exists());
+
+        // Et le compteur du dossier « Transféré » retombe à zéro pour le facteur
+        $compteurs = Ticket::compteursPour($this->facteur->fresh());
+        $this->assertSame(0, $compteurs[Ticket::DOSSIER_TRANSFERE]);
+    }
+
     public function test_transfert_facteur_vers_service_et_personne(): void
     {
         \Illuminate\Support\Facades\Mail::fake();

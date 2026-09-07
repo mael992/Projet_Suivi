@@ -47,6 +47,7 @@ Route::post('/cgu', function (\Illuminate\Http\Request $request) {
 // Page publique « Contacter votre Mairie » (formulaire → ticket)
 Route::get('/contacter-mairie',  [\App\Http\Controllers\PublicContactController::class, 'create'])->name('contact.mairie');
 Route::post('/contacter-mairie', [\App\Http\Controllers\PublicContactController::class, 'store'])->name('contact.mairie.store');
+Route::post('/contacter-mairie/adhesion-marche', [\App\Http\Controllers\PublicContactController::class, 'storeMarche'])->name('contact.marche.store');
 Route::post('/mon-ticket',       [\App\Http\Controllers\PublicContactController::class, 'suivi'])->name('contact.ticket.suivi');
 Route::get('/mon-ticket/{ticket}', [\App\Http\Controllers\PublicContactController::class, 'voirTicket'])->name('contact.ticket.voir');
 Route::post('/mon-ticket/{ticket}/repondre', [\App\Http\Controllers\PublicContactController::class, 'repondreCitoyen'])->name('contact.ticket.repondre');
@@ -163,6 +164,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/messagerie/tickets/{ticket}/cloturer', [\App\Http\Controllers\MessagerieController::class, 'cloturer'])->name('messagerie.cloturer');
     Route::post('/messagerie/tickets/{ticket}/reouverture/accepter', [\App\Http\Controllers\MessagerieController::class, 'accepterReouverture'])->name('messagerie.reouverture.accepter');
     Route::post('/messagerie/tickets/{ticket}/reouverture/refuser', [\App\Http\Controllers\MessagerieController::class, 'refuserReouverture'])->name('messagerie.reouverture.refuser');
+    // Demandes d'adhésion au marché : accepter fait entrer au registre
+    Route::post('/messagerie/tickets/{ticket}/adhesion/accepter', [\App\Http\Controllers\MessagerieController::class, 'accepterAdhesion'])->name('messagerie.adhesion.accepter');
+    Route::post('/messagerie/tickets/{ticket}/adhesion/refuser',  [\App\Http\Controllers\MessagerieController::class, 'refuserAdhesion'])->name('messagerie.adhesion.refuser');
 
     // Boîte de dialogue (entraide entre mairies)
     Route::get('/dialogue', [\App\Http\Controllers\DialogueController::class, 'index'])->name('dialogue.index');

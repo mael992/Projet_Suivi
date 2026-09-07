@@ -28,6 +28,17 @@ class Ticket extends Model
      */
     public const DOSSIER_TRANSFERE = 'transfere';
 
+    /** Boîte de réception des demandes d'adhésion au marché. */
+    public const DOSSIER_ADHESION = 'adhesion_marche';
+
+    /**
+     * Types de conversation. « externe » = un habitant écrit à sa mairie ;
+     * « marche » = un commerçant demande à rejoindre le marché. Les deux
+     * partagent la mécanique de conversation mais pas la boîte de réception.
+     */
+    public const TYPE_EXTERNE = 'externe';
+    public const TYPE_MARCHE  = 'marche';
+
     /** Délai pendant lequel une réouverture peut être demandée (jours). */
     public const JOURS_REOUVERTURE = 15;
 
@@ -35,7 +46,7 @@ class Ticket extends Model
     public const MOIS_CONSERVATION = 6;
 
     protected $fillable = [
-        'mairie_id', 'reference', 'type', 'service',
+        'mairie_id', 'marche_demande_id', 'reference', 'type', 'service',
         'nom', 'prenom', 'telephone_indicatif', 'telephone', 'email',
         'sujet', 'photos', 'statut', 'confidentiel', 'confidents',
         'transfere_services', 'transfere_users', 'transfere_par', 'transfere_at',
@@ -55,6 +66,11 @@ class Ticket extends Model
             'cloture_at'              => 'datetime',
             'reouverture_demandee_at' => 'datetime',
         ];
+    }
+
+    public function demandeMarche()
+    {
+        return $this->belongsTo(MarcheDemande::class, 'marche_demande_id');
     }
 
     public function mairie()
@@ -259,22 +275,95 @@ class Ticket extends Model
             return false; // l'admin reste en lecture seule
         }
 
-        return $user->mairie_id === $this->mairie_id
-            && static::whereKey($this->id)->visiblesPar($user)->exists();
+        if ($user->mairie_id !== $this->mairie_id) {
+            return false;
+        }
+
+        // Les demandes d'adhésion au marché suivent le droit de leur
+        // application, pas les cases de communication extérieure.
+        if ($this->type === self::TYPE_MARCHE) {
+            return $user->aDroit('marche_gestion');
+        }
+
+        return static::whereKey($this->id)->visiblesPar($user)->exists();
+    }
+
+    /**
+     * Boîte de réception des demandes d'adhésion au marché : réservée aux
+     * personnes qui ont le droit sur l'application Marché.
+     */
+    public static function adhesionsMarchePour(User $user): Builder
+    {
+        $query = static::where('type', self::TYPE_MARCHE);
+
+        return $user->isAdmin() ? $query : $query->where('mairie_id', $user->mairie_id);
+    }
+
+    /** L'utilisateur a-t-il accès à la boîte « Demande adhésion marché » ? */
+    public static function voitAdhesionsMarche(User $user): bool
+    {
+        return $user->isAdmin() || $user->aDroit('marche_gestion');
+    }
+
+    /**
+     * Dossiers de travail (Réception, Réponse, Clôturé, Réouverture).
+     *
+     * Une demande transférée n'y figure plus que pour ses destinataires :
+     * celui qui l'a transférée la retrouve dans « Transféré », et pas en
+     * double dans sa Réception — sauf s'il s'est mis lui-même parmi les
+     * destinataires, auquel cas elle réapparaît des deux côtés.
+     */
+    public function scopeDossiersDeTravail(Builder $query, User $user): Builder
+    {
+        if ($user->isAdmin() || $user->voitTousLesMessages()) {
+            return $query;
+        }
+
+        $services = array_values(array_filter(
+            $user->categoriesCommunication(),
+            fn ($c) => $c !== 'inconnu',
+        ));
+
+        return $query->where(function (Builder $q) use ($user, $services) {
+            $q->whereNull('transfere_at')
+              ->orWhereJsonContains('transfere_users', $user->id);
+
+            foreach ($services as $service) {
+                $q->orWhereJsonContains('transfere_services', (int) $service);
+            }
+        });
+    }
+
+    /**
+     * Dossier « Transféré » : les demandes transférées encore en cours.
+     * Une fois clôturée, la demande vit dans « Clôturé » et disparaît d'ici,
+     * y compris pour la personne qui l'avait transférée.
+     */
+    public function scopeDossierTransfere(Builder $query): Builder
+    {
+        return $query->whereNotNull('transfere_at')
+            ->where('statut', '!=', self::STATUT_CLOTURE);
     }
 
     /** Compteurs de notification par dossier (Réception + Réouverture demandée). */
     public static function compteursPour(User $user): array
     {
-        $base = static::where('type', 'externe')->visiblesPar($user);
+        $base    = static::where('type', self::TYPE_EXTERNE)->visiblesPar($user);
+        $travail = (clone $base)->dossiersDeTravail($user);
+
+        if (self::voitAdhesionsMarche($user)) {
+            $adhesions = self::adhesionsMarchePour($user)
+                ->where('statut', '!=', self::STATUT_CLOTURE)->count();
+        }
 
         return [
-            self::STATUT_RECEPTION   => (clone $base)->where('statut', self::STATUT_RECEPTION)->count(),
-            self::STATUT_REPONSE     => (clone $base)->where('statut', self::STATUT_REPONSE)->count(),
-            self::STATUT_CLOTURE     => (clone $base)->where('statut', self::STATUT_CLOTURE)->count(),
-            self::STATUT_REOUVERTURE => (clone $base)->where('statut', self::STATUT_REOUVERTURE)->count(),
-            // Dossier transversal : les demandes transférées, tous statuts confondus
-            self::DOSSIER_TRANSFERE  => (clone $base)->whereNotNull('transfere_at')->count(),
+            self::DOSSIER_ADHESION   => $adhesions ?? 0,
+            self::STATUT_RECEPTION   => (clone $travail)->where('statut', self::STATUT_RECEPTION)->count(),
+            self::STATUT_REPONSE     => (clone $travail)->where('statut', self::STATUT_REPONSE)->count(),
+            self::STATUT_CLOTURE     => (clone $travail)->where('statut', self::STATUT_CLOTURE)->count(),
+            self::STATUT_REOUVERTURE => (clone $travail)->where('statut', self::STATUT_REOUVERTURE)->count(),
+            // Dossier transversal : les demandes transférées encore ouvertes
+            self::DOSSIER_TRANSFERE  => (clone $base)->dossierTransfere()->count(),
         ];
     }
 
@@ -283,6 +372,7 @@ class Ticket extends Model
     {
         return static::where('type', 'externe')
             ->visiblesPar($user)
+            ->dossiersDeTravail($user)
             ->whereIn('statut', [self::STATUT_RECEPTION, self::STATUT_REOUVERTURE])
             ->count();
     }

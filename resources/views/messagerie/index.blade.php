@@ -52,14 +52,21 @@
                             // « Transféré » vient après les quatre dossiers : ce n'est pas
                             // un statut mais un tri, d'où sa pastille orange clair.
                             $dossiers = Ticket::STATUTS + [Ticket::DOSSIER_TRANSFERE => 'Transféré'];
+
+                            // Boîte à part, réservée à l'application Marché
+                            if ($voitAdhesions) {
+                                $dossiers[Ticket::DOSSIER_ADHESION] = 'Demande adhésion marché';
+                            }
+
                             $icones   = [
                                 'reception' => '📥', 'reponse' => '↩️', 'cloture' => '🔒',
                                 'reouverture_demandee' => '🔓', Ticket::DOSSIER_TRANSFERE => '🔁',
+                                Ticket::DOSSIER_ADHESION => '🛍️',
                             ];
                         @endphp
                         @foreach($dossiers as $cle => $label)
                             @php
-                                $notif     = in_array($cle, [Ticket::STATUT_RECEPTION, Ticket::STATUT_REOUVERTURE], true);
+                                $notif     = in_array($cle, [Ticket::STATUT_RECEPTION, Ticket::STATUT_REOUVERTURE, Ticket::DOSSIER_ADHESION], true);
                                 $transfert = $cle === Ticket::DOSSIER_TRANSFERE;
                             @endphp
                             <a href="{{ route('messagerie.index', array_merge(request()->only('mairie', 'q', 'tri'), ['dossier' => $cle])) }}"
@@ -383,6 +390,37 @@
                             @csrf
                             <button class="btn btn-outline-dark btn-sm">🔒 {{ __('Clôturer la conversation') }}</button>
                         </form>
+
+                        {{-- Demande d'adhésion au marché : décider sans quitter la conversation --}}
+                        @if($ticket->type === Ticket::TYPE_MARCHE && $ticket->demandeMarche)
+                            <div class="border rounded p-2 mt-3" style="background:#fbfbf9;">
+                                <div class="fw-semibold mb-2" style="font-size:13px;">
+                                    🛍️ {{ __('Demande d\'adhésion au marché') }}
+                                    <span class="badge bg-secondary ms-1" style="font-size:10px;">
+                                        {{ \App\Models\MarcheDemande::STATUTS[$ticket->demandeMarche->statut] ?? $ticket->demandeMarche->statut }}
+                                    </span>
+                                </div>
+
+                                <div class="d-flex gap-2 flex-wrap align-items-start">
+                                    <form method="POST" action="{{ route('messagerie.adhesion.accepter', $ticket) }}"
+                                          onsubmit="return confirm(@js(__('Accepter cette demande ? Le commerçant rejoindra le registre et la conversation sera clôturée.')))">
+                                        @csrf
+                                        <button class="btn btn-success btn-sm">✅ {{ __('Accepter et inscrire au registre') }}</button>
+                                    </form>
+
+                                    <form method="POST" action="{{ route('messagerie.adhesion.refuser', $ticket) }}" class="d-flex gap-2">
+                                        @csrf
+                                        <input type="text" name="reponse" class="form-control form-control-sm"
+                                               style="min-width:220px;" maxlength="1000"
+                                               placeholder="{{ __('Motif du refus (facultatif)') }}">
+                                        <button class="btn btn-outline-danger btn-sm">✖ {{ __('Refuser') }}</button>
+                                    </form>
+                                </div>
+                                <div class="text-muted mt-2" style="font-size:11px;">
+                                    {{ __('Vous pouvez aussi discuter avec le candidat ci-dessus avant de décider.') }}
+                                </div>
+                            </div>
+                        @endif
                     @else
                         <div class="text-muted" style="font-size:12px;">🔒 {{ __('Conversation clôturée — lecture seule.') }}</div>
                     @endif

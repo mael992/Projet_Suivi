@@ -25,19 +25,34 @@ class MessagerieController extends Controller
         $user  = auth()->user();
         $admin = $user->isAdmin();
 
+        $dossiersValides = array_merge(
+            array_keys(Ticket::STATUTS),
+            [Ticket::DOSSIER_TRANSFERE, Ticket::DOSSIER_ADHESION],
+        );
+
         $dossier = $request->input('dossier', Ticket::STATUT_RECEPTION);
-        if (! array_key_exists($dossier, Ticket::STATUTS) && $dossier !== Ticket::DOSSIER_TRANSFERE) {
+        if (! in_array($dossier, $dossiersValides, true)) {
             $dossier = Ticket::STATUT_RECEPTION;
         }
 
-        $requete = Ticket::with(['messages.auteur', 'mairie'])
-            ->where('type', 'externe')
-            ->visiblesPar($user);
+        if ($dossier === Ticket::DOSSIER_ADHESION) {
+            // Boîte réservée à l'application Marché : ni service, ni transfert
+            abort_unless(Ticket::voitAdhesionsMarche($user), 403);
 
-        // « Transféré » n'est pas un statut : c'est un tri transversal
-        $dossier === Ticket::DOSSIER_TRANSFERE
-            ? $requete->whereNotNull('transfere_at')
-            : $requete->where('statut', $dossier);
+            $requete = Ticket::adhesionsMarchePour($user)
+                ->with(['messages.auteur', 'mairie', 'demandeMarche']);
+        } else {
+            $requete = Ticket::with(['messages.auteur', 'mairie'])
+                ->where('type', Ticket::TYPE_EXTERNE)
+                ->visiblesPar($user);
+
+            // « Transféré » n'est pas un statut : c'est un tri transversal.
+            // Les dossiers de travail, eux, ne gardent une demande transférée
+            // que pour ses destinataires.
+            $dossier === Ticket::DOSSIER_TRANSFERE
+                ? $requete->dossierTransfere()
+                : $requete->where('statut', $dossier)->dossiersDeTravail($user);
+        }
 
         // Recherche : sujet, e-mail, nom, prénom, référence
         if ($request->filled('q')) {
@@ -87,7 +102,88 @@ class MessagerieController extends Controller
             'dossier'      => $dossier,
             'tri'          => $tri === 'asc' ? 'ancien' : 'recent',
             'compteurs'    => Ticket::compteursPour($user),
+            'voitAdhesions' => Ticket::voitAdhesionsMarche($user),
         ]);
+    }
+
+    /**
+     * La mairie accepte la demande d'adhésion : le candidat rejoint le
+     * registre des commerçants, et la conversation se clôture.
+     */
+    public function accepterAdhesion(Ticket $ticket)
+    {
+        $demande = $this->demandeDuTicket($ticket);
+
+        $demande->update(['statut' => \App\Models\MarcheDemande::STATUT_ACCEPTEE]);
+
+        \App\Models\Commercant::firstOrCreate(
+            ['mairie_id' => $demande->mairie_id, 'email' => $demande->email],
+            [
+                'prenom'              => $demande->prenom,
+                'nom'                 => $demande->nom,
+                'activite'            => $demande->activite,
+                'telephone_indicatif' => $demande->telephone_indicatif,
+                'telephone'           => $demande->telephone,
+                'longueur_defaut'     => $demande->longueur_souhaitee,
+            ],
+        );
+
+        $this->cloturerAdhesion($ticket, "Demande acceptée : {$demande->nom_complet} rejoint le registre des commerçants.");
+
+        ActivityLogger::log('MARCHE', 'DEMANDE', "Adhésion acceptée : {$demande->nom_complet} ({$demande->activite})");
+
+        return back()->with('success', "Demande acceptée : {$demande->nom_complet} a été ajouté au registre.");
+    }
+
+    /** La mairie refuse la demande, avec un motif transmis au candidat. */
+    public function refuserAdhesion(Request $request, Ticket $ticket)
+    {
+        $demande = $this->demandeDuTicket($ticket);
+
+        $data = $request->validate(['reponse' => 'nullable|string|max:1000']);
+
+        $demande->update([
+            'statut'  => \App\Models\MarcheDemande::STATUT_REFUSEE,
+            'reponse' => $data['reponse'] ?? null,
+        ]);
+
+        $this->cloturerAdhesion(
+            $ticket,
+            trim("Demande refusée. " . ($data['reponse'] ?? '')),
+        );
+
+        ActivityLogger::log('MARCHE', 'DEMANDE', "Adhésion refusée : {$demande->nom_complet}");
+
+        return back()->with('success', "Demande de {$demande->nom_complet} refusée.");
+    }
+
+    /** Trace la décision dans la conversation puis la clôture. */
+    private function cloturerAdhesion(Ticket $ticket, string $corps): void
+    {
+        TicketMessage::create([
+            'ticket_id' => $ticket->id,
+            'user_id'   => auth()->id(),
+            'corps'     => $corps,
+        ]);
+
+        $ticket->update([
+            'statut'      => Ticket::STATUT_CLOTURE,
+            'cloture_at'  => now(),
+            'cloture_par' => 'mairie',
+        ]);
+
+        $this->notifierCitoyen($ticket);
+    }
+
+    private function demandeDuTicket(Ticket $ticket): \App\Models\MarcheDemande
+    {
+        $user = auth()->user();
+
+        abort_unless($ticket->type === Ticket::TYPE_MARCHE, 404);
+        abort_unless($ticket->peutEtreGerePar($user), 403);
+        abort_unless($ticket->demandeMarche !== null, 404);
+
+        return $ticket->demandeMarche;
     }
 
     /** Un agent de la mairie répond au ticket (message ajouté, jamais modifiable). */

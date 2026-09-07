@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Mail\NouveauMessageTicket;
 use App\Models\Mairie;
+use App\Models\MarcheDemande;
 use App\Models\Ticket;
 use App\Models\TicketMessage;
 use App\Support\Referentiel;
@@ -25,6 +26,10 @@ class PublicContactController extends Controller
         // répondre (réception autorisée + abonnement valide).
         return view('contact.mairie', [
             'mairies' => Mairie::joignables(),
+            // Onglet « Demande adhésion marché » : seules les communes qui ont
+            // ouvert les inscriptions y figurent.
+            'mairiesMarche' => Mairie::where('marche_inscription_ouverte', true)
+                ->orderBy('nom')->get(),
         ]);
     }
 
@@ -84,6 +89,81 @@ class PublicContactController extends Controller
         $this->notifierMairie($ticket);
 
         return redirect()->route('contact.mairie')->with('ticket_ok', $ticket->reference);
+    }
+
+    /**
+     * Demande d'adhésion au marché. Elle devient une conversation à part
+     * entière : la mairie peut discuter avec le candidat avant de trancher,
+     * et lui répond dans le même fil que les autres demandes.
+     */
+    public function storeMarche(Request $request)
+    {
+        $data = $request->validate([
+            'mairie_id'           => 'required|exists:mairies,id',
+            'prenom'              => 'required|string|min:2|max:100',
+            'nom'                 => 'required|string|min:2|max:100',
+            'societe'             => 'nullable|string|max:150',
+            'activite'            => 'required|string|min:2|max:100',
+            'telephone_indicatif' => 'nullable|string|max:8',
+            'telephone'           => 'required|string|min:6|max:20',
+            'email'               => 'required|email|max:255',
+            'longueur_souhaitee'  => 'nullable|numeric|min:1|max:50',
+            'message'             => 'nullable|string|max:2000',
+        ]);
+
+        // La commune doit avoir ouvert les inscriptions à son marché
+        $mairie = Mairie::where('id', $data['mairie_id'])
+            ->where('marche_inscription_ouverte', true)
+            ->first();
+
+        if (! $mairie) {
+            return back()
+                ->withErrors(['mairie_id' => __('Cette commune n\'ouvre pas les inscriptions à son marché pour le moment.')])
+                ->withInput();
+        }
+
+        $data['telephone_indicatif'] = ($data['telephone_indicatif'] ?? '') ?: '+33';
+
+        $demande = MarcheDemande::create($data);
+
+        $ticket = Ticket::create([
+            'mairie_id'           => $mairie->id,
+            'marche_demande_id'   => $demande->id,
+            'reference'           => Ticket::genererReference($mairie->id),
+            'type'                => Ticket::TYPE_MARCHE,
+            'service'             => null,
+            'nom'                 => $data['nom'],
+            'prenom'              => $data['prenom'],
+            'telephone_indicatif' => $data['telephone_indicatif'],
+            'telephone'           => $data['telephone'],
+            'email'               => $data['email'],
+            'sujet'               => 'Demande d\'adhésion au marché — ' . $data['activite'],
+            'statut'              => Ticket::STATUT_RECEPTION,
+        ]);
+
+        // Le premier message reprend la demande, pour que la mairie ait tout
+        // sous les yeux sans quitter la conversation.
+        $societe  = $data['societe'] ?? null;
+        $longueur = $data['longueur_souhaitee'] ?? null;
+
+        $lignes = [
+            'Activité : ' . $data['activite'],
+            $societe  ? 'Société : ' . $societe : null,
+            $longueur ? 'Longueur souhaitée : ' . $longueur . ' m' : null,
+            $data['message'] ?? null,
+        ];
+
+        TicketMessage::create([
+            'ticket_id' => $ticket->id,
+            'user_id'   => null,
+            'corps'     => implode("\n", array_filter($lignes)),
+        ]);
+
+        $this->notifierGestionnairesMarche($ticket);
+
+        return redirect()->route('contact.mairie')
+            ->with('ticket_ok', $ticket->reference)
+            ->with('ticket_message', 'Votre demande d\'adhésion au marché a bien été transmise à la mairie.');
     }
 
     // ── Suivi d'un ticket existant (« J'ai déjà un ticket ») ─────
@@ -198,6 +278,24 @@ class PublicContactController extends Controller
     }
 
     // ── Helpers ──────────────────────────────────────────────────
+
+    /** Prévient les agents qui gèrent le Marché de la commune. */
+    private function notifierGestionnairesMarche(Ticket $ticket): void
+    {
+        $gestionnaires = $ticket->mairie->users()
+            ->where('role', 'user')
+            ->whereNotNull('email')
+            ->get()
+            ->filter(fn ($u) => $u->aDroit('marche_gestion'));
+
+        foreach ($gestionnaires as $agent) {
+            try {
+                Mail::to($agent->email)->send(new NouveauMessageTicket($ticket, pourCitoyen: false));
+            } catch (\Exception $e) {
+                report($e);
+            }
+        }
+    }
 
     /** Prévient par e-mail les agents de la mairie qui reçoivent ce service. */
     private function notifierMairie(Ticket $ticket): void
