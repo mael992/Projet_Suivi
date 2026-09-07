@@ -74,7 +74,7 @@ class PlanningController extends Controller
         return redirect()->route('planning.show', $planning)->with('success', 'Planning créé.');
     }
 
-    public function show(Planning $planning)
+    public function show(Request $request, Planning $planning)
     {
         $user = auth()->user();
         $this->verifierMairie($planning);
@@ -86,12 +86,20 @@ class PlanningController extends Controller
 
         abort_if($lignes->isEmpty() && ! $peutGerer, 403);
 
+        // Filtre par service : préparer le planning d'une équipe à la fois
+        $service = $this->serviceFiltre($request);
+        if ($service !== null) {
+            $lignes = $lignes->filter(fn (PlanningLigne $l) => (int) $l->user?->service === $service)->values();
+        }
+
         return view('planning.show', [
             'planning'  => $planning,
             'lignes'    => $lignes,
             'dates'     => $planning->dates(),
             'peutGerer' => $peutGerer,
             'moi'       => $user,
+            'service'   => $service,
+            'services'  => $planning->mairie->libellesServices(),
         ]);
     }
 
@@ -103,10 +111,11 @@ class PlanningController extends Controller
 
         $data = $request->validate([
             'lignes'                          => 'required|array',
-            // Durée due sur la semaine, saisie en « HH:MM » (ex. 35:00)
-            'lignes.*.duree_contrat'          => ['nullable', 'regex:/^\d{1,2}:[0-5]\d$/'],
+            // Durée due sur la semaine, en heures et en chiffres (35 ou 35.5)
+            'lignes.*.duree_contrat'          => 'nullable|numeric|min:0|max:99',
             'lignes.*.jours'                  => 'nullable|array',
             'lignes.*.jours.*.repos'          => 'nullable',
+            'lignes.*.jours.*.retard'         => 'nullable|integer|min:0|max:600',
             'lignes.*.jours.*.creneaux'       => 'nullable|array',
             'lignes.*.jours.*.creneaux.*.*'   => 'nullable|date_format:H:i',
         ]);
@@ -119,7 +128,7 @@ class PlanningController extends Controller
 
             $ligne->update([
                 'jours'         => $this->normaliserJours($saisie['jours'] ?? []),
-                'duree_contrat' => PlanningLigne::minutesEntre('00:00', $saisie['duree_contrat'] ?? null) ?: null,
+                'duree_contrat' => PlanningLigne::heuresEnMinutes($saisie['duree_contrat'] ?? null),
                 // Modifier la semaine invalide la signature déjà donnée
                 'signe_at'      => null,
             ]);
@@ -158,19 +167,40 @@ class PlanningController extends Controller
         return back()->with('success', 'Planning signé.');
     }
 
-    public function pdf(Planning $planning)
+    public function pdf(Request $request, Planning $planning)
     {
         $this->verifierMairie($planning);
         $this->verifierGestion();
 
+        // Le PDF suit le filtre demandé : on imprime une équipe, ou tout
+        $service = $this->serviceFiltre($request);
+        $lignes  = $this->lignesAvecAbsences($planning);
+
+        if ($service !== null) {
+            $lignes = $lignes->filter(fn (PlanningLigne $l) => (int) $l->user?->service === $service)->values();
+        }
+
         $pdf = Pdf::loadView('pdf.planning', [
-            'planning' => $planning,
-            'lignes'   => $this->lignesAvecAbsences($planning),
-            'dates'    => $planning->dates(),
-            'genereLe' => now(),
+            'planning'      => $planning,
+            'lignes'        => $lignes,
+            'dates'         => $planning->dates(),
+            'genereLe'      => now(),
+            'serviceLabel'  => $service === null ? null : $planning->mairie->libelleService($service),
         ])->setPaper('a4', 'landscape');
 
-        return $pdf->download('Planning_S' . $planning->semaine . '_' . $planning->annee . '.pdf');
+        $suffixe = $service === null ? '' : '_service' . $service;
+
+        return $pdf->download('Planning_S' . $planning->semaine . '_' . $planning->annee . $suffixe . '.pdf');
+    }
+
+    /** Numéro de service demandé en filtre, ou null pour « tous les services ». */
+    private function serviceFiltre(Request $request): ?int
+    {
+        $service = $request->input('service');
+
+        return ($service === null || $service === '' || $service === 'tout')
+            ? null
+            : (int) $service;
     }
 
     // ── Helpers ──────────────────────────────────────────────────
@@ -217,6 +247,7 @@ class PlanningController extends Controller
             $jours[(string) $jour] = [
                 'repos'    => (bool) ($brut['repos'] ?? false),
                 'creneaux' => $creneaux,
+                'retard'   => max(0, (int) ($brut['retard'] ?? 0)),
             ];
         }
 

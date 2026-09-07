@@ -205,6 +205,7 @@ Route::middleware(['auth', 'gestion'])->prefix('gestion')->name('gestion.')->gro
     // Absences des agents (le binôme reste réglé sur le compte)
     Route::get('/absences',                 [\App\Http\Controllers\Gestion\AbsenceController::class, 'index'])->name('absences.index');
     Route::post('/absences',                [\App\Http\Controllers\Gestion\AbsenceController::class, 'store'])->name('absences.store');
+    Route::put('/absences/{absence}',       [\App\Http\Controllers\Gestion\AbsenceController::class, 'update'])->name('absences.update');
     Route::delete('/absences/{absence}',    [\App\Http\Controllers\Gestion\AbsenceController::class, 'destroy'])->name('absences.destroy');
     Route::get('/absences/{absence}/justificatif', [\App\Http\Controllers\Gestion\AbsenceController::class, 'justificatif'])->name('absences.justificatif');
 

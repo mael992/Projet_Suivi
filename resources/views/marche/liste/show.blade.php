@@ -47,7 +47,14 @@
         </div>
     </form>
 
-    <div class="d-flex justify-content-end mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div style="max-width:400px;flex:1;">
+            <div class="search-input-group">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="rechercheEndroit" class="search-input"
+                       placeholder="{{ __('Rechercher une rue, une place…') }}" autocomplete="off">
+            </div>
+        </div>
         <button class="btn btn-primary" onclick="ouvrirModaleEndroit()">
             + {{ __('Ajouter un nom de rue, place…') }}
         </button>
@@ -64,9 +71,9 @@
                         <th class="text-end">{{ __('Action') }}</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="corpsEndroits">
                 @forelse($endroits as $endroit)
-                    <tr>
+                    <tr data-recherche="{{ strtolower(\Illuminate\Support\Str::ascii($endroit->nom . ' ' . $endroit->type_label)) }}">
                         <td class="fw-semibold">{{ $endroit->nom }}</td>
                         <td>{{ $endroit->type_label }}</td>
                         <td style="font-size:13px;">{{ $endroit->updated_at?->format('d/m/Y à H:i') ?? '—' }}</td>
@@ -122,6 +129,13 @@
 </div>
 
 <script>
+    document.getElementById('rechercheEndroit').addEventListener('input', function () {
+        const q = this.value.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+        document.querySelectorAll('#corpsEndroits tr[data-recherche]').forEach(ligne => {
+            ligne.style.display = (! q || ligne.dataset.recherche.includes(q)) ? '' : 'none';
+        });
+    });
+
     const modaleEndroit = document.getElementById('modaleEndroit');
     function ouvrirModaleEndroit() { modaleEndroit.classList.remove('d-none'); }
     function fermerModaleEndroit() { modaleEndroit.classList.add('d-none'); }

@@ -63,21 +63,25 @@ class UserController extends Controller
             'email'               => 'nullable|email|unique:users,email',
             'telephone_indicatif' => 'nullable|string|max:8',
             'telephone'           => 'nullable|string|max:20',
-            'password'            => 'required|min:8',
         ]);
 
         if (! in_array((int) $data['grade'], Referentiel::gradesAutorises((int) $data['service']), true)) {
             return back()->withInput()->withErrors(['grade' => 'Ce statut n\'est pas autorisé pour ce service.']);
         }
 
+        // Le mot de passe provisoire est tiré au sort : personne ne le choisit.
+        // Il figure sur le courrier d'identifiants et se change à la première
+        // connexion. Le cast « hashed » s'occupe du hachage.
+        $motDePasse = User::genererMotDePasseProvisoire();
+
         $user = User::create([
             'prenom'                   => $data['prenom'],
             'nom'                      => $data['nom'],
             'username'                 => User::genererUsername($data['prenom'], $data['nom']),
             'email'                    => ($data['email'] ?? null) ?: null,
-            'password'                 => Hash::make($data['password']),
-            'temp_password'            => $data['password'],
-            'temp_password_expires_at' => now()->addHours(48),
+            'password'                 => $motDePasse,
+            'temp_password'            => $motDePasse,
+            'temp_password_expires_at' => now()->addHours(User::HEURES_TEMP_PASSWORD),
             'must_change_password'     => true,
             'role'                     => 'user',
             'mairie_id'                => $mairie->id,
@@ -129,7 +133,7 @@ class UserController extends Controller
             'email'               => 'nullable|email|unique:users,email,' . $user->id,
             'telephone_indicatif' => 'nullable|string|max:8',
             'telephone'           => 'nullable|string|max:20',
-            'password'            => 'nullable|min:8',
+            'reinitialiser_mdp'   => 'nullable|boolean',
         ]);
 
         if (! in_array((int) $data['grade'], Referentiel::gradesAutorises((int) $data['service']), true)) {
@@ -157,11 +161,8 @@ class UserController extends Controller
         if ($serviceChange) {
             $user->reference = User::genererReference($user->mairie_id, (int) $data['service']);
         }
-        if (! empty($data['password'])) {
-            $user->password                 = Hash::make($data['password']);
-            $user->temp_password            = $data['password'];
-            $user->temp_password_expires_at = now()->addHours(48);
-            $user->must_change_password     = true;
+        if ($request->boolean('reinitialiser_mdp')) {
+            $user->attribuerMotDePasseProvisoire();
         }
 
         $user->save();

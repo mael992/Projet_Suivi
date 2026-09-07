@@ -111,7 +111,8 @@ class PlanningTest extends TestCase
         $this->actingAs($chef)->put("/planning/{$planning->id}", [
             'lignes' => [
                 $ligne->id => [
-                    'duree_contrat' => '35:00',
+                    // La durée se saisit en heures, en chiffres seulement
+                    'duree_contrat' => '35',
                     'jours' => [
                         1 => ['creneaux' => [['08:00', '12:00'], ['14:00', '17:00']]],
                         2 => ['creneaux' => [['09:00', '12:30'], ['', '']]],
@@ -132,6 +133,79 @@ class PlanningTest extends TestCase
         $this->assertSame(630 - 2100, $ligne->variationMinutes($dates));
         $this->assertSame('10h30', PlanningLigne::formatMinutes(630));
         $this->assertSame('-24h30', PlanningLigne::formatMinutes(630 - 2100));
+    }
+
+    /** La durée accepte les demi-heures, toujours en chiffres. */
+    public function test_la_duree_se_saisit_en_heures_decimales(): void
+    {
+        $chef     = $this->chef();
+        $planning = $this->planning();
+        $ligne    = PlanningLigne::create(['planning_id' => $planning->id, 'user_id' => $chef->id]);
+
+        $this->actingAs($chef)->put("/planning/{$planning->id}", [
+            'lignes' => [$ligne->id => ['duree_contrat' => '35.5', 'jours' => []]],
+        ])->assertRedirect();
+
+        $ligne->refresh();
+        $this->assertSame(2130, $ligne->duree_contrat);      // 35 h 30
+        $this->assertSame('35.5', $ligne->dureeContratSaisie());
+
+        // Un « 35:00 » à l'ancienne est refusé
+        $this->actingAs($chef)->put("/planning/{$planning->id}", [
+            'lignes' => [$ligne->id => ['duree_contrat' => '35:00', 'jours' => []]],
+        ])->assertSessionHasErrors('lignes.' . $ligne->id . '.duree_contrat');
+    }
+
+    /** Le retard se déduit des heures faites et se cumule sur la semaine. */
+    public function test_le_retard_diminue_les_heures_du_jour(): void
+    {
+        $chef     = $this->chef();
+        $planning = $this->planning();
+        $ligne    = PlanningLigne::create(['planning_id' => $planning->id, 'user_id' => $chef->id]);
+
+        $this->actingAs($chef)->put("/planning/{$planning->id}", [
+            'lignes' => [
+                $ligne->id => [
+                    'duree_contrat' => '7',
+                    'jours' => [
+                        1 => ['creneaux' => [['08:00', '12:00']], 'retard' => 30],
+                        2 => ['creneaux' => [['08:00', '12:00']], 'retard' => 0],
+                    ],
+                ],
+            ],
+        ])->assertRedirect();
+
+        $ligne = PlanningLigne::with('user.absences')->find($ligne->id);
+        $dates = $planning->dates();
+
+        $this->assertSame(210, $ligne->minutesJour(1, $dates[1]));   // 4 h moins 30 min
+        $this->assertSame(240, $ligne->minutesJour(2, $dates[2]));
+        $this->assertSame(30,  $ligne->retardMinutes($dates));
+        $this->assertSame(450, $ligne->totalMinutes($dates));
+    }
+
+    /** Le filtre par service prépare (et imprime) une équipe à la fois. */
+    public function test_le_filtre_par_service_restreint_la_grille_et_le_pdf(): void
+    {
+        $chef     = $this->chef();                    // service 1
+        $agent    = $this->agent();                   // service 12
+        $planning = $this->planning();
+        PlanningLigne::create(['planning_id' => $planning->id, 'user_id' => $chef->id]);
+        PlanningLigne::create(['planning_id' => $planning->id, 'user_id' => $agent->id]);
+
+        $this->actingAs($chef)->get("/planning/{$planning->id}?service=12")
+            ->assertOk()
+            ->assertSee($agent->full_name)
+            ->assertDontSee($chef->full_name);
+
+        $this->actingAs($chef)->get("/planning/{$planning->id}?service=tout")
+            ->assertOk()
+            ->assertSee($agent->full_name)
+            ->assertSee($chef->full_name);
+
+        $pdf = $this->actingAs($chef)->get("/planning/{$planning->id}/pdf?service=12");
+        $pdf->assertOk();
+        $this->assertSame('application/pdf', $pdf->headers->get('content-type'));
     }
 
     public function test_une_absence_neutralise_la_journee_sans_toucher_au_planning(): void

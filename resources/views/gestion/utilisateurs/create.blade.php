@@ -66,9 +66,10 @@
                 @include('gestion.utilisateurs.partials.droits')
 
                 <div class="col-12">
-                    <label class="form-label fw-semibold">Mot de passe provisoire *</label>
-                    <input type="text" name="password" value="{{ old('password') }}" class="form-control" required minlength="8">
-                    <small class="text-muted">L'utilisateur devra le changer à sa première connexion (valable 48h).</small>
+                    <label class="form-label fw-semibold">🔑 {{ __('Mot de passe provisoire') }}</label>
+                    <div class="border rounded p-2 text-muted" style="font-size:13px;">
+                        {{ __('Généré automatiquement à la création : vous n\'avez rien à saisir. Il figure sur le courrier d\'identifiants, reste valable 48 heures, et l\'utilisateur doit le changer à sa première connexion.') }}
+                    </div>
                 </div>
             </div>
 

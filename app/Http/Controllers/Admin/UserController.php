@@ -58,7 +58,9 @@ class UserController extends Controller
             'email'               => 'nullable|email|unique:users,email',
             'telephone_indicatif' => 'nullable|string|max:8',
             'telephone'           => 'nullable|string|max:20',
-            'password'            => 'required|min:8',
+            // Seul un compte administrateur garde un mot de passe choisi :
+            // les agents de mairie recoivent un provisoire tire au sort.
+            'password'            => 'required_if:role,admin|nullable|min:8',
         ]);
 
         $estAdmin = $data['role'] === 'admin';
@@ -67,14 +69,16 @@ class UserController extends Controller
             return back()->withInput()->withErrors(['grade' => 'Ce statut n\'est pas autorisé pour ce service.']);
         }
 
+        $motDePasse = User::genererMotDePasseProvisoire();
+
         $user = User::create([
             'prenom'                   => $data['prenom'],
             'nom'                      => $data['nom'],
             'username'                 => User::genererUsername($data['prenom'], $data['nom']),
             'email'                    => ($data['email'] ?? null) ?: null,
-            'password'                 => Hash::make($data['password']),
-            'temp_password'            => $estAdmin ? null : $data['password'],
-            'temp_password_expires_at' => $estAdmin ? null : now()->addHours(48),
+            'password'                 => $estAdmin ? $data['password'] : $motDePasse,
+            'temp_password'            => $estAdmin ? null : $motDePasse,
+            'temp_password_expires_at' => $estAdmin ? null : now()->addHours(User::HEURES_TEMP_PASSWORD),
             'must_change_password'     => ! $estAdmin,
             'role'                     => $data['role'],
             'mairie_id'                => $estAdmin ? null : $data['mairie_id'],
@@ -129,7 +133,8 @@ class UserController extends Controller
             'email'               => 'nullable|email|unique:users,email,' . $user->id,
             'telephone_indicatif' => 'nullable|string|max:8',
             'telephone'           => 'nullable|string|max:20',
-            'password'            => 'nullable|min:8',
+            'password'            => 'nullable|min:8',   // administrateur uniquement
+            'reinitialiser_mdp'   => 'nullable|boolean',
         ]);
 
         $estAdmin  = $data['role'] === 'admin';
@@ -164,8 +169,12 @@ class UserController extends Controller
         if ($serviceChange) {
             $user->reference = User::genererReference((int) $data['mairie_id'], (int) $data['service']);
         }
-        if (! empty($data['password'])) {
+        // Un administrateur choisit son mot de passe ; un agent de mairie
+        // reçoit un provisoire tiré au sort.
+        if ($user->role === 'admin' && ! empty($data['password'])) {
             $user->password = Hash::make($data['password']);
+        } elseif ($user->role !== 'admin' && $request->boolean('reinitialiser_mdp')) {
+            $user->attribuerMotDePasseProvisoire();
         }
 
         $user->save();

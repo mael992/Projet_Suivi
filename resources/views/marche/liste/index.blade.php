@@ -25,7 +25,14 @@
         <div class="alert alert-danger mb-3">{{ $errors->first() }}</div>
     @endif
 
-    <div class="d-flex justify-content-end mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div style="max-width:400px;flex:1;">
+            <div class="search-input-group">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="rechercheMarche" class="search-input"
+                       placeholder="{{ __('Rechercher un marché ou une date…') }}" autocomplete="off">
+            </div>
+        </div>
         <button class="btn btn-primary" onclick="ouvrirModaleMarche()">+ {{ __('Ajouter un nouveau marché') }}</button>
     </div>
 
@@ -40,9 +47,10 @@
                         <th class="text-end">{{ __('Action') }}</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="corpsMarches">
                 @forelse($marches as $marche)
-                    <tr class="{{ $marche->estPasse() ? 'text-muted' : '' }}">
+                    <tr class="{{ $marche->estPasse() ? 'text-muted' : '' }}"
+                        data-recherche="{{ strtolower(\Illuminate\Support\Str::ascii($marche->nom . ' ' . $marche->dateLabel())) }}">
                         <td class="fw-semibold">{{ $marche->nom }}</td>
                         <td>
                             {{ $marche->dateLabel() }}
@@ -98,6 +106,14 @@
 </div>
 
 <script>
+    // Recherche immediate cote navigateur : la liste peut s'allonger vite
+    document.getElementById('rechercheMarche').addEventListener('input', function () {
+        const q = this.value.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+        document.querySelectorAll('#corpsMarches tr[data-recherche]').forEach(ligne => {
+            ligne.style.display = (! q || ligne.dataset.recherche.includes(q)) ? '' : 'none';
+        });
+    });
+
     const modaleMarche = document.getElementById('modaleMarche');
     function ouvrirModaleMarche() { modaleMarche.classList.remove('d-none'); }
     function fermerModaleMarche() { modaleMarche.classList.add('d-none'); }

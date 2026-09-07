@@ -26,7 +26,8 @@
 
 <h1>🕒 Planning — {{ $planning->libelle() }}</h1>
 <div class="sub">
-    {{ $planning->mairie->nom }} · {{ $planning->periodeLabel() }} —
+    {{ $planning->mairie->nom }} · {{ $planning->periodeLabel() }} ·
+    {{ $serviceLabel ?? 'Tous les services' }} —
     <strong>édité le {{ $genereLe->format('d/m/Y à H:i') }}</strong>
 </div>
 
@@ -40,6 +41,7 @@
             @endforeach
             <th style="width:44px;">TOTAL</th>
             <th style="width:44px;">VAR.</th>
+            <th style="width:44px;">RETARD</th>
             <th style="width:70px;">SIGNATURE</th>
         </tr>
     </thead>
@@ -48,6 +50,7 @@
         @php
             $total     = $ligne->totalMinutes($dates);
             $variation = $ligne->variationMinutes($dates);
+            $retard    = $ligne->retardMinutes($dates);
         @endphp
         <tr>
             <td class="agent">
@@ -70,6 +73,9 @@
                         @foreach($journee['creneaux'] as $creneau)
                             {{ $creneau[0] }}–{{ $creneau[1] }}<br>
                         @endforeach
+                        @if($journee['retard'] > 0)
+                            <span style="color:#c53030;font-size:9px;">retard {{ PlanningLigne::formatMinutes($journee['retard']) }}</span><br>
+                        @endif
                         <span class="sousTotal">{{ PlanningLigne::formatMinutes($ligne->minutesJour($numero, $dates[$numero])) }}</span>
                     </td>
                 @endif
@@ -77,6 +83,7 @@
 
             <td class="total">{{ PlanningLigne::formatMinutes($total) }}</td>
             <td class="total">{{ PlanningLigne::formatMinutes($variation) }}</td>
+            <td class="total">{{ $retard > 0 ? PlanningLigne::formatMinutes($retard) : '—' }}</td>
             <td class="signature">
                 @if($ligne->estSigne())
                     ✅ {{ $ligne->signe_at->format('d/m/Y') }}

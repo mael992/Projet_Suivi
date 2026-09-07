@@ -174,6 +174,80 @@ class AbsencesTest extends TestCase
             ->get(route('gestion.absences.justificatif', $absence))->assertForbidden();
     }
 
+    /**
+     * Un justificatif arrive souvent après coup : l'absence doit rester
+     * modifiable, y compris quand elle est déjà passée (historique).
+     */
+    public function test_une_absence_passee_reste_modifiable_et_accepte_un_justificatif(): void
+    {
+        Storage::fake('local');
+        $agent   = $this->agent();
+        $absence = $this->absence(
+            $agent,
+            now()->subMonth()->toDateString(),
+            now()->subMonth()->addDays(2)->toDateString(),
+            'signalee',
+        );
+
+        $this->actingAs($this->gestionnaire())->put(route('gestion.absences.update', $absence), [
+            'motif'        => 'arret_travail',
+            'date_debut'   => now()->subMonth()->toDateString(),
+            'date_fin'     => now()->subMonth()->addDays(5)->toDateString(),
+            'justificatif' => UploadedFile::fake()->create('arret.pdf', 30, 'application/pdf'),
+        ])->assertRedirect(route('gestion.absences.index'));
+
+        $absence->refresh();
+        $this->assertSame('arret_travail', $absence->motif);
+        $this->assertSame(now()->subMonth()->addDays(5)->toDateString(), $absence->date_fin->toDateString());
+        $this->assertNotNull($absence->justificatif);
+        Storage::disk('local')->assertExists($absence->justificatif);
+    }
+
+    public function test_le_justificatif_peut_etre_retire(): void
+    {
+        Storage::fake('local');
+        $agent   = $this->agent();
+        $absence = $this->absence($agent, now()->toDateString(), now()->addDay()->toDateString());
+        $absence->update(['justificatif' => UploadedFile::fake()->create('a.pdf', 5)->store('justificatifs', 'local')]);
+
+        $chemin = $absence->justificatif;
+
+        $this->actingAs($this->gestionnaire())->put(route('gestion.absences.update', $absence), [
+            'motif'                => $absence->motif,
+            'date_debut'           => $absence->date_debut->toDateString(),
+            'date_fin'             => $absence->date_fin->toDateString(),
+            'retirer_justificatif' => '1',
+        ])->assertRedirect();
+
+        $this->assertNull($absence->fresh()->justificatif);
+        Storage::disk('local')->assertMissing($chemin);
+    }
+
+    public function test_on_ne_modifie_pas_l_absence_d_une_autre_mairie(): void
+    {
+        $autre = Mairie::create([
+            'nom'                 => 'Mairie Voisine',
+            'email'               => 'voisine@mairie.fr',
+            'date_fin_abonnement' => now()->addYear()->toDateString(),
+        ]);
+        $etranger = User::factory()->create(['mairie_id' => $autre->id, 'grade' => Referentiel::GRADE_EMPLOYE]);
+        $absence  = Absence::create([
+            'mairie_id'  => $autre->id,
+            'user_id'    => $etranger->id,
+            'motif'      => 'vacances',
+            'date_debut' => now()->toDateString(),
+            'date_fin'   => now()->addDay()->toDateString(),
+        ]);
+
+        $this->actingAs($this->gestionnaire())->put(route('gestion.absences.update', $absence), [
+            'motif'      => 'formation',
+            'date_debut' => now()->toDateString(),
+            'date_fin'   => now()->addDay()->toDateString(),
+        ])->assertForbidden();
+
+        $this->assertSame('vacances', $absence->fresh()->motif);
+    }
+
     public function test_suppression_d_une_absence(): void
     {
         $agent    = $this->agent();

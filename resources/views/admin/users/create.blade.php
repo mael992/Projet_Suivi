@@ -80,10 +80,18 @@
                         @include('gestion.utilisateurs.partials.droits')
                     </div>
                 </div>
-                <div class="col-12">
+                {{-- Un administrateur choisit son mot de passe ; un agent de mairie
+                     reçoit un provisoire tiré au sort par le système. --}}
+                <div class="col-12" id="blocMotDePasse">
                     <label class="form-label fw-semibold">{{ __('Mot de passe') }} *</label>
-                    <input type="text" name="password" value="{{ old('password') }}" class="form-control" required minlength="8">
-                    <small class="text-muted">Pour un utilisateur de mairie : mot de passe provisoire (changement obligatoire, valable 48h).</small>
+                    <input type="text" name="password" value="{{ old('password') }}" class="form-control" minlength="8">
+                    <small class="text-muted">{{ __('Compte administrateur : mot de passe choisi ici.') }}</small>
+                </div>
+                <div class="col-12 d-none" id="blocMotDePasseAuto">
+                    <label class="form-label fw-semibold">🔑 {{ __('Mot de passe provisoire') }}</label>
+                    <div class="border rounded p-2 text-muted" style="font-size:13px;">
+                        {{ __('Généré automatiquement à la création : rien à saisir. Il figure sur le courrier d\'identifiants, reste valable 48 heures, et doit être changé à la première connexion.') }}
+                    </div>
                 </div>
             </div>
 
@@ -99,6 +107,13 @@
 function toggleMairie() {
     const estAdmin = document.getElementById('roleSelect').value === 'admin';
     document.querySelectorAll('.champ-mairie').forEach(el => el.style.display = estAdmin ? 'none' : '');
+
+    // Seul l'administrateur saisit son mot de passe
+    const saisie = document.getElementById('blocMotDePasse');
+    const auto   = document.getElementById('blocMotDePasseAuto');
+    saisie.classList.toggle('d-none', ! estAdmin);
+    auto.classList.toggle('d-none', estAdmin);
+    saisie.querySelector('input[name=password]').required = estAdmin;
 }
 toggleMairie();
 </script>

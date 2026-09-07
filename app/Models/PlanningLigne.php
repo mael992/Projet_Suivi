@@ -55,6 +55,8 @@ class PlanningLigne extends Model
         return [
             'repos'    => (bool) ($donnees['repos'] ?? false),
             'creneaux' => $donnees['creneaux'] ?? [],
+            // Retard constaté ce jour-là, en minutes (0 = à l'heure)
+            'retard'   => (int) ($donnees['retard'] ?? 0),
         ];
     }
 
@@ -83,7 +85,8 @@ class PlanningLigne extends Model
             $total += self::minutesEntre($creneau[0] ?? null, $creneau[1] ?? null);
         }
 
-        return $total;
+        // Le retard se déduit des heures effectivement faites
+        return max(0, $total - $journee['retard']);
     }
 
     /** Total de la semaine, absences et repos déduits. */
@@ -105,17 +108,51 @@ class PlanningLigne extends Model
             : $this->totalMinutes($dates) - $this->duree_contrat;
     }
 
+    /** Retard cumulé sur la semaine, en minutes. */
+    public function retardMinutes(array $dates = []): int
+    {
+        $total = 0;
+        foreach (range(1, 7) as $jour) {
+            // Un jour d'absence ou de repos ne compte pas de retard
+            if (($dates[$jour] ?? null) && $this->absencePour($dates[$jour])) {
+                continue;
+            }
+            if ($this->journee($jour)['repos']) {
+                continue;
+            }
+            $total += $this->journee($jour)['retard'];
+        }
+
+        return $total;
+    }
+
     public function estSigne(): bool
     {
         return $this->signe_at !== null;
     }
 
-    /** Durée due telle qu'on la ressaisit dans le formulaire (« 35:00 »). */
+    /**
+     * Durée due telle qu'on la saisit : en heures, en chiffres seulement
+     * (35 ou 35.5). Le « HH:MM » se tapait mal et prêtait à confusion avec
+     * les créneaux horaires.
+     */
     public function dureeContratSaisie(): string
     {
-        return $this->duree_contrat === null
-            ? ''
-            : sprintf('%02d:%02d', intdiv($this->duree_contrat, 60), $this->duree_contrat % 60);
+        if ($this->duree_contrat === null) {
+            return '';
+        }
+
+        $heures = $this->duree_contrat / 60;
+
+        return rtrim(rtrim(number_format($heures, 2, '.', ''), '0'), '.');
+    }
+
+    /** Convertit une saisie en heures (35, 35.5…) en minutes. */
+    public static function heuresEnMinutes(mixed $heures): ?int
+    {
+        return $heures === null || $heures === ''
+            ? null
+            : (int) round(((float) $heures) * 60);
     }
 
     // ── Formatage ────────────────────────────────────────────────

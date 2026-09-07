@@ -64,6 +64,50 @@ class AbsenceController extends Controller
             ->with('success', __('Absence enregistrée.'));
     }
 
+    /**
+     * Correction d'une absence déjà enregistrée : un justificatif arrive
+     * souvent après coup (arrêt de travail prolongé, certificat…), et les
+     * dates changent. Possible aussi bien sur les absences en cours que sur
+     * celles de l'historique.
+     */
+    public function update(Request $request, Absence $absence)
+    {
+        $this->verifierMairie($absence);
+
+        $data = $request->validate([
+            'motif'                => 'required|string|in:' . implode(',', array_keys(Referentiel::MOTIFS_ABSENCE)),
+            'date_debut'           => 'required|date',
+            'date_fin'             => 'required|date|after_or_equal:date_debut',
+            'justificatif'         => 'nullable|file|max:8192|mimes:jpg,jpeg,png,webp,pdf,doc,docx',
+            'retirer_justificatif' => 'nullable|boolean',
+        ]);
+
+        $justificatif = $absence->justificatif;
+
+        if ($request->boolean('retirer_justificatif') || $request->hasFile('justificatif')) {
+            if ($justificatif) {
+                Storage::disk('local')->delete($justificatif);
+            }
+            $justificatif = null;
+        }
+
+        if ($request->hasFile('justificatif')) {
+            $justificatif = $request->file('justificatif')->store('justificatifs', 'local');
+        }
+
+        $absence->update([
+            'motif'        => $data['motif'],
+            'date_debut'   => $data['date_debut'],
+            'date_fin'     => $data['date_fin'],
+            'justificatif' => $justificatif,
+        ]);
+
+        ActivityLogger::log('GESTION', 'UPDATE', "Absence modifiée : {$absence->user?->username} — {$absence->motifLabel()} ({$absence->periodeLabel()})");
+
+        return redirect()->route('gestion.absences.index')
+            ->with('success', __('Absence mise à jour.'));
+    }
+
     public function destroy(Absence $absence)
     {
         $this->verifierMairie($absence);

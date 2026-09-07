@@ -1,6 +1,19 @@
 @extends('layouts.app')
 
-@php use App\Support\Referentiel; @endphp
+@php
+    use App\Support\Referentiel;
+
+    // Absences de la page, pour préremplir la modale de correction
+    $absencesJson = $actuelles->concat($historique)->mapWithKeys(fn ($a) => [
+        $a->id => [
+            'agent'        => $a->user?->username,
+            'motif'        => $a->motif,
+            'debut'        => $a->date_debut->format('Y-m-d'),
+            'fin'          => $a->date_fin->format('Y-m-d'),
+            'justificatif' => (bool) $a->justificatif,
+        ],
+    ]);
+@endphp
 
 @section('content')
 <div class="container-fluid px-3 px-md-4 py-4">
@@ -37,6 +50,7 @@
         </button>
     </div>
 
+    <div id="zoneAbsences">
     {{-- ── Onglet 1 : en cours et à venir ── --}}
     <div class="card shadow-sm" id="panneauActuelles">
         <div class="table-responsive">
@@ -75,6 +89,8 @@
                             @endif
                         </td>
                         <td class="text-end">
+                            <button type="button" class="btn btn-sm btn-outline-primary"
+                                    onclick="modifierAbsence({{ $absence->id }})">{{ __('Modifier') }}</button>
                             <form method="POST" action="{{ route('gestion.absences.destroy', $absence) }}"
                                   onsubmit="return confirm('{{ __('Supprimer cette absence ?') }}')">
                                 @csrf @method('DELETE')
@@ -119,6 +135,8 @@
                             @endif
                         </td>
                         <td class="text-end">
+                            <button type="button" class="btn btn-sm btn-outline-primary"
+                                    onclick="modifierAbsence({{ $absence->id }})">{{ __('Modifier') }}</button>
                             <form method="POST" action="{{ route('gestion.absences.destroy', $absence) }}"
                                   onsubmit="return confirm('{{ __('Supprimer cette absence ?') }}')">
                                 @csrf @method('DELETE')
@@ -132,6 +150,62 @@
                 </tbody>
             </table>
         </div>
+    </div>
+    </div>{{-- /#zoneAbsences --}}
+</div>
+
+{{-- ── Modale : corriger une absence ── --}}
+<div id="modaleEditAbsence" class="d-none position-fixed top-0 start-0 w-100 h-100"
+     style="background:rgba(0,0,0,.5);z-index:1050;">
+    <div class="bg-white rounded shadow position-absolute top-50 start-50 translate-middle p-4"
+         style="width:100%;max-width:460px;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="h5 mb-0">{{ __('Modifier l\'absence') }}</h2>
+            <button type="button" class="btn-close" onclick="fermerEditAbsence()"></button>
+        </div>
+
+        <form method="POST" id="formEditAbsence" enctype="multipart/form-data">
+            @csrf @method('PUT')
+            <p class="text-muted" id="editAgent" style="font-size:13px;"></p>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold" style="font-size:13px;">{{ __('Motif de l\'absence') }} *</label>
+                <select name="motif" id="editMotif" class="form-select" required>
+                    @foreach(Referentiel::MOTIFS_ABSENCE as $cle => $label)
+                        <option value="{{ $cle }}">{{ __($label) }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <label class="form-label fw-semibold" style="font-size:13px;">{{ __('Date de début') }} *</label>
+                    <input type="date" name="date_debut" id="editDebut" class="form-control" required>
+                </div>
+                <div class="col-6">
+                    <label class="form-label fw-semibold" style="font-size:13px;">{{ __('Date de fin') }} *</label>
+                    <input type="date" name="date_fin" id="editFin" class="form-control" required>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold" style="font-size:13px;">{{ __('Justificatif') }}</label>
+                <input type="file" name="justificatif" class="form-control"
+                       accept=".jpg,.jpeg,.png,.webp,.pdf,.doc,.docx">
+                <div class="form-check mt-2 d-none" id="blocRetrait">
+                    <input class="form-check-input" type="checkbox" name="retirer_justificatif" value="1" id="retirerJustificatif">
+                    <label class="form-check-label" for="retirerJustificatif" style="font-size:12px;">
+                        {{ __('Retirer le justificatif actuel') }}
+                    </label>
+                </div>
+                <small class="text-muted">{{ __('Un nouveau fichier remplace l\'ancien. 8 Mo maximum.') }}</small>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-outline-secondary" onclick="fermerEditAbsence()">{{ __('Annuler') }}</button>
+                <button type="submit" class="btn btn-primary">{{ __('Enregistrer') }}</button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -212,10 +286,36 @@
     window.ouvrirModaleAbsence = () => modale.classList.remove('d-none');
     window.fermerModaleAbsence = () => modale.classList.add('d-none');
 
+    // Édition : les absences connues de la page, indexées par identifiant
+    const ABSENCES = @json($absencesJson);
+
+    const modaleEdit = document.getElementById('modaleEditAbsence');
+    const formEdit   = document.getElementById('formEditAbsence');
+    const urlEdit    = @json(route('gestion.absences.update', ['absence' => '__ID__']));
+
+    window.modifierAbsence = (id) => {
+        const a = ABSENCES[id];
+        if (! a) return;
+
+        formEdit.action = urlEdit.replace('__ID__', id);
+        document.getElementById('editAgent').textContent = a.agent ?? '';
+        document.getElementById('editMotif').value = a.motif;
+        document.getElementById('editDebut').value = a.debut;
+        document.getElementById('editFin').value   = a.fin;
+        document.getElementById('blocRetrait').classList.toggle('d-none', ! a.justificatif);
+        document.getElementById('retirerJustificatif').checked = false;
+
+        modaleEdit.classList.remove('d-none');
+    };
+
+    window.fermerEditAbsence = () => modaleEdit.classList.add('d-none');
+
     // Le formulaire rouvre la modale s'il a été refusé
     @if($errors->any() && old('user_id'))
         ouvrirModaleAbsence();
     @endif
 })();
 </script>
+
+@include('partials.autorefresh', ['selector' => '#zoneAbsences'])
 @endsection

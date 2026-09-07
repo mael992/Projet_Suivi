@@ -17,9 +17,22 @@
             <h1 class="h3 mb-1">🕒 {{ __('Planning') }} {{ $planning->libelle() }}</h1>
             <p class="text-muted mb-0" style="font-size:13px;">{{ $planning->periodeLabel() }}</p>
         </div>
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 align-items-end flex-wrap">
             @if($peutGerer)
-                <a href="{{ route('planning.pdf', $planning) }}" class="btn btn-outline-dark">📄 {{ __('Télécharger en PDF') }}</a>
+                {{-- Filtre : préparer une équipe à la fois, et l'imprimer telle quelle --}}
+                <form method="GET" class="d-flex gap-2 align-items-end">
+                    <div>
+                        <label class="form-label mb-1" style="font-size:12px;">{{ __('Service') }}</label>
+                        <select name="service" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="tout">{{ __('Tous les services') }}</option>
+                            @foreach($services as $numero => $label)
+                                <option value="{{ $numero }}" @selected($service === $numero)>{{ $numero }} — {{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </form>
+                <a href="{{ route('planning.pdf', array_merge(['planning' => $planning->id], $service === null ? [] : ['service' => $service])) }}"
+                   class="btn btn-outline-dark">📄 {{ __('Télécharger en PDF') }}</a>
                 <button type="submit" form="formPlanning" class="btn btn-primary">{{ __('Enregistrer') }}</button>
             @endif
         </div>
@@ -35,7 +48,7 @@
     <form method="POST" action="{{ route('planning.update', $planning) }}" id="formPlanning">
         @csrf @method('PUT')
 
-        <div class="card shadow-sm">
+        <div class="card shadow-sm" id="zonePlanning">
             <div class="table-responsive">
                 <table class="table table-bordered mb-0 align-middle text-center" style="font-size:12px;">
                     <thead class="table-light">
@@ -50,6 +63,7 @@
                             @endforeach
                             <th style="min-width:70px;">{{ __('TOTAL') }}</th>
                             <th style="min-width:70px;">{{ __('VAR.') }}</th>
+                            <th style="min-width:70px;">{{ __('RETARD') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -57,6 +71,7 @@
                         @php
                             $total     = $ligne->totalMinutes($dates);
                             $variation = $ligne->variationMinutes($dates);
+                            $retard    = $ligne->retardMinutes($dates);
                         @endphp
                         <tr>
                             <td class="text-start">
@@ -73,10 +88,11 @@
 
                             <td>
                                 @if($peutGerer)
-                                    <input type="text" class="form-control form-control-sm text-center"
+                                    <input type="number" class="form-control form-control-sm text-center"
                                            name="lignes[{{ $ligne->id }}][duree_contrat]"
                                            value="{{ $ligne->dureeContratSaisie() }}"
-                                           placeholder="35:00" pattern="\d{1,2}:[0-5]\d">
+                                           placeholder="35" min="0" max="99" step="0.25">
+                                    <span class="text-muted" style="font-size:10px;">{{ __('heures') }}</span>
                                 @else
                                     {{ PlanningLigne::formatMinutes($ligne->duree_contrat) }}
                                 @endif
@@ -109,6 +125,24 @@
                                             </div>
                                         @endfor
 
+                                        {{-- Retard constaté : saisi par la personne qui gère
+                                             les emplois du temps, déduit des heures faites --}}
+                                        @if($peutGerer)
+                                            <div class="d-flex align-items-center justify-content-center gap-1 mb-1" style="font-size:10px;">
+                                                <span title="{{ __('Retard en minutes') }}">⏱</span>
+                                                <input type="number" class="form-control form-control-sm p-1 text-center"
+                                                       style="width:56px;font-size:11px;" min="0" max="600" step="5"
+                                                       name="lignes[{{ $ligne->id }}][jours][{{ $numero }}][retard]"
+                                                       value="{{ $journee['retard'] ?: '' }}" placeholder="0"
+                                                       @disabled($journee['repos'])>
+                                                <span class="text-muted">min</span>
+                                            </div>
+                                        @elseif($journee['retard'] > 0)
+                                            <span class="d-block text-danger fw-bold" style="font-size:10px;">
+                                                ⏱ {{ __('Retard') }} {{ PlanningLigne::formatMinutes($journee['retard']) }}
+                                            </span>
+                                        @endif
+
                                         @if($peutGerer)
                                             <label class="d-flex align-items-center justify-content-center gap-1 mb-0" style="font-size:10px;">
                                                 <input type="checkbox" class="case-repos"
@@ -131,9 +165,12 @@
                             <td class="fw-bold {{ $variation !== null && $variation < 0 ? 'text-danger' : 'text-success' }}">
                                 {{ PlanningLigne::formatMinutes($variation) }}
                             </td>
+                            <td class="fw-bold {{ $retard > 0 ? 'text-danger' : 'text-muted' }}">
+                                {{ $retard > 0 ? PlanningLigne::formatMinutes($retard) : '—' }}
+                            </td>
                         </tr>
                     @empty
-                        <tr><td colspan="12" class="text-muted py-4">{{ __('Aucun agent sur ce planning.') }}</td></tr>
+                        <tr><td colspan="13" class="text-muted py-4">{{ __('Aucun agent pour ce filtre.') }}</td></tr>
                     @endforelse
                     </tbody>
                 </table>
@@ -173,11 +210,15 @@
     // Un jour de repos n'a pas d'horaires à saisir
     document.querySelectorAll('.case-repos').forEach(caseRepos => {
         const majCellule = () => caseRepos.closest('td')
-            .querySelectorAll('input[type=time]')
+            .querySelectorAll('input[type=time], input[type=number]')
             .forEach(champ => { champ.disabled = caseRepos.checked; });
 
         caseRepos.addEventListener('change', majCellule);
     });
 </script>
 @endif
+
+@unless($peutGerer)
+    @include('partials.autorefresh', ['selector' => '#zonePlanning'])
+@endunless
 @endsection

@@ -61,9 +61,18 @@
                 @include('gestion.utilisateurs.partials.droits')
 
                 <div class="col-12">
-                    <label class="form-label fw-semibold">{{ __('Nouveau mot de passe') }} provisoire</label>
-                    <input type="text" name="password" class="form-control" minlength="8" placeholder="Laisser vide pour ne pas changer">
-                    <small class="text-muted">S'il est renseigné, l'utilisateur devra le changer à sa prochaine connexion.</small>
+                    <label class="form-label fw-semibold">🔑 {{ __('Mot de passe provisoire') }}</label>
+                    <div class="border rounded p-2">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="reinitialiser_mdp" value="1" id="reinitialiserMdp">
+                            <label class="form-check-label fw-semibold" for="reinitialiserMdp" style="font-size:13px;">
+                                {{ __('Générer un nouveau mot de passe provisoire') }}
+                            </label>
+                            <div class="text-muted" style="font-size:11px;">
+                                {{ __('Le système le tire au sort ; il figure sur le courrier d\'identifiants et l\'utilisateur devra le changer à sa prochaine connexion.') }}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 

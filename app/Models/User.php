@@ -248,6 +248,37 @@ class User extends Authenticatable
             && $this->temp_password_expires_at->isPast();
     }
 
+    /** Validité du mot de passe provisoire remis à l'ouverture d'un compte. */
+    public const HEURES_TEMP_PASSWORD = 48;
+
+    /**
+     * Mot de passe provisoire d'ouverture de compte : le système le tire au
+     * sort, personne ne le choisit. La mairie n'a donc pas à inventer un mot
+     * de passe (et à le réutiliser d'un agent à l'autre) ; il figure sur le
+     * courrier d'identifiants et doit être changé à la première connexion.
+     *
+     * Sans symboles : il est recopié à la main depuis un courrier papier.
+     */
+    public static function genererMotDePasseProvisoire(): string
+    {
+        return Str::password(12, symbols: false, spaces: false);
+    }
+
+    /** Applique un mot de passe provisoire fraîchement tiré et le renvoie en clair. */
+    public function attribuerMotDePasseProvisoire(): string
+    {
+        $clair = self::genererMotDePasseProvisoire();
+
+        $this->forceFill([
+            'password'                 => Hash::make($clair),
+            'temp_password'            => $clair,
+            'temp_password_expires_at' => now()->addHours(self::HEURES_TEMP_PASSWORD),
+            'must_change_password'     => true,
+        ]);
+
+        return $clair;
+    }
+
     // ── Mot de passe provisoire en libre-service ─────────────────
 
     /** Durée de validité du mot de passe provisoire envoyé par e-mail. */
