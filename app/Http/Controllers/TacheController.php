@@ -74,7 +74,7 @@ class TacheController extends Controller
 
         return view('taches.create', [
             'mairies'            => $user->isAdmin() ? Mairie::orderBy('nom')->get() : collect(),
-            'usersService'       => $this->usersParService($user->isAdmin() ? null : $user->mairie_id),
+            'usersAttribuables'  => $this->usersAttribuables($user->isAdmin() ? null : $user->mairie_id),
             'confidentsPossibles' => $this->confidentsPossibles($user),
         ]);
     }
@@ -99,10 +99,12 @@ class TacheController extends Controller
 
         $mairieId = $user->isAdmin() ? (int) $data['mairie_id'] : $user->mairie_id;
 
-        // Le responsable chargé de la tâche doit appartenir à la mairie et au service choisis
+        // Le responsable appartient à la mairie, mais pas forcément au service
+        // chargé de la tâche : certains services n'ont personne, et on doit
+        // pouvoir confier le travail à quelqu'un d'autre — soi-même compris.
         $assigne = User::findOrFail($data['user_id']);
-        if ($assigne->mairie_id !== $mairieId || $assigne->service !== (int) $data['service']) {
-            return back()->withInput()->withErrors(['user_id' => "L'utilisateur sélectionné n'appartient pas à ce service."]);
+        if ($assigne->mairie_id !== $mairieId) {
+            return back()->withInput()->withErrors(['user_id' => "L'utilisateur sélectionné n'appartient pas à cette mairie."]);
         }
 
         $tache = new Tache([
@@ -263,7 +265,7 @@ class TacheController extends Controller
 
         return view('taches.edit', [
             'tache'          => $tache,
-            'usersService'   => $this->usersParService($tache->mairie_id),
+            'usersAttribuables' => $this->usersAttribuables($tache->mairie_id),
             'employesService' => $this->employesDuService($tache),
             'employeSeul'    => ! $user->peutGererTaches(),
         ]);
@@ -310,8 +312,8 @@ class TacheController extends Controller
         if ($gestion) {
             if (array_key_exists('user_id', $data) && $data['user_id']) {
                 $assigne = User::findOrFail($data['user_id']);
-                if ($assigne->mairie_id !== $tache->mairie_id || $assigne->service !== $tache->service) {
-                    return back()->withErrors(['user_id' => "L'utilisateur sélectionné n'appartient pas à ce service."]);
+                if ($assigne->mairie_id !== $tache->mairie_id) {
+                    return back()->withErrors(['user_id' => "L'utilisateur sélectionné n'appartient pas à cette mairie."]);
                 }
             }
             $nouvelAssigne = ($data['user_id'] ?? null) && (int) $data['user_id'] !== (int) $tache->user_id;
@@ -430,8 +432,8 @@ class TacheController extends Controller
             ->get();
     }
 
-    /** Utilisateurs groupés par service (pour la liste dépendante du formulaire) */
-    private function usersParService(?int $mairieId): array
+    /** Tous les agents sélectionnables comme responsable, avec leur service. */
+    private function usersAttribuables(?int $mairieId): array
     {
         $query = User::where('role', 'user')->orderBy('nom')->orderBy('prenom');
 
@@ -439,12 +441,12 @@ class TacheController extends Controller
             $query->where('mairie_id', $mairieId);
         }
 
-        return $query->get()
-            ->groupBy(fn ($u) => ($mairieId ? '' : $u->mairie_id . ':') . $u->service)
-            ->map(fn ($users) => $users->map(fn ($u) => [
-                'id'    => $u->id,
-                'label' => $u->username . ' (' . $u->grade_label . ')',
-            ])->values())
-            ->toArray();
+        return $query->get()->map(fn ($u) => [
+            'id'        => $u->id,
+            'label'     => $u->username . ' (' . $u->grade_label . ')',
+            'service'   => (string) $u->service,
+            'mairie_id' => (string) $u->mairie_id,
+            'moi'       => $u->id === auth()->id(),
+        ])->values()->toArray();
     }
 }

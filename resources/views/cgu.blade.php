@@ -27,39 +27,63 @@
             l'identifiant et le mot de passe sont personnels et ne doivent jamais être partagés. Le mot de passe
             provisoire remis à la création doit être changé dès la première connexion (validité 48 heures).</p>
 
-            <h2 class="h6">3. Usage professionnel</h2>
+            <h2 class="h6">3. Hameçonnage : ce que MGDS ne vous demandera jamais</h2>
+            <div class="alert alert-warning" style="font-size:14px;">
+                <p class="fw-semibold mb-2">⚠️ MGDS ne vous demandera <u>jamais</u> :</p>
+                <ul class="mb-2">
+                    <li>vos coordonnées bancaires : numéro de carte, RIB, cryptogramme ;</li>
+                    <li>votre numéro de téléphone personnel ou une pièce d'identité ;</li>
+                    <li>les codes d'accès de votre compte, mot de passe compris.</li>
+                </ul>
+                <p class="mb-2">Nous n'envoyons pas non plus d'e-mail réclamant ces informations, quel qu'en soit
+                le prétexte : un message de ce type ne vient pas de nous.</p>
+                <p class="mb-0">
+                    Au moindre doute sur une activité suspecte,
+                    @if(config('mgds.support_email'))
+                        contactez immédiatement le support MGDS
+                        (<a href="mailto:{{ config('mgds.support_email') }}">{{ config('mgds.support_email') }}</a>@if(config('mgds.support_phone')),
+                        {{ config('mgds.support_phone') }}@endif)
+                    @else
+                        contactez immédiatement le support MGDS
+                    @endif
+                    ou prévenez votre administrateur — votre mairie — qui nous alertera aussitôt.
+                    Nous vous recontacterons dans les plus brefs délais pour donner suite à votre problème.
+                </p>
+            </div>
+
+            <h2 class="h6">4. Usage professionnel</h2>
             <p>La plateforme est réservée à un usage professionnel dans le cadre des missions de la mairie.
             Tout contenu illicite, injurieux, discriminatoire ou étranger au service est proscrit.</p>
 
-            <h2 class="h6">4. Confidentialité et secret professionnel</h2>
+            <h2 class="h6">5. Confidentialité et secret professionnel</h2>
             <p>Les informations consultées (annuaire, demandes des habitants, tâches) sont couvertes par le secret
             professionnel. Elles ne doivent être ni diffusées ni exploitées hors du cadre du service.
             Les éléments marqués « confidentiels » ne sont accessibles qu'aux personnes expressément désignées.</p>
 
-            <h2 class="h6">5. Données personnelles (RGPD)</h2>
+            <h2 class="h6">6. Données personnelles (RGPD)</h2>
             <p>Les données sont hébergées pour le compte de la mairie, responsable de traitement. Les journaux
             d'activité sont conservés six mois. Les conversations clôturées restent consultables six mois.
             Chaque mairie peut demander l'export ou la suppression définitive de ses données ; une attestation
             lui est alors remise.</p>
 
-            <h2 class="h6">6. Traçabilité</h2>
+            <h2 class="h6">7. Traçabilité</h2>
             <p>Les actions réalisées (création, modification, suppression, consultation de documents sensibles)
             sont enregistrées à des fins de sécurité et de preuve.</p>
 
-            <h2 class="h6">7. Disponibilité</h2>
+            <h2 class="h6">8. Disponibilité</h2>
             <p>MGDS s'efforce d'assurer la continuité du service. Des interruptions peuvent survenir pour
             maintenance ou pour des raisons indépendantes de sa volonté. L'accès cesse à l'échéance de
             l'abonnement de la mairie, la date de fin étant incluse.</p>
 
-            <h2 class="h6">8. Responsabilités</h2>
+            <h2 class="h6">9. Responsabilités</h2>
             <p>L'utilisateur est responsable des contenus qu'il saisit et des actions réalisées depuis son compte.
             Toute anomalie ou suspicion d'accès frauduleux doit être signalée sans délai au support.</p>
 
-            <h2 class="h6">9. Évolution des conditions</h2>
+            <h2 class="h6">10. Évolution des conditions</h2>
             <p>Ces conditions peuvent évoluer. Une nouvelle acceptation sera demandée en cas de modification
             substantielle.</p>
 
-            <h2 class="h6">10. Contact</h2>
+            <h2 class="h6">11. Contact</h2>
             <p>Pour toute question : rubrique « Contacter le Support technique » depuis votre espace connecté.</p>
         </div>
     </div>

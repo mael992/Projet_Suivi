@@ -1,15 +1,20 @@
 @extends('layouts.app')
 
-@php use App\Models\Devis; @endphp
+@php
+    use App\Models\Devis;
+    $mairieParam = request()->only('mairie');
+@endphp
 
 @section('content')
 <div class="container py-4" style="max-width:1000px;">
 
-    @include('admin.partials.onglets')
+    <a href="{{ route('marche.ville', $mairieParam) }}" class="text-decoration-none d-inline-block mb-2" style="font-size:14px;">
+        ← {{ __('Application Marché') }}
+    </a>
 
-    <h2 class="h5 mb-1">🧾 {{ __('Devis d\'abonnement') }}</h2>
+    <h2 class="h5 mb-1">🧾 {{ __('Estimations du marché') }} — {{ $mairie->nom }}</h2>
     <p class="text-muted mb-3" style="font-size:14px;">
-        {{ __('Établissez un devis conforme (mentions obligatoires) pour une commune, puis téléchargez-le en PDF.') }}
+        {{ __('Chiffrez une prestation pour un commerçant de votre marché (emplacement, branchement, services annexes…), puis téléchargez l\'estimation en PDF.') }}
     </p>
 
     @if(session('success'))
@@ -23,22 +28,23 @@
 
     @if(! $editeur['siret'] || ! $editeur['forme'])
         <div class="alert alert-warning" style="font-size:13px;">
-            ⚠️ {{ __('Vos coordonnées d\'éditeur sont incomplètes (forme juridique, SIRET…). Un devis sans ces mentions n\'est pas conforme : renseignez-les dans le fichier .env du serveur.') }}
+            ⚠️ {{ __('Les coordonnées d\'éditeur sont incomplètes (forme juridique, SIRET…). Une estimation sans ces mentions n\'est pas conforme.') }}
         </div>
     @endif
 
     <div class="card shadow-sm mb-4">
-        <div class="card-header py-2 fw-semibold">➕ {{ __('Nouveau devis') }}</div>
-        <form method="POST" action="{{ route('admin.devis.store') }}" class="card-body">
+        <div class="card-header py-2 fw-semibold">➕ {{ __('Nouvelle estimation') }}</div>
+        <form method="POST" action="{{ route('marche.devis.store', $mairieParam) }}" class="card-body">
             @csrf
             <div class="row g-3">
                 <div class="col-md-5">
-                    <label class="form-label fw-semibold" style="font-size:13px;">{{ __('Mairie') }}</label>
-                    <select name="mairie_id" class="form-select form-select-sm" id="mairieDevis" onchange="remplirClient()">
-                        <option value="">— {{ __('Client libre') }} —</option>
-                        @foreach($mairies as $m)
-                            <option value="{{ $m->id }}" data-nom="{{ $m->nom }}" data-email="{{ $m->email }}"
-                                    data-cp="{{ $m->code_postal }}">{{ $m->nom }} ({{ $m->code_postal }})</option>
+                    <label class="form-label fw-semibold" style="font-size:13px;">{{ __('Commerçant') }}</label>
+                    <select name="commercant_id" class="form-select form-select-sm" id="commercantDevis" onchange="remplirClient()">
+                        <option value="">— {{ __('Client libre (hors registre)') }} —</option>
+                        @foreach($commercants as $c)
+                            <option value="{{ $c->id }}"
+                                    data-nom="{{ trim($c->prenom . ' ' . $c->nom) }}"
+                                    data-email="{{ $c->email }}">{{ trim($c->prenom . ' ' . $c->nom) }}@if($c->activite) — {{ $c->activite }}@endif</option>
                         @endforeach
                     </select>
                 </div>
@@ -111,7 +117,7 @@
                 </div>
             </div>
 
-            <button type="submit" class="btn btn-primary mt-3">{{ __('Créer le devis') }}</button>
+            <button type="submit" class="btn btn-primary mt-3">{{ __('Créer l\'estimation') }}</button>
         </form>
     </div>
 
@@ -139,7 +145,7 @@
                         </td>
                         <td class="text-end fw-semibold">{{ number_format($d->totalTtc(), 2, ',', ' ') }} €</td>
                         <td>
-                            <form method="POST" action="{{ route('admin.devis.statut', $d) }}">
+                            <form method="POST" action="{{ route('marche.devis.statut', array_merge(['devis' => $d->id], $mairieParam)) }}">
                                 @csrf
                                 <select name="statut" class="form-select form-select-sm" style="width:auto;" onchange="this.form.submit()">
                                     @foreach(Devis::STATUTS as $cle => $label)
@@ -149,16 +155,16 @@
                             </form>
                         </td>
                         <td class="text-end">
-                            <a href="{{ route('admin.devis.pdf', $d) }}" class="btn btn-sm btn-outline-dark">⬇ PDF</a>
-                            <form action="{{ route('admin.devis.destroy', $d) }}" method="POST" class="d-inline"
-                                  onsubmit="return confirm('{{ __('Supprimer ce devis ?') }}')">
+                            <a href="{{ route('marche.devis.pdf', array_merge(['devis' => $d->id], $mairieParam)) }}" class="btn btn-sm btn-outline-dark">⬇ PDF</a>
+                            <form action="{{ route('marche.devis.destroy', array_merge(['devis' => $d->id], $mairieParam)) }}" method="POST" class="d-inline"
+                                  onsubmit="return confirm('{{ __('Supprimer cette estimation ?') }}')">
                                 @csrf @method('DELETE')
                                 <button class="btn btn-sm btn-outline-danger">🗑</button>
                             </form>
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="6" class="text-center text-muted py-4">{{ __('Aucun devis pour le moment.') }}</td></tr>
+                    <tr><td colspan="6" class="text-center text-muted py-4">{{ __('Aucune estimation pour le moment.') }}</td></tr>
                 @endforelse
                 </tbody>
             </table>
@@ -169,7 +175,7 @@
 <script>
 // Pré-remplit le client à partir de la mairie choisie
 function remplirClient() {
-    const sel = document.getElementById('mairieDevis');
+    const sel = document.getElementById('commercantDevis');
     const opt = sel.options[sel.selectedIndex];
     if (! sel.value) return;
     document.getElementById('clientNom').value   = opt.dataset.nom || '';

@@ -21,9 +21,22 @@
             @unless($employeSeul)
                 <div class="mb-3">
                     <label class="form-label fw-semibold">{{ __('Responsable chargé de la tâche') }} *</label>
+                    @php
+                        // Le service de la tâche remonte en tête, sans masquer les autres agents
+                        $duService = collect($usersAttribuables)->where('service', (string) $tache->service);
+                        $autres    = collect($usersAttribuables)->where('service', '!=', (string) $tache->service);
+                    @endphp
                     <select name="user_id" class="form-select" required>
-                        @foreach(($usersService[(string) $tache->service] ?? []) as $u)
-                            <option value="{{ $u['id'] }}" @selected(old('user_id', $tache->user_id) == $u['id'])>{{ $u['label'] }}</option>
+                        @foreach(['Service choisi' => $duService, 'Autres services' => $autres] as $groupe => $liste)
+                            @if($liste->isNotEmpty())
+                                <optgroup label="{{ __($groupe) }}">
+                                    @foreach($liste as $u)
+                                        <option value="{{ $u['id'] }}" @selected(old('user_id', $tache->user_id) == $u['id'])>
+                                            {{ $u['label'] }}{{ $u['moi'] ? ' — ' . __('moi') : '' }}
+                                        </option>
+                                    @endforeach
+                                </optgroup>
+                            @endif
                         @endforeach
                     </select>
                 </div>

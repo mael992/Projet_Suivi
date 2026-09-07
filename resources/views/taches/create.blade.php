@@ -101,23 +101,43 @@
 </div>
 
 <script>
-// Utilisateurs groupés par service (clé = "service" ou "mairie:service" pour l'admin)
-const usersService = @json($usersService);
+// Tous les agents attribuables, avec leur service d'appartenance
+const usersAttribuables = @json($usersAttribuables);
 const isAdmin = @json(auth()->user()->isAdmin());
 
+/**
+ * Le service choisi remonte ses agents en tête de liste, sans masquer les
+ * autres : un service sans personnel doit rester attribuable à quelqu'un.
+ */
 function filtrerUsers() {
     const service = document.getElementById('serviceSelect').value;
     const mairie  = document.querySelector('[name=mairie_id]')?.value ?? '';
-    const cle     = isAdmin ? (mairie + ':' + service) : service;
     const select  = document.getElementById('userSelect');
+    const choix   = select.value;
+
+    const candidats = usersAttribuables.filter(u => !isAdmin || !mairie || u.mairie_id === mairie);
+    const duService = candidats.filter(u => service !== '' && u.service === service);
+    const autres    = candidats.filter(u => !duService.includes(u));
 
     select.innerHTML = '<option value="">— Personne (le responsable du service affectera) —</option>';
-    (usersService[cle] ?? []).forEach(u => {
-        const opt = document.createElement('option');
-        opt.value = u.id;
-        opt.textContent = u.label;
-        select.appendChild(opt);
-    });
+
+    const ajouterGroupe = (libelle, liste) => {
+        if (!liste.length) return;
+        const groupe = document.createElement('optgroup');
+        groupe.label = libelle;
+        liste.forEach(u => {
+            const opt = document.createElement('option');
+            opt.value = u.id;
+            opt.textContent = u.label + (u.moi ? ' — moi' : '');
+            groupe.appendChild(opt);
+        });
+        select.appendChild(groupe);
+    };
+
+    ajouterGroupe('Service choisi', duService);
+    ajouterGroupe(duService.length ? 'Autres services' : 'Agents de la mairie', autres);
+
+    select.value = choix;   // conserve la sélection si elle reste valable
 }
 
 document.querySelector('[name=mairie_id]')?.addEventListener('change', filtrerUsers);

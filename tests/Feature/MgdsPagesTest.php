@@ -189,6 +189,67 @@ class MgdsPagesTest extends TestCase
         $this->assertDatabaseHas('taches', ['reference' => '12-2']);
     }
 
+    /**
+     * Le service chargé de la tâche ne restreint plus le choix du responsable :
+     * un service sans personnel rendait sinon la tâche impossible à attribuer.
+     */
+    public function test_le_responsable_peut_venir_d_un_autre_service(): void
+    {
+        $responsable = $this->responsable();          // service 12
+        $agentAutreService = User::factory()->create([
+            'mairie_id' => $this->mairie->id,
+            'service'   => 7,
+            'grade'     => Referentiel::GRADE_EMPLOYE,
+        ]);
+
+        // Service 0 (Maire) : personne n'y est rattaché
+        $this->actingAs($responsable)->post('/taches', [
+            'service'     => 0,
+            'user_id'     => $agentAutreService->id,
+            'date_butoir' => now()->addWeek()->toDateString(),
+        ])->assertRedirect(route('dashboard', absolute: false));
+
+        $this->assertDatabaseHas('taches', [
+            'service' => 0,
+            'user_id' => $agentAutreService->id,
+        ]);
+
+        // Mais pas quelqu'un d'une autre mairie
+        $autreMairie = Mairie::create([
+            'nom'                 => 'Mairie Voisine',
+            'email'               => 'voisine@mairie.fr',
+            'date_fin_abonnement' => now()->addYear()->toDateString(),
+        ]);
+        $etranger = User::factory()->create([
+            'mairie_id' => $autreMairie->id,
+            'grade'     => Referentiel::GRADE_EMPLOYE,
+        ]);
+
+        $this->actingAs($responsable)->post('/taches', [
+            'service'     => 12,
+            'user_id'     => $etranger->id,
+            'date_butoir' => now()->addWeek()->toDateString(),
+        ])->assertSessionHasErrors('user_id');
+    }
+
+    /** On doit pouvoir se confier une tâche à soi-même. */
+    public function test_on_peut_s_attribuer_une_tache(): void
+    {
+        $responsable = $this->responsable();
+
+        $this->actingAs($responsable)->get('/taches/create')
+            ->assertOk()
+            ->assertSee($responsable->username);
+
+        $this->actingAs($responsable)->post('/taches', [
+            'service'     => 12,
+            'user_id'     => $responsable->id,
+            'date_butoir' => now()->addWeek()->toDateString(),
+        ])->assertRedirect(route('dashboard', absolute: false));
+
+        $this->assertDatabaseHas('taches', ['user_id' => $responsable->id]);
+    }
+
     public function test_responsable_obligatoire_a_la_creation(): void
     {
         $this->actingAs($this->responsable())->post('/taches', [

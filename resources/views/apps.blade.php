@@ -82,6 +82,7 @@
                         <a href="{{ route('marche.ville') }}" class="badge text-decoration-none" style="background:var(--brand);">🏙️ {{ __('Ville') }}</a>
                         <a href="{{ route('marche.commercants') }}" class="badge bg-dark text-decoration-none">👥 Commerçants</a>
                         <a href="{{ route('marche.registre') }}" class="badge text-decoration-none" style="background:var(--gold);">🏦 Registre</a>
+                        <a href="{{ route('marche.devis.index') }}" class="badge bg-secondary text-decoration-none">🧾 {{ __('Estimations') }}</a>
                     </div>
                 </div>
             </div>

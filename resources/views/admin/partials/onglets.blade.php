@@ -22,8 +22,6 @@
         <a class="nav-link {{ request()->routeIs('admin.donnees.*') ? 'active' : '' }}"
            href="{{ route('admin.donnees.index') }}">🗄️ {{ __('Données (RGPD)') }}</a>
     </li>
-    <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.devis.*') ? 'active' : '' }}"
-           href="{{ route('admin.devis.index') }}">🧾 {{ __('Devis') }}</a>
-    </li>
+    {{-- Le devis n'est plus une affaire d'abonnement : il a rejoint le Marché
+         sous forme d'estimation pour les commerçants. --}}
 </ul>

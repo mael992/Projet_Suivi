@@ -134,6 +134,13 @@ Route::middleware('auth')->group(function () {
         Route::post('/codes', [\App\Http\Controllers\Marche\DemandeController::class, 'genererCode'])->name('codes.store');
         Route::delete('/codes/{code}', [\App\Http\Controllers\Marche\DemandeController::class, 'supprimerCode'])->name('codes.destroy');
 
+        // 🧾 Estimations pour les commerçants
+        Route::get('/devis',                  [\App\Http\Controllers\Marche\DevisController::class, 'index'])->name('devis.index');
+        Route::post('/devis',                 [\App\Http\Controllers\Marche\DevisController::class, 'store'])->name('devis.store');
+        Route::get('/devis/{devis}/pdf',      [\App\Http\Controllers\Marche\DevisController::class, 'pdf'])->name('devis.pdf');
+        Route::post('/devis/{devis}/statut',  [\App\Http\Controllers\Marche\DevisController::class, 'statut'])->name('devis.statut');
+        Route::delete('/devis/{devis}',       [\App\Http\Controllers\Marche\DevisController::class, 'destroy'])->name('devis.destroy');
+
         // 🏦 Registre des commerçants
         Route::get('/registre', [RegistreController::class, 'index'])->name('registre');
 
@@ -227,9 +234,4 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('/admin/donnees/{mairie}/detruire', [\App\Http\Controllers\Admin\DonneesController::class, 'detruire'])->name('admin.donnees.detruire');
 
     // Devis d'abonnement adressés aux mairies
-    Route::get('/admin/devis',  [\App\Http\Controllers\Admin\DevisController::class, 'index'])->name('admin.devis.index');
-    Route::post('/admin/devis', [\App\Http\Controllers\Admin\DevisController::class, 'store'])->name('admin.devis.store');
-    Route::get('/admin/devis/{devis}/pdf', [\App\Http\Controllers\Admin\DevisController::class, 'pdf'])->name('admin.devis.pdf');
-    Route::post('/admin/devis/{devis}/statut', [\App\Http\Controllers\Admin\DevisController::class, 'statut'])->name('admin.devis.statut');
-    Route::delete('/admin/devis/{devis}', [\App\Http\Controllers\Admin\DevisController::class, 'destroy'])->name('admin.devis.destroy');
 });

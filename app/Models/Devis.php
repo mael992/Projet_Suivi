@@ -5,8 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Devis d'abonnement MGDS. Les montants sont calculés à partir des lignes
- * (désignation, quantité, prix unitaire HT) et du taux de TVA.
+ * Estimation établie par une mairie pour un commerçant de son marché.
+ * Les montants sont calculés à partir des lignes (désignation, quantité,
+ * prix unitaire HT) et du taux de TVA.
  */
 class Devis extends Model
 {
@@ -20,7 +21,7 @@ class Devis extends Model
     ];
 
     protected $fillable = [
-        'mairie_id', 'reference', 'client_nom', 'client_adresse', 'client_email',
+        'mairie_id', 'commercant_id', 'reference', 'client_nom', 'client_adresse', 'client_email',
         'date_devis', 'validite_jours', 'lieu_execution', 'delai_execution',
         'conditions', 'modalites_paiement', 'lignes', 'taux_tva', 'statut',
     ];
@@ -37,6 +38,11 @@ class Devis extends Model
     public function mairie()
     {
         return $this->belongsTo(Mairie::class);
+    }
+
+    public function commercant()
+    {
+        return $this->belongsTo(Commercant::class);
     }
 
     public function totalHt(): float
