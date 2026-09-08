@@ -14,6 +14,8 @@ class DialogueQuestion extends Model
         'tableau-suivis' => 'Tableau des suivis',
         'marche'         => 'Marché',
         'fiche-contact'  => 'Fiche Contact',
+        'messagerie'     => 'Centre de Messagerie',
+        'planning'       => 'Planning & absences',
         'administration' => 'Paramètres Administration',
     ];
 
@@ -22,6 +24,9 @@ class DialogueQuestion extends Model
         'tableau-suivis' => null,
         'marche'         => 'marche_gestion',
         'fiche-contact'  => 'contacts_lecture',
+        // Tout agent reçoit des messages ou consulte son planning : pas de droit exigé
+        'messagerie'     => null,
+        'planning'       => null,
         'administration' => 'admin',
     ];
 

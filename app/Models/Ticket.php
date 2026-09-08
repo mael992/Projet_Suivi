@@ -306,6 +306,21 @@ class Ticket extends Model
     }
 
     /**
+     * Demandes d'adhésion au marché qui attendent une décision.
+     * Sert la pastille bleue du hub : c'est une réception, comme un message.
+     */
+    public static function adhesionsEnAttentePour(User $user): int
+    {
+        if (! self::voitAdhesionsMarche($user)) {
+            return 0;
+        }
+
+        return self::adhesionsMarchePour($user)
+            ->whereIn('statut', [self::STATUT_RECEPTION, self::STATUT_REOUVERTURE])
+            ->count();
+    }
+
+    /**
      * Dossiers de travail (Réception, Réponse, Clôturé, Réouverture).
      *
      * Une demande transférée n'y figure plus que pour ses destinataires :
@@ -315,17 +330,17 @@ class Ticket extends Model
      */
     public function scopeDossiersDeTravail(Builder $query, User $user): Builder
     {
-        if ($user->isAdmin() || $user->voitTousLesMessages()) {
-            return $query;
-        }
-
         $services = array_values(array_filter(
             $user->categoriesCommunication(),
             fn ($c) => $c !== 'inconnu',
         ));
 
         return $query->where(function (Builder $q) use ($user, $services) {
-            $q->whereNull('transfere_at')
+            // Ce que je n'ai pas transféré moi-même ne bouge pas
+            $q->where(fn (Builder $s) => $s
+                ->whereNull('transfere_at')
+                ->orWhere('transfere_par', '!=', $user->id))
+              // Transférée par moi, mais je me suis mis dans les destinataires
               ->orWhereJsonContains('transfere_users', $user->id);
 
             foreach ($services as $service) {

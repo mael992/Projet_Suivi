@@ -28,8 +28,12 @@ class Referentiel
         13 => 'Pôle Sécurité / Police Municipale',
     ];
 
-    // Services qui voient toutes les tâches de la mairie
-    public const SERVICES_VUE_GLOBALE = [0, 1, 2];
+    /**
+     * Services de direction. Purement indicatif : la vue globale sur les
+     * tâches suit le grade (voir User::voitTousLesServices()), pas ce
+     * rattachement — un employé du Cabinet du maire n'est pas un chef.
+     */
+    public const SERVICES_DIRECTION = [0, 1, 2];
 
     /**
      * Statuts (grades) autorisés pour un service donné — couplage du

@@ -152,6 +152,43 @@ class AdhesionMarcheTest extends TestCase
             ->assertDontSee('Primeur');
     }
 
+    /** La demande se signale par une pastille bleue sur le hub des applications. */
+    public function test_la_demande_se_signale_sur_la_liste_des_applications(): void
+    {
+        Mail::fake();
+        $gestionnaire = $this->gestionnaireMarche();
+
+        $this->assertSame(0, Ticket::adhesionsEnAttentePour($gestionnaire));
+
+        $ticket = $this->demander();
+
+        $this->assertSame(1, Ticket::adhesionsEnAttentePour($gestionnaire->fresh()));
+
+        $this->actingAs($gestionnaire)->get('/apps')
+            ->assertOk()
+            ->assertSee('dossier=' . Ticket::DOSSIER_ADHESION, false)
+            ->assertSee('bulle-notif', false);
+
+        // Une fois traitée, la pastille retombe
+        $this->actingAs($gestionnaire)->post("/messagerie/tickets/{$ticket->id}/adhesion/accepter");
+        $this->assertSame(0, Ticket::adhesionsEnAttentePour($gestionnaire->fresh()));
+    }
+
+    /** Sans le droit Marché, aucune pastille : la boîte ne le concerne pas. */
+    public function test_pas_de_pastille_sans_le_droit_marche(): void
+    {
+        Mail::fake();
+        $this->demander();
+
+        $sansDroit = User::factory()->create([
+            'mairie_id' => $this->mairie->id,
+            'grade'     => Referentiel::GRADE_EMPLOYE,
+            'droits'    => [],
+        ]);
+
+        $this->assertSame(0, Ticket::adhesionsEnAttentePour($sansDroit));
+    }
+
     public function test_accepter_inscrit_au_registre_et_cloture(): void
     {
         Mail::fake();

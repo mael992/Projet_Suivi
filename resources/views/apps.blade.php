@@ -71,14 +71,26 @@
         <div class="col-12 col-md-6 app-tile" data-app="marche marché exposants commercants plan placement registre banque">
             <div class="card shadow-sm h-100">
                 <div class="card-body d-flex flex-column">
+                    @php $nbAdhesions = \App\Models\Ticket::adhesionsEnAttentePour($user); @endphp
                     <a href="{{ route('marche.ville') }}" class="text-decoration-none text-reset d-flex align-items-center gap-3 mb-3">
                         <span style="font-size:44px;line-height:1;">🛍️</span>
                         <span>
-                            <span class="h5 d-block mb-1" style="color:var(--brand);">Marché</span>
+                            <span class="h5 d-block mb-1" style="color:var(--brand);">
+                                Marché
+                                @if($nbAdhesions > 0)
+                                    <span class="bulle-notif ms-1" title="{{ __('Demandes d\'adhésion au marché à traiter') }}">{{ $nbAdhesions }}</span>
+                                @endif
+                            </span>
                             <span class="text-muted" style="font-size:13px;">{{ __('Placement des exposants & registre des commerçants') }}</span>
                         </span>
                     </a>
                     <div class="mt-auto d-flex gap-2 flex-wrap">
+                        @if($nbAdhesions > 0)
+                            <a href="{{ route('messagerie.index', ['dossier' => \App\Models\Ticket::DOSSIER_ADHESION]) }}"
+                               class="badge text-decoration-none" style="background:#2e86de;">
+                                📥 {{ __('Demandes d\'adhésion') }} ({{ $nbAdhesions }})
+                            </a>
+                        @endif
                         <a href="{{ route('marche.ville') }}" class="badge text-decoration-none" style="background:var(--brand);">🏙️ {{ __('Ville') }}</a>
                         <a href="{{ route('marche.commercants') }}" class="badge bg-dark text-decoration-none">👥 Commerçants</a>
                         <a href="{{ route('marche.registre') }}" class="badge text-decoration-none" style="background:var(--gold);">🏦 Registre</a>
@@ -217,7 +229,12 @@
                         <span>
                             <span class="h5 d-block mb-1" style="color:var(--brand);">
                                 {{ __('Centre de Messagerie') }}
-                                @php $nbMsg = \App\Models\Ticket::enAttentePour($user); @endphp
+                                @php
+                                    // Les demandes d'adhésion au marché arrivent aussi ici :
+                                    // c'est une réception, donc la même pastille bleue.
+                                    $nbMsg = \App\Models\Ticket::enAttentePour($user)
+                                           + \App\Models\Ticket::adhesionsEnAttentePour($user);
+                                @endphp
                                 @if($nbMsg > 0)<span class="bulle-notif ms-1" title="{{ __('Messages en attente de réponse') }}">{{ $nbMsg }}</span>@endif
                             </span>
                             <span class="text-muted" style="font-size:13px;">{{ __('Messages reçus des habitants & support') }}</span>
@@ -225,6 +242,12 @@
                     </a>
                     <div class="mt-auto d-flex gap-2 flex-wrap">
                         <a href="{{ route('messagerie.index') }}" class="badge text-decoration-none" style="background:var(--brand);">🌐 {{ __('Messages externes') }}</a>
+                        @if(\App\Models\Ticket::adhesionsEnAttentePour($user) > 0)
+                            <a href="{{ route('messagerie.index', ['dossier' => \App\Models\Ticket::DOSSIER_ADHESION]) }}"
+                               class="badge text-decoration-none" style="background:#2e86de;">
+                                🛍️ {{ __('Adhésions marché') }} ({{ \App\Models\Ticket::adhesionsEnAttentePour($user) }})
+                            </a>
+                        @endif
                     </div>
                 </div>
             </div>

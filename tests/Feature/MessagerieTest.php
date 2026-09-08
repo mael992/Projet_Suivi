@@ -180,6 +180,59 @@ class MessagerieTest extends TestCase
         $this->assertTrue($enReception($agent->fresh()));
     }
 
+    /**
+     * Même règle pour la direction : « voir tous les messages » donne un accès,
+     * pas une place en Réception. Un Directeur de Cabinet qui transfère une
+     * demande ne doit plus l'y retrouver.
+     */
+    public function test_la_direction_aussi_perd_de_sa_reception_ce_qu_elle_transfere(): void
+    {
+        \Illuminate\Support\Facades\Mail::fake();
+
+        $directeur = User::factory()->create([
+            'mairie_id'     => $this->mairie->id,
+            'service'       => 1,
+            'grade'         => \App\Support\Referentiel::GRADE_DIR_CABINET,
+            'communication' => ['inconnu'],
+        ]);
+        $agent = User::factory()->create([
+            'mairie_id'     => $this->mairie->id,
+            'grade'         => \App\Support\Referentiel::GRADE_EMPLOYE,
+            'communication' => [],
+        ]);
+
+        $this->assertTrue($directeur->voitTousLesMessages());
+
+        $ticket = Ticket::create([
+            'mairie_id' => $this->mairie->id,
+            'reference' => $this->mairie->id . '-9',
+            'nom'       => 'Dupont', 'prenom' => 'Marie',
+            'telephone' => '0612345678', 'email' => 'marie@example.fr',
+            'sujet'     => 'Lampadaire cassé', 'statut' => Ticket::STATUT_RECEPTION,
+        ]);
+
+        $this->actingAs($directeur)->post("/messagerie/tickets/{$ticket->id}/transferer", [
+            'users' => [$agent->id],
+        ])->assertRedirect();
+
+        $directeur = $directeur->fresh();
+
+        $this->assertFalse(
+            Ticket::visiblesPar($directeur)->dossiersDeTravail($directeur)
+                ->where('statut', Ticket::STATUT_RECEPTION)->whereKey($ticket->id)->exists(),
+            'Le directeur ne doit plus voir en Réception ce qu\'il a transféré'
+        );
+
+        // Il la garde dans « Transféré », et le destinataire l'a en Réception
+        $this->assertTrue(
+            Ticket::visiblesPar($directeur)->dossierTransfere()->whereKey($ticket->id)->exists()
+        );
+        $this->assertTrue(
+            Ticket::visiblesPar($agent->fresh())->dossiersDeTravail($agent->fresh())
+                ->where('statut', Ticket::STATUT_RECEPTION)->whereKey($ticket->id)->exists()
+        );
+    }
+
     /** S'il s'inclut dans le transfert, le facteur la garde des deux côtés. */
     public function test_le_facteur_qui_s_auto_selectionne_garde_la_demande_en_reception(): void
     {

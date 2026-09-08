@@ -200,12 +200,17 @@ class User extends Authenticatable
         ], true);
     }
 
-    /** Cabinet du maire / DGS / Maire : voient toutes les tâches de la mairie */
+    /**
+     * Voit toutes les tâches de la mairie.
+     *
+     * C'est le GRADE qui l'accorde, pas le service : appartenir au Cabinet du
+     * maire ou à la DGS ne suffit pas. Un employé de ces services y voyait
+     * auparavant toutes les tâches de la commune sans être responsable de
+     * quoi que ce soit.
+     */
     public function voitTousLesServices(): bool
     {
-        return $this->isAdmin()
-            || $this->estDirection()
-            || in_array($this->service, Referentiel::SERVICES_VUE_GLOBALE, true);
+        return $this->isAdmin() || $this->estDirection();
     }
 
     /** Directeur de Cabinet / DGS : voient toutes les tâches de leur service */

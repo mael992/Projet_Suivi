@@ -90,6 +90,49 @@ class MgdsPagesTest extends TestCase
         $this->actingAs($chef)->get('/marche/ville')->assertForbidden();
     }
 
+    /**
+     * Appartenir au Cabinet du maire ne fait pas de vous un chef : un employé
+     * de ce service ne voit que ses propres tâches. La vue globale suit le
+     * grade, pas le rattachement au service.
+     */
+    public function test_un_employe_du_cabinet_ne_voit_pas_les_taches_des_autres(): void
+    {
+        $employeCabinet = User::factory()->create([
+            'mairie_id' => $this->mairie->id,
+            'service'   => 1,                       // Cabinet du maire
+            'grade'     => Referentiel::GRADE_EMPLOYE,
+        ]);
+        $autre = User::factory()->create([
+            'mairie_id' => $this->mairie->id,
+            'service'   => 12,
+            'grade'     => Referentiel::GRADE_EMPLOYE,
+        ]);
+
+        $tacheAutre = Tache::create([
+            'mairie_id'   => $this->mairie->id,
+            'reference'   => '12-1',
+            'service'     => 12,
+            'user_id'     => $autre->id,
+            'created_by'  => $this->responsable()->id,
+            'statut'      => 'ouvert',
+            'date_butoir' => now()->addWeek()->toDateString(),
+        ]);
+
+        $this->assertFalse($employeCabinet->voitTousLesServices());
+        $this->assertFalse(
+            Tache::visiblesPar($employeCabinet)->whereKey($tacheAutre->id)->exists(),
+            'Un employé du Cabinet ne doit pas voir les tâches des autres services'
+        );
+
+        // Son directeur de cabinet, lui, voit bien tout
+        $directeur = User::factory()->create([
+            'mairie_id' => $this->mairie->id,
+            'service'   => 1,
+            'grade'     => Referentiel::GRADE_DIR_CABINET,
+        ]);
+        $this->assertTrue(Tache::visiblesPar($directeur)->whereKey($tacheAutre->id)->exists());
+    }
+
     public function test_tache_confidentielle_invisible_meme_pour_la_direction(): void
     {
         $dgs = User::factory()->create([
