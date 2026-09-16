@@ -177,13 +177,26 @@ class DonneesController extends Controller
         return array_values(array_filter(array_unique($fichiers)));
     }
 
-    /** Fichiers de la mairie stockés hors du disque public (justificatifs d'absence). */
+    /**
+     * Fichiers de la mairie stockés hors du disque public : justificatifs
+     * d'absence et documents joints aux tâches.
+     */
     private function fichiersPrives(Mairie $mairie): array
     {
-        return \DB::table('absences')->where('mairie_id', $mairie->id)
+        $chemins = \DB::table('absences')->where('mairie_id', $mairie->id)
             ->whereNotNull('justificatif')
             ->pluck('justificatif')
-            ->unique()->values()->all();
+            ->all();
+
+        foreach (\DB::table('taches')->where('mairie_id', $mairie->id)->get(['fichiers', 'fichiers_cloture']) as $tache) {
+            foreach (['fichiers', 'fichiers_cloture'] as $liste) {
+                foreach (json_decode($tache->$liste ?? '[]', true) ?: [] as $entree) {
+                    $chemins[] = $entree['chemin'] ?? null;
+                }
+            }
+        }
+
+        return array_values(array_unique(array_filter($chemins)));
     }
 
     private function lisezMoi(Mairie $mairie, array $donnees): string

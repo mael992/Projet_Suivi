@@ -71,6 +71,16 @@
                 </div>
 
                 <div class="mb-3">
+                    <label class="form-label fw-semibold">📎 {{ __('Documents joints') }}</label>
+                    @if($tache->fichiers)
+                        <div class="mb-2">
+                            @include('partials.documents-tache', ['tache' => $tache, 'liste' => 'fichiers', 'retirable' => true])
+                        </div>
+                    @endif
+                    @include('partials.depot-fichiers', ['champ' => 'fichiers'])
+                </div>
+
+                <div class="mb-3">
                     <label class="form-label fw-semibold">Description & remarques (d'instruction)</label>
                     <textarea name="description_instruction" rows="3" class="form-control">{{ old('description_instruction', $tache->description_instruction) }}</textarea>
                 </div>

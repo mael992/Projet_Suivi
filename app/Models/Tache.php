@@ -23,6 +23,8 @@ class Tache extends Model
         'prise_en_charge',
         'photo_avant',
         'photo_apres',
+        'fichiers',
+        'fichiers_cloture',
         'description_instruction',
         'description_cloture',
         'date_butoir',
@@ -37,6 +39,8 @@ class Tache extends Model
             'date_cloture' => 'datetime',
             'confidentiel' => 'boolean',
             'confidents'   => 'array',
+            'fichiers'         => 'array',
+            'fichiers_cloture' => 'array',
         ];
     }
 
@@ -75,14 +79,29 @@ class Tache extends Model
     }
 
     /**
+     * Agit en tant que responsable de la tâche : le responsable lui-même, ou
+     * son binôme pendant qu'il est absent (prise en charge, substitution…).
+     */
+    public function estResponsablePour(User $user): bool
+    {
+        return $this->user_id === $user->id
+            || in_array($this->user_id, $user->idsRemplaces(), true);
+    }
+
+    /**
      * L'utilisateur peut-il modifier / supprimer cette tâche ?
-     * Hiérarchie mini-admin : le créateur, un admin, le Maire, ou un membre
-     * de la direction d'un rang strictement supérieur à celui du créateur
-     * (une tâche créée par un admin est gérable par toute la direction).
+     * Hiérarchie mini-admin : le créateur (ou son binôme pendant son absence),
+     * un admin, le Maire, ou un membre de la direction d'un rang strictement
+     * supérieur à celui du créateur (une tâche créée par un admin est gérable
+     * par toute la direction).
      */
     public function peutEtreGereePar(User $user): bool
     {
-        if ($user->isAdmin() || $this->created_by === $user->id) {
+        // Le créateur, ou son binôme pendant son absence : sans cela, les
+        // tâches qu'il avait lancées ne pouvaient plus être réattribuées.
+        if ($user->isAdmin()
+            || $this->created_by === $user->id
+            || in_array($this->created_by, $user->idsRemplaces(), true)) {
             return true;
         }
 
@@ -190,7 +209,9 @@ class Tache extends Model
 
             if ($remplaces) {
                 $q->orWhereIn('user_id', $remplaces)
-                  ->orWhereIn('substitut_id', $remplaces);
+                  ->orWhereIn('substitut_id', $remplaces)
+                  // …y compris celles que l'absent avait lancées, pour les réattribuer
+                  ->orWhereIn('created_by', $remplaces);
             }
         });
     }

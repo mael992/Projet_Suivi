@@ -88,10 +88,36 @@ class User extends Authenticatable
         return $this->droits ?? Referentiel::droitsDefaut($this->grade);
     }
 
-    /** Droits effectifs : les cases cochées, plus ce qu'elles impliquent. */
+    /**
+     * Droits effectifs : les cases cochées, plus ce qu'elles impliquent —
+     * plus, le temps d'une absence, les droits de chaque personne que
+     * l'utilisateur remplace comme binôme.
+     *
+     * Le binôme prend toutes les responsabilités de l'absent : s'il ne pouvait
+     * pas attribuer les tâches ou gérer les utilisateurs, le travail restait
+     * bloqué. Ces droits s'éteignent d'eux-mêmes à la fin de l'absence.
+     *
+     * Seuls les droits PROPRES de l'absent sont repris, pas ceux qu'il hériterait
+     * lui-même : on évite les chaînes de remplacement et les boucles.
+     */
     public function droitsActuels(): array
     {
-        return Referentiel::expanserDroits($this->droitsCoches());
+        $droits = $this->droitsCoches();
+
+        foreach ($this->personnesRemplacees() as $absent) {
+            $droits = array_merge($droits, $absent->droitsCoches());
+        }
+
+        return Referentiel::expanserDroits($droits);
+    }
+
+    /** Droits hérités d'un absent, pour les signaler à l'écran. */
+    public function droitsHerites(): array
+    {
+        return array_values(array_diff(
+            $this->droitsActuels(),
+            Referentiel::expanserDroits($this->droitsCoches()),
+        ));
     }
 
     /**
@@ -181,13 +207,36 @@ class User extends Authenticatable
         return $this->absences()->enCours()->orderBy('date_debut')->first();
     }
 
+    /**
+     * Personnes actuellement absentes que cet utilisateur remplace.
+     * Mémorisé sur l'instance : aDroit() est appelé des dizaines de fois par
+     * page, une requête par appel serait inutilement coûteuse.
+     */
+    private ?\Illuminate\Support\Collection $remplaceesEnCours = null;
+
+    public function personnesRemplacees(): \Illuminate\Support\Collection
+    {
+        if ($this->role === 'admin' || ! $this->exists) {
+            return collect();
+        }
+
+        return $this->remplaceesEnCours ??= $this->remplaces()
+            ->whereHas('absences', fn ($q) => $q->enCours())
+            ->get();
+    }
+
+    /** Un rechargement doit aussi oublier les remplacements mémorisés. */
+    public function refresh()
+    {
+        $this->remplaceesEnCours = null;
+
+        return parent::refresh();
+    }
+
     /** Ids des personnes actuellement absentes que cet utilisateur remplace. */
     public function idsRemplaces(): array
     {
-        return $this->remplaces()
-            ->whereHas('absences', fn ($q) => $q->enCours())
-            ->pluck('id')
-            ->all();
+        return $this->personnesRemplacees()->pluck('id')->all();
     }
 
     /** Maire, Directeur de Cabinet ou DGS : « mini-admins » de leur mairie */

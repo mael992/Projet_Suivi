@@ -87,6 +87,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/taches/{tache}/prise-en-charge', [TacheController::class, 'prendreEnCharge'])->name('taches.prise-en-charge');
     Route::post('/taches/{tache}/cloturer', [TacheController::class, 'cloturer'])->name('taches.cloturer');
     Route::post('/taches/{tache}/substitut', [TacheController::class, 'changerSubstitut'])->name('taches.substitut');
+    Route::get('/taches/{tache}/documents/{liste}/{index}', [TacheController::class, 'document'])
+        ->whereIn('liste', ['fichiers', 'fichiers_cloture'])
+        ->whereNumber('index')
+        ->name('taches.document');
 
     // Application Marché 🛍
     Route::prefix('marche')->name('marche.')->group(function () {

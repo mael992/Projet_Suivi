@@ -226,6 +226,8 @@ class MessagerieController extends Controller
             'statut'                  => Ticket::STATUT_CLOTURE,
             'cloture_at'              => now(),
             'cloture_par'             => 'mairie',
+            // Qui a clôturé : utile au centre de tri si l'habitant la rouvre
+            'cloture_user_id'         => auth()->id(),
             'reouverture_demandee_at' => null,
             'reouverture_motif'       => null,
         ]);

@@ -7,6 +7,7 @@ use App\Models\Tache;
 use App\Models\User;
 use App\Services\ActivityLogger;
 use App\Services\TacheNotifier;
+use App\Support\DocumentsTache;
 use App\Support\Referentiel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -95,7 +96,7 @@ class TacheController extends Controller
             'confidentiel'            => 'nullable|boolean',
             'confidents'              => 'nullable|array',
             'confidents.*'            => 'exists:users,id',
-        ]);
+        ] + DocumentsTache::regles('fichiers'));
 
         $mairieId = $user->isAdmin() ? (int) $data['mairie_id'] : $user->mairie_id;
 
@@ -130,6 +131,9 @@ class TacheController extends Controller
             $tache->photo_apres = $request->file('photo_apres')->store('taches', 'public');
         }
 
+        // Documents joints (PDF, Word, tableurs…) en plus de la photo
+        $tache->fichiers = DocumentsTache::enregistrer($request->file('fichiers', [])) ?: null;
+
         $tache->save();
 
         ActivityLogger::log('TACHE', 'CREATE', "Tâche {$tache->reference} créée (mairie #{$mairieId}, service {$tache->service_label}, responsable : {$assigne->username})");
@@ -146,7 +150,7 @@ class TacheController extends Controller
 
         // Employés proposés pour la substitution (même mairie, même service)
         $employes = collect();
-        $estResponsable = $user->id === $tache->user_id;
+        $estResponsable = $tache->estResponsablePour($user);
         if ($estResponsable && ($tache->enAttentePriseEnCharge() || $tache->prise_en_charge === 'substitution')) {
             $employes = $this->employesDuService($tache);
         }
@@ -158,7 +162,8 @@ class TacheController extends Controller
     public function changerSubstitut(Request $request, Tache $tache)
     {
         $user = auth()->user();
-        abort_unless($user->id === $tache->user_id, 403);
+        // Le responsable, ou son binôme pendant son absence
+        abort_unless($tache->estResponsablePour($user), 403);
         abort_unless($tache->prise_en_charge === 'substitution' && ! $tache->estFaite(), 403);
 
         $data = $request->validate([
@@ -184,7 +189,8 @@ class TacheController extends Controller
     public function prendreEnCharge(Request $request, Tache $tache)
     {
         $user = auth()->user();
-        abort_unless($user->id === $tache->user_id, 403);
+        // Le responsable, ou son binôme pendant son absence
+        abort_unless($tache->estResponsablePour($user), 403);
         abort_unless($tache->enAttentePriseEnCharge(), 403);
 
         $data = $request->validate([
@@ -230,7 +236,7 @@ class TacheController extends Controller
         $data = $request->validate([
             'description_cloture' => 'required|string|max:5000',
             'photo_apres'         => 'nullable|image|max:8192',
-        ], [
+        ] + DocumentsTache::regles('fichiers_cloture'), [
             'description_cloture.required' => 'Le commentaire de clôture est obligatoire.',
         ]);
 
@@ -244,6 +250,9 @@ class TacheController extends Controller
             }
             $tache->photo_apres = $request->file('photo_apres')->store('taches', 'public');
         }
+
+        // On peut répondre avec des documents : compte rendu, facture, devis…
+        $tache->fichiers_cloture = DocumentsTache::enregistrer($request->file('fichiers_cloture', [])) ?: null;
 
         $tache->description_cloture = $data['description_cloture'];
         $tache->statut              = Referentiel::STATUT_FAIT;
@@ -293,7 +302,9 @@ class TacheController extends Controller
                 'date_butoir'             => 'required|date',
                 'photo_avant'             => 'nullable|image|max:8192',
                 'description_instruction' => 'nullable|string|max:5000',
-            ];
+                'retirer_fichiers'        => 'nullable|array',
+                'retirer_fichiers.*'      => 'string',
+            ] + DocumentsTache::regles('fichiers');
         }
 
         $data = $request->validate($rules);
@@ -339,6 +350,23 @@ class TacheController extends Controller
                 }
                 $tache->photo_avant = $request->file('photo_avant')->store('taches', 'public');
             }
+
+            // Documents : on retire ceux décochés, puis on ajoute les nouveaux
+            $aRetirer  = $data['retirer_fichiers'] ?? [];
+            $conserves = [];
+            foreach ($tache->fichiers ?? [] as $entree) {
+                if (in_array($entree['chemin'], $aRetirer, true)) {
+                    DocumentsTache::supprimer([$entree]);
+                } else {
+                    $conserves[] = $entree;
+                }
+            }
+            $tous = array_merge($conserves, DocumentsTache::enregistrer($request->file('fichiers', [])));
+
+            if (count($tous) > DocumentsTache::MAX_FICHIERS) {
+                return back()->withErrors(['fichiers' => DocumentsTache::MAX_FICHIERS . ' documents maximum par tâche.']);
+            }
+            $tache->fichiers = $tous ?: null;
         } else {
             $nouvelAssigne = false;
         }
@@ -378,6 +406,22 @@ class TacheController extends Controller
         return redirect()->route('dashboard')->with('success', "Tâche {$tache->reference} mise à jour.");
     }
 
+    /**
+     * Télécharge un document joint. Le fichier n'est jamais exposé en lien
+     * public : on vérifie d'abord que la tâche est visible, confidentialité
+     * comprise.
+     */
+    public function document(Tache $tache, string $liste, int $index)
+    {
+        $this->autoriserVue($tache);
+        abort_unless(in_array($liste, ['fichiers', 'fichiers_cloture'], true), 404);
+
+        $entree = ($tache->$liste ?? [])[$index] ?? null;
+        abort_unless($entree && Storage::disk(DocumentsTache::DISQUE)->exists($entree['chemin']), 404);
+
+        return Storage::disk(DocumentsTache::DISQUE)->download($entree['chemin'], $entree['nom']);
+    }
+
     public function destroy(Tache $tache)
     {
         $this->autoriserVue($tache);
@@ -388,6 +432,8 @@ class TacheController extends Controller
                 Storage::disk('public')->delete($tache->$photo);
             }
         }
+        DocumentsTache::supprimer($tache->fichiers);
+        DocumentsTache::supprimer($tache->fichiers_cloture);
 
         $ref = $tache->reference;
         $tache->delete();

@@ -50,7 +50,8 @@ class Ticket extends Model
         'nom', 'prenom', 'telephone_indicatif', 'telephone', 'email',
         'sujet', 'photos', 'statut', 'confidentiel', 'confidents',
         'transfere_services', 'transfere_users', 'transfere_par', 'transfere_at',
-        'cloture_at', 'cloture_par', 'reouverture_demandee_at', 'reouverture_motif',
+        'cloture_at', 'cloture_par', 'cloture_user_id', 'precedent_transfert',
+        'reouverture_demandee_at', 'reouverture_motif',
     ];
 
     protected function casts(): array
@@ -63,6 +64,7 @@ class Ticket extends Model
             'transfere_services'      => 'array',
             'transfere_users'         => 'array',
             'transfere_at'            => 'datetime',
+            'precedent_transfert'     => 'array',
             'cloture_at'              => 'datetime',
             'reouverture_demandee_at' => 'datetime',
         ];
@@ -199,6 +201,67 @@ class Ticket extends Model
         $dernier = $this->messages()->latest('created_at')->first();
 
         return $dernier !== null && $dernier->user_id === null;
+    }
+
+    /**
+     * L'habitant demande la réouverture : la demande revient au centre de tri.
+     *
+     * Le transfert est levé, si bien que la personne qui avait clôturé ne la
+     * voit plus ; c'est celle qui l'avait transférée (et la Réception) qui la
+     * récupère, juge et retransfère ou non. Si le problème venait d'une
+     * clôture trop rapide, l'information remonte ainsi au-dessus.
+     *
+     * Le transfert levé et l'auteur de la clôture sont conservés pour que le
+     * centre de tri sache ce qui s'est passé.
+     */
+    public function demanderReouverture(string $motif): void
+    {
+        $attributs = [
+            'statut'                  => self::STATUT_REOUVERTURE,
+            'reouverture_demandee_at' => now(),
+            'reouverture_motif'       => $motif,
+        ];
+
+        if ($this->estTransfere()) {
+            $attributs += [
+                'precedent_transfert' => [
+                    'services'   => $this->servicesTransfert(),
+                    'users'      => $this->idsTransfert(),
+                    'par'        => $this->transfere_par,
+                    'le'         => $this->transfere_at?->toDateTimeString(),
+                    'cloture_par' => $this->cloture_user_id,
+                ],
+                'transfere_services' => null,
+                'transfere_users'    => null,
+                'transfere_at'       => null,
+                // transfere_par est gardé : le « facteur » garde la main dessus,
+                // même s'il ne réceptionne pas lui-même les messages extérieurs
+            ];
+        }
+
+        $this->update($attributs);
+    }
+
+    /** « Transmise à X, clôturée par Y » pour le centre de tri, sinon null. */
+    public function resumePrecedentTransfert(): ?string
+    {
+        $p = $this->precedent_transfert;
+        if (! $p) {
+            return null;
+        }
+
+        $cibles = array_map(fn ($s) => $this->mairie?->libelleService((int) $s) ?? (string) $s, $p['services'] ?? []);
+        foreach (User::whereIn('id', $p['users'] ?? [])->orderBy('nom')->get() as $agent) {
+            $cibles[] = $agent->username;
+        }
+
+        $texte = 'Transmise à ' . (implode(', ', $cibles) ?: '—');
+
+        if (! empty($p['cloture_par']) && ($closeur = User::find($p['cloture_par']))) {
+            $texte .= ', clôturée par ' . $closeur->username;
+        }
+
+        return $texte;
     }
 
     /** Recalcule le dossier après un nouveau message. */

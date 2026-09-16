@@ -54,6 +54,8 @@ class GuideAide
                 'astuces' => [
                     "Seuls le créateur, un administrateur et la direction (Maire, Directeur de Cabinet, DGS) peuvent modifier ou supprimer une tâche.",
                     "Le responsable peut changer la personne substituée grâce au crayon ✏️ à côté de son nom.",
+                    "Joignez des documents à une tâche (PDF, Word, Excel, images) en les glissant dans la zone 📎, à la création comme au moment de la clôture pour répondre avec un compte rendu ou une facture. Cinq fichiers au plus, 10 Mo chacun.",
+                    "Les documents d'une tâche confidentielle restent réservés aux personnes désignées.",
                 ],
                 'emails' => [
                     [
@@ -119,7 +121,7 @@ class GuideAide
                     "Réception : un nouveau message de l'habitant attend une réponse.",
                     "Réponse : la mairie a répondu au dernier message.",
                     "Clôturé : la conversation est fermée ; elle reste consultable 6 mois.",
-                    "Réouverture demandée : l'habitant demande la réouverture ; vous acceptez ou refusez.",
+                    "Réouverture demandée : l'habitant demande la réouverture ; vous acceptez ou refusez. Si la demande avait été transférée, elle revient au centre de tri — la personne qui l'avait transférée — et non à celle qui l'a clôturée, avec le rappel de qui l'avait eue.",
                     "Transféré : les demandes que vous avez orientées vers un service ou une personne. Elles quittent votre Réception — sauf si vous vous êtes mis parmi les destinataires — et sortent de ce dossier une fois clôturées.",
                     "Demande adhésion marché : les candidatures des commerçants, réservées aux personnes ayant le droit sur l'application Marché.",
                     "Vous ne recevez ces demandes que si la case « Réceptionner les messages extérieurs » est cochée sur votre compte (réglée par votre mairie).",
@@ -221,6 +223,7 @@ class GuideAide
                 'astuces' => [
                     "Une absence reste corrigeable après coup : c'est là qu'on ajoute un arrêt reçu en retard ou qu'on prolonge les dates.",
                     "Le binôme se règle sur la fiche de la personne, pas sur l'absence : il vaut pour toutes ses absences.",
+                    "Pendant l'absence, le binôme reprend tous les droits de la personne absente — gestion des utilisateurs, attribution des tâches… — et les perd dès la fin de l'absence. Un bandeau le lui rappelle sur le hub.",
                     "Les justificatifs ne sont consultables que depuis cette page et disparaissent avec les données de la mairie.",
                 ],
                 'emails' => [],

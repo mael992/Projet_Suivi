@@ -64,6 +64,11 @@
             </div>
 
             <div class="mb-3">
+                <label class="form-label fw-semibold">📎 {{ __('Documents joints') }} <span class="text-muted">({{ __('optionnels') }})</span></label>
+                @include('partials.depot-fichiers', ['champ' => 'fichiers'])
+            </div>
+
+            <div class="mb-3">
                 <label class="form-label fw-semibold">Description & remarques (d'instruction)</label>
                 <textarea name="description_instruction" rows="4" class="form-control">{{ old('description_instruction') }}</textarea>
             </div>

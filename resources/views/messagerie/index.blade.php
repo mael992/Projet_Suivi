@@ -309,6 +309,15 @@
                         🔓 <strong>{{ __('Demande de réouverture') }}</strong>
                         ({{ $ticket->reouverture_demandee_at?->format('d/m/Y H:i') }}) :
                         <div style="white-space:pre-wrap;">{{ $ticket->reouverture_motif }}</div>
+
+                        {{-- Revenue au centre de tri : ce qui s'était passé avant --}}
+                        @if($resume = $ticket->resumePrecedentTransfert())
+                            <div class="mt-2 pt-2 border-top border-warning-subtle">
+                                ↩️ {{ __('Revenue au centre de tri.') }}
+                                <strong>{{ $resume }}.</strong>
+                                {{ __('Jugez la demande, puis retransférez-la si besoin.') }}
+                            </div>
+                        @endif
                     </div>
                 @elseif($ticket->estCloture())
                     <div class="alert alert-secondary py-2" style="font-size:13px;">

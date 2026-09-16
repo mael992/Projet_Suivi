@@ -36,6 +36,21 @@
 
     <hr class="mb-4">
 
+    {{-- Binôme d'une personne absente : ses droits sont les vôtres le temps de l'absence --}}
+    @php $remplacees = $user->isAdmin() ? collect() : $user->personnesRemplacees(); @endphp
+    @if($remplacees->isNotEmpty())
+        <div class="alert alert-warning d-flex gap-2 align-items-start mb-4" style="font-size:14px;">
+            <span style="font-size:20px;line-height:1;">🤝</span>
+            <div>
+                <strong>{{ __('Vous remplacez') }} {{ $remplacees->pluck('full_name')->join(', ') }}</strong>
+                {{ __('pendant son absence.') }}
+                <div class="text-muted" style="font-size:13px;">
+                    {{ __('Vous disposez temporairement de ses droits et pouvez traiter ses tâches. Ces droits disparaissent dès la fin de l\'absence.') }}
+                </div>
+            </div>
+        </div>
+    @endif
+
     {{-- ── Tuiles des applications ── --}}
     <div class="row g-4" id="appsGrid">
 

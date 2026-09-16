@@ -233,6 +233,67 @@ class MessagerieTest extends TestCase
         );
     }
 
+    /**
+     * Scénario de la réouverture : l'habitant écrit, l'agent 1 transfère à
+     * l'agent 2, qui clôture. L'habitant demande la réouverture : elle revient
+     * au centre de tri (agent 1), pas à l'agent 2.
+     */
+    public function test_la_reouverture_revient_au_centre_de_tri(): void
+    {
+        \Illuminate\Support\Facades\Mail::fake();
+
+        $agent2 = User::factory()->create([
+            'mairie_id'     => $this->mairie->id,
+            'grade'         => \App\Support\Referentiel::GRADE_EMPLOYE,
+            'communication' => [],
+            'email'         => 'agent2@mairie.fr',
+        ]);
+
+        $ticket = Ticket::create([
+            'mairie_id' => $this->mairie->id,
+            'reference' => $this->mairie->id . '-7',
+            'nom'       => 'Dupont', 'prenom' => 'Marie',
+            'telephone' => '0612345678', 'email' => 'marie@example.fr',
+            'sujet'     => 'Nid-de-poule', 'statut' => Ticket::STATUT_RECEPTION,
+        ]);
+
+        // Agent 1 (le facteur) transfère, agent 2 clôture
+        $this->actingAs($this->facteur)->post("/messagerie/tickets/{$ticket->id}/transferer", [
+            'users' => [$agent2->id],
+        ])->assertRedirect();
+        $this->actingAs($agent2)->post("/messagerie/tickets/{$ticket->id}/cloturer")->assertRedirect();
+
+        $this->assertSame($agent2->id, $ticket->fresh()->cloture_user_id);
+
+        // L'habitant demande la réouverture depuis son suivi
+        $this->withSession(['ticket_suivi_' . $ticket->id => true])
+            ->post("/mon-ticket/{$ticket->id}/reouverture", ['motif' => 'Le trou est toujours là.'])
+            ->assertRedirect();
+
+        $ticket->refresh();
+        $this->assertSame(Ticket::STATUT_REOUVERTURE, $ticket->statut);
+        $this->assertFalse($ticket->estTransfere(), 'Le transfert doit être levé');
+
+        // L'agent 2 ne la voit plus ; le centre de tri la récupère
+        $this->assertFalse(Ticket::visiblesPar($agent2->fresh())->whereKey($ticket->id)->exists());
+        $this->assertTrue(
+            Ticket::visiblesPar($this->facteur->fresh())->dossiersDeTravail($this->facteur->fresh())
+                ->where('statut', Ticket::STATUT_REOUVERTURE)->whereKey($ticket->id)->exists()
+        );
+
+        // Et elle sait ce qui s'est passé
+        $this->assertSame(
+            'Transmise à ' . $agent2->username . ', clôturée par ' . $agent2->username,
+            $ticket->resumePrecedentTransfert()
+        );
+
+        // Le centre de tri est prévenu, pas l'agent 2
+        \Illuminate\Support\Facades\Mail::assertQueued(
+            \App\Mail\NouveauMessageTicket::class,
+            fn ($mail) => $mail->hasTo($this->facteur->email)
+        );
+    }
+
     /** S'il s'inclut dans le transfert, le facteur la garde des deux côtés. */
     public function test_le_facteur_qui_s_auto_selectionne_garde_la_demande_en_reception(): void
     {

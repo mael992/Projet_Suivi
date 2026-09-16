@@ -264,13 +264,12 @@ class PublicContactController extends Controller
             'motif' => 'required|string|min:2|max:1000',
         ]);
 
-        $ticket->update([
-            'statut'                  => Ticket::STATUT_REOUVERTURE,
-            'reouverture_demandee_at' => now(),
-            'reouverture_motif'       => $data['motif'],
-        ]);
+        // Retour au centre de tri : le transfert est levé, la personne qui
+        // avait clôturé ne la reçoit plus
+        $facteurId = $ticket->transfere_par;
+        $ticket->demanderReouverture($data['motif']);
 
-        $this->notifierMairie($ticket);
+        $this->notifierMairie($ticket, $facteurId);
 
         return redirect()->route('contact.mairie')
             ->with('ticket_ok', $ticket->reference)
@@ -298,9 +297,16 @@ class PublicContactController extends Controller
     }
 
     /** Prévient par e-mail les agents de la mairie qui reçoivent ce service. */
-    private function notifierMairie(Ticket $ticket): void
+    private function notifierMairie(Ticket $ticket, ?int $facteurId = null): void
     {
-        foreach ($ticket->mairie->destinatairesCommunication($ticket->service) as $agent) {
+        $agents = $ticket->mairie->destinatairesCommunication($ticket->service);
+
+        // Le facteur est prévenu même s'il ne réceptionne pas les messages extérieurs
+        if ($facteurId && ($facteur = \App\Models\User::find($facteurId)) && $facteur->email) {
+            $agents = $agents->push($facteur)->unique('id');
+        }
+
+        foreach ($agents as $agent) {
             try {
                 Mail::to($agent->email)->send(new NouveauMessageTicket($ticket, pourCitoyen: false));
             } catch (\Exception $e) {

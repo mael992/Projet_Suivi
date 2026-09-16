@@ -6,7 +6,8 @@
     @php
         $user          = auth()->user();
         $estCreateur   = $tache->peutEtreGereePar($user);
-        $estResponsable = $tache->user_id === $user->id;
+        // Le binôme d'un responsable absent agit à sa place
+        $estResponsable = $tache->estResponsablePour($user);
         $doitChoisir   = $estResponsable && $tache->enAttentePriseEnCharge();
         $peutCloturer  = $tache->peutEtreClotureePar($user);
     @endphp
@@ -165,10 +166,28 @@
         </div>
     @endif
 
+    @if($tache->fichiers)
+        <div class="card shadow-sm mb-3">
+            <div class="card-header py-2" style="font-size:13px;font-weight:600;">📎 {{ __('Documents joints à la tâche') }}</div>
+            <div class="card-body p-2">
+                @include('partials.documents-tache', ['tache' => $tache, 'liste' => 'fichiers'])
+            </div>
+        </div>
+    @endif
+
     @if($tache->description_cloture)
         <div class="card shadow-sm mb-3">
             <div class="card-header py-2" style="font-size:13px;font-weight:600;">Description & remarques (de clôture)</div>
             <div class="card-body" style="font-size:14px;white-space:pre-wrap;">{{ $tache->description_cloture }}</div>
+        </div>
+    @endif
+
+    @if($tache->fichiers_cloture)
+        <div class="card shadow-sm mb-3">
+            <div class="card-header py-2" style="font-size:13px;font-weight:600;">📎 {{ __('Documents joints à la clôture') }}</div>
+            <div class="card-body p-2">
+                @include('partials.documents-tache', ['tache' => $tache, 'liste' => 'fichiers_cloture'])
+            </div>
         </div>
     @endif
 
@@ -191,6 +210,12 @@
                     <label class="form-label mb-1" style="font-size:13px;">{{ __('Commentaire de clôture') }} <span class="text-danger">*</span></label>
                     <textarea name="description_cloture" class="form-control form-control-sm" rows="3" required
                               placeholder="{{ __('Décrivez ce qui a été fait…') }}">{{ old('description_cloture') }}</textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label mb-1" style="font-size:13px;">
+                        📎 {{ __('Documents en réponse') }} <span class="text-muted">({{ __('compte rendu, facture, devis…') }})</span>
+                    </label>
+                    @include('partials.depot-fichiers', ['champ' => 'fichiers_cloture'])
                 </div>
                 <button type="submit" class="btn btn-success"
                         onclick="return confirm('{{ __('Clôturer définitivement cette tâche ?') }}')">
