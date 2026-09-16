@@ -21,13 +21,30 @@ class DocumentsTache
     /** Taille maximale d'un fichier, en kilo-octets (10 Mo). */
     public const MAX_KO = 10240;
 
+    /**
+     * Taille totale des documents d'un envoi (20 Mo).
+     *
+     * Le serveur refuse tout envoi de plus de 32 Mo (post_max_size) : au-delà,
+     * le formulaire entier est rejeté et la saisie perdue. 20 Mo de documents
+     * laissent la place à la photo (8 Mo) envoyée dans le même formulaire.
+     */
+    public const MAX_TOTAL_KO = 20480;
+
     public const EXTENSIONS = ['pdf', 'doc', 'docx', 'odt', 'xls', 'xlsx', 'ods', 'txt', 'jpg', 'jpeg', 'png', 'webp'];
 
     /** Règles de validation d'un champ de dépôt (ex. « fichiers »). */
     public static function regles(string $champ): array
     {
         return [
-            $champ        => 'nullable|array|max:' . self::MAX_FICHIERS,
+            $champ => [
+                'nullable', 'array', 'max:' . self::MAX_FICHIERS,
+                function (string $attribut, mixed $fichiers, \Closure $echec) {
+                    $total = collect($fichiers)->sum(fn ($f) => $f instanceof UploadedFile ? $f->getSize() : 0);
+                    if ($total > self::MAX_TOTAL_KO * 1024) {
+                        $echec('Les documents dépassent ' . intdiv(self::MAX_TOTAL_KO, 1024) . ' Mo au total.');
+                    }
+                },
+            ],
             $champ . '.*' => 'file|max:' . self::MAX_KO . '|mimes:' . implode(',', self::EXTENSIONS),
         ];
     }

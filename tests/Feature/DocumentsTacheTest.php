@@ -103,6 +103,24 @@ class DocumentsTacheTest extends TestCase
         ])->assertSessionHasErrors('fichiers');
     }
 
+    /** Au-delà de 20 Mo cumulés, l'envoi dépasserait la limite du serveur. */
+    public function test_la_taille_totale_est_plafonnee(): void
+    {
+        $lourds = array_map(
+            fn ($i) => UploadedFile::fake()->create("plan{$i}.pdf", 9000, 'application/pdf'),
+            range(1, 3)
+        );
+
+        $this->actingAs($this->dgs())->post('/taches', [
+            'service'     => 12,
+            'user_id'     => $this->agent()->id,
+            'date_butoir' => now()->addWeek()->toDateString(),
+            'fichiers'    => $lourds,          // 3 × 9 Mo = 27 Mo
+        ])->assertSessionHasErrors('fichiers');
+
+        $this->assertSame(0, Tache::count());
+    }
+
     public function test_on_repond_avec_des_documents_a_la_cloture(): void
     {
         $responsable = $this->agent();

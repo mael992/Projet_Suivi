@@ -21,7 +21,8 @@
         {{ __('ou cliquez pour parcourir') }} —
         PDF, Word, Excel, {{ __('images') }} ·
         {{ DocumentsTache::MAX_FICHIERS }} {{ __('fichiers max') }},
-        {{ intdiv(DocumentsTache::MAX_KO, 1024) }} {{ __('Mo chacun') }}
+        {{ intdiv(DocumentsTache::MAX_KO, 1024) }} {{ __('Mo chacun') }},
+        {{ intdiv(DocumentsTache::MAX_TOTAL_KO, 1024) }} {{ __('Mo au total') }}
     </div>
     <input type="file" name="{{ $champ }}[]" multiple accept="{{ $accept }}" class="d-none">
     <ul class="list-unstyled text-start mb-0 mt-2 liste-depot" style="font-size:13px;"></ul>
@@ -36,6 +37,8 @@
     const liste = zone.querySelector('.liste-depot');
     const MAX   = {{ DocumentsTache::MAX_FICHIERS }};
     const MAXO  = {{ DocumentsTache::MAX_KO }} * 1024;
+    // Total d'un envoi : au-delà, le serveur rejette le formulaire entier
+    const TOTAL = {{ DocumentsTache::MAX_TOTAL_KO }} * 1024;
     const EXT   = @json(DocumentsTache::EXTENSIONS);
 
     // Liste de travail : on cumule les dépôts successifs au lieu de les écraser
@@ -68,6 +71,8 @@
             if (! EXT.includes(ext))          return refus.push(f.name + ' : ' + @json(__('format non accepté')));
             if (f.size > MAXO)                return refus.push(f.name + ' : ' + @json(__('trop volumineux')));
             if (fichiers.length >= MAX)       return refus.push(f.name + ' : ' + @json(__('nombre maximum atteint')));
+            const cumul = fichiers.reduce((t, x) => t + x.size, 0);
+            if (cumul + f.size > TOTAL)       return refus.push(f.name + ' : ' + @json(__('taille totale dépassée')));
             fichiers.push(f);
         });
         synchroniser();
