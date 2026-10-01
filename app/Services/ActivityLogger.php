@@ -33,29 +33,48 @@ class ActivityLogger
 
     /**
      * Écrit une ligne dans le fichier de log du mois courant.
+     *
+     * Un journal qui ne s'écrit pas ne doit jamais faire échouer l'action en
+     * cours : le 1er octobre 2026, le fichier du mois créé en root bloquait
+     * toutes les déconnexions (session laissée ouverte). On signale l'incident
+     * dans laravel.log et on continue.
      */
     public static function log(string $category, string $action, string $detail, ?string $actor = null): void
     {
-        $dir  = storage_path('logs/activity');
-        $file = $dir . '/activity-' . now()->format('Y-m') . '.log';
+        try {
+            $dir  = storage_path('logs/activity');
+            $file = $dir . '/activity-' . now()->format('Y-m') . '.log';
 
-        if (!is_dir($dir)) {
-            mkdir($dir, 0775, true);
+            if (!is_dir($dir)) {
+                mkdir($dir, 0775, true);
+            }
+
+            $actor = $actor ?? static::resolveActor();
+            $ip    = Request::ip() ?? '—';
+            $line  = sprintf(
+                "[%s] [%s] [%s] %s | Acteur: %s | IP: %s\n",
+                now()->format('Y-m-d H:i:s'),
+                $category,
+                strtoupper($action),
+                $detail,
+                $actor,
+                $ip
+            );
+
+            if (file_put_contents($file, $line, FILE_APPEND | LOCK_EX) === false) {
+                throw new \RuntimeException("Journal d'activité non inscriptible : {$file}");
+            }
+
+            // Le fichier du mois est souvent créé par une tâche planifiée qui
+            // tourne en root : sans droit d'écriture pour le groupe (www-data),
+            // le site ne pourrait plus y écrire jusqu'à la fin du mois.
+            clearstatcache(true, $file);
+            if ((fileperms($file) & 0020) === 0) {
+                @chmod($file, 0664);
+            }
+        } catch (\Throwable $e) {
+            report($e);
         }
-
-        $actor = $actor ?? static::resolveActor();
-        $ip    = Request::ip() ?? '—';
-        $line  = sprintf(
-            "[%s] [%s] [%s] %s | Acteur: %s | IP: %s\n",
-            now()->format('Y-m-d H:i:s'),
-            $category,
-            strtoupper($action),
-            $detail,
-            $actor,
-            $ip
-        );
-
-        file_put_contents($file, $line, FILE_APPEND | LOCK_EX);
     }
 
     // ── Raccourcis thématiques ───────────────────────────────────
