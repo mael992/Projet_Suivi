@@ -31,7 +31,6 @@ class DevisController extends Controller
                                 ->orderByDesc('date_devis')->orderByDesc('id')->get(),
             'commercants' => Commercant::where('mairie_id', $mairie->id)
                                 ->orderBy('nom')->orderBy('prenom')->get(),
-            'editeur'     => config('mgds.editeur'),
             'mairies'     => $this->mairiesPourSelecteur(),
         ]);
     }
@@ -87,9 +86,18 @@ class DevisController extends Controller
     {
         $this->verifierDevis($request, $devis);
 
+        // Le prestataire est la mairie qui établit l'estimation pour le
+        // commerçant (et non l'éditeur du logiciel).
+        $mairie = $devis->mairie;
+
         return Pdf::loadView('pdf.devis', [
-            'devis'   => $devis,
-            'editeur' => config('mgds.editeur'),
+            'devis'       => $devis,
+            'prestataire' => [
+                'nom'         => $mairie->nom,
+                'code_postal' => $mairie->code_postal,
+                'telephone'   => trim(($mairie->telephone_indicatif ?? '') . ' ' . ($mairie->telephone ?? '')),
+                'email'       => $mairie->email,
+            ],
         ])->setPaper('a4', 'portrait')
           ->download('Estimation_' . $devis->reference . '.pdf');
     }

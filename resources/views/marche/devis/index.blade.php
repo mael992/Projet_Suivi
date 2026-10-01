@@ -8,9 +8,7 @@
 @section('content')
 <div class="container py-4" style="max-width:1000px;">
 
-    <a href="{{ route('marche.ville', $mairieParam) }}" class="text-decoration-none d-inline-block mb-2" style="font-size:14px;">
-        ← {{ __('Application Marché') }}
-    </a>
+    @include('marche.partials.onglets')
 
     <h2 class="h5 mb-1">🧾 {{ __('Estimations du marché') }} — {{ $mairie->nom }}</h2>
     <p class="text-muted mb-3" style="font-size:14px;">
@@ -23,12 +21,6 @@
     @if($errors->any())
         <div class="alert alert-danger mb-3">
             @foreach($errors->all() as $error)<div>{{ $error }}</div>@endforeach
-        </div>
-    @endif
-
-    @if(! $editeur['siret'] || ! $editeur['forme'])
-        <div class="alert alert-warning" style="font-size:13px;">
-            ⚠️ {{ __('Les coordonnées d\'éditeur sont incomplètes (forme juridique, SIRET…). Une estimation sans ces mentions n\'est pas conforme.') }}
         </div>
     @endif
 
@@ -75,19 +67,19 @@
 
                 <div class="col-md-6">
                     <label class="form-label fw-semibold" style="font-size:13px;">{{ __('Lieu d\'exécution') }}</label>
-                    <input type="text" name="lieu_execution" value="{{ old('lieu_execution', 'Plateforme en ligne m-gds.com') }}" class="form-control form-control-sm">
+                    <input type="text" name="lieu_execution" value="{{ old('lieu_execution') }}" class="form-control form-control-sm" placeholder="{{ __('Ex. marché hebdomadaire du centre-ville') }}">
                 </div>
                 <div class="col-md-6">
                     <label class="form-label fw-semibold" style="font-size:13px;">{{ __('Délai d\'exécution') }}</label>
-                    <input type="text" name="delai_execution" value="{{ old('delai_execution', 'Mise en service sous 5 jours ouvrés après accord') }}" class="form-control form-control-sm">
+                    <input type="text" name="delai_execution" value="{{ old('delai_execution') }}" class="form-control form-control-sm" placeholder="{{ __('Ex. dès l\'attribution de l\'emplacement') }}">
                 </div>
                 <div class="col-md-6">
                     <label class="form-label fw-semibold" style="font-size:13px;">{{ __('Modalités de paiement') }}</label>
-                    <input type="text" name="modalites_paiement" value="{{ old('modalites_paiement', 'Virement à réception de facture, à 30 jours') }}" class="form-control form-control-sm">
+                    <input type="text" name="modalites_paiement" value="{{ old('modalites_paiement') }}" class="form-control form-control-sm" placeholder="{{ __('Ex. paiement du droit de place selon le règlement du marché') }}">
                 </div>
                 <div class="col-md-6">
                     <label class="form-label fw-semibold" style="font-size:13px;">{{ __('Conditions d\'exécution') }}</label>
-                    <input type="text" name="conditions" value="{{ old('conditions', 'Abonnement annuel, hébergement et support inclus') }}" class="form-control form-control-sm">
+                    <input type="text" name="conditions" value="{{ old('conditions') }}" class="form-control form-control-sm" placeholder="{{ __('Ex. emplacement soumis au règlement du marché communal') }}">
                 </div>
 
                 <div class="col-12">
@@ -104,7 +96,8 @@
                         @for($i = 0; $i < 4; $i++)
                             <tr>
                                 <td><input type="text" name="lignes[{{ $i }}][designation]" class="form-control form-control-sm"
-                                           value="{{ old("lignes.$i.designation", $i === 0 ? 'Abonnement annuel MGDS — accès à toutes les applications' : '') }}"></td>
+                                           placeholder="{{ $i === 0 ? __('Ex. droit de place — emplacement sur le marché') : '' }}"
+                                           value="{{ old("lignes.$i.designation", $i === 0 ? 'Droit de place — emplacement sur le marché' : '') }}"></td>
                                 <td><input type="number" step="0.5" min="0" name="lignes[{{ $i }}][quantite]" class="form-control form-control-sm"
                                            value="{{ old("lignes.$i.quantite", $i === 0 ? 1 : 0) }}"></td>
                                 <td><input type="number" step="0.01" min="0" name="lignes[{{ $i }}][prix_unitaire]" class="form-control form-control-sm"

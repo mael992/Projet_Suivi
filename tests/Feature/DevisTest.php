@@ -151,6 +151,25 @@ class DevisTest extends TestCase
             ->get("/marche/devis/{$devisVoisin->id}/pdf")->assertForbidden();
     }
 
+    /**
+     * Issue #75 : l'onglet est accessible depuis l'application Marché, et le
+     * formulaire ne reprend plus l'offre d'abonnement MGDS.
+     */
+    public function test_l_onglet_est_dans_le_marche_et_le_formulaire_parle_du_marche(): void
+    {
+        $user = $this->gestionnaireMarche();
+
+        $this->actingAs($user)->get('/marche/commercants')
+            ->assertOk()
+            ->assertSee(route('marche.devis.index'), false);
+
+        $this->actingAs($user)->get('/marche/devis')
+            ->assertOk()
+            ->assertSee('Droit de place')
+            ->assertDontSee('Abonnement annuel MGDS')
+            ->assertDontSee('Plateforme en ligne m-gds.com');
+    }
+
     /** L'onglet a bien quitté l'espace admin. */
     public function test_l_ancienne_page_admin_n_existe_plus(): void
     {

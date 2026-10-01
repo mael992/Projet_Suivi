@@ -12,6 +12,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\Rules\Password;
 
 /**
  * Gestion des utilisateurs côté admin : on voit tout, toutes mairies,
@@ -60,7 +61,7 @@ class UserController extends Controller
             'telephone'           => 'nullable|string|max:20',
             // Seul un compte administrateur garde un mot de passe choisi :
             // les agents de mairie recoivent un provisoire tire au sort.
-            'password'            => 'required_if:role,admin|nullable|min:8',
+            'password'            => ['nullable', 'required_if:role,admin', Password::defaults()],
         ]);
 
         $estAdmin = $data['role'] === 'admin';
@@ -133,7 +134,7 @@ class UserController extends Controller
             'email'               => 'nullable|email|unique:users,email,' . $user->id,
             'telephone_indicatif' => 'nullable|string|max:8',
             'telephone'           => 'nullable|string|max:20',
-            'password'            => 'nullable|min:8',   // administrateur uniquement
+            'password'            => ['nullable', Password::defaults()],   // administrateur uniquement
             'reinitialiser_mdp'   => 'nullable|boolean',
         ]);
 

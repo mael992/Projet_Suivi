@@ -11,8 +11,18 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // Le trafic arrive via le proxy Cloudflare / tunnel cloudflared
-        $middleware->trustProxies(at: '*');
+        // Le trafic arrive via le proxy Cloudflare / tunnel cloudflared : on lui
+        // fait confiance pour le schéma (https) et l'hôte, mais PAS pour l'IP du
+        // visiteur via X-Forwarded-For (falsifiable). L'IP réelle est reprise de
+        // l'en-tête Cloudflare « CF-Connecting-IP » par SetCloudflareClientIp.
+        $middleware->trustProxies(at: '*', headers:
+            \Illuminate\Http\Request::HEADER_X_FORWARDED_PROTO |
+            \Illuminate\Http\Request::HEADER_X_FORWARDED_HOST |
+            \Illuminate\Http\Request::HEADER_X_FORWARDED_PORT
+        );
+
+        // Doit s'exécuter avant toute lecture de request()->ip()
+        $middleware->prepend(\App\Http\Middleware\SetCloudflareClientIp::class);
 
         $middleware->alias([
             'admin'   => \App\Http\Middleware\AdminMiddleware::class,

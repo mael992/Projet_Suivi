@@ -39,14 +39,10 @@
         <td style="padding-right:8px;">
             <div class="bloc">
                 <strong>Prestataire</strong>
-                {{ $editeur['nom'] }}@if($editeur['forme']) — {{ $editeur['forme'] }}@endif<br>
-                @if($editeur['adresse']){{ $editeur['adresse'] }}<br>@endif
-                @if($editeur['code_postal'] || $editeur['ville']){{ $editeur['code_postal'] }} {{ $editeur['ville'] }}<br>@endif
-                @if(config('mgds.support_phone'))Tél. {{ config('mgds.support_phone') }}<br>@endif
-                @if(config('mgds.support_email')){{ config('mgds.support_email') }}<br>@endif
-                @if($editeur['siret'])SIRET : {{ $editeur['siret'] }}<br>@endif
-                @if($editeur['rcs'])RCS : {{ $editeur['rcs'] }}<br>@endif
-                @if($editeur['tva'])TVA intracom. : {{ $editeur['tva'] }}@endif
+                {{ $prestataire['nom'] }}<br>
+                @if($prestataire['code_postal']){{ $prestataire['code_postal'] }}<br>@endif
+                @if(trim($prestataire['telephone']))Tél. {{ $prestataire['telephone'] }}<br>@endif
+                @if($prestataire['email']){{ $prestataire['email'] }}@endif
             </div>
         </td>
         <td style="padding-left:8px;">
@@ -102,9 +98,9 @@
     @if($devis->delai_execution)<strong>Délai d'exécution :</strong> {{ $devis->delai_execution }}<br>@endif
     @if($devis->modalites_paiement)<strong>Modalités de paiement :</strong> {{ $devis->modalites_paiement }}<br>@endif
     @if($devis->conditions)<strong>Conditions d'exécution :</strong> {{ $devis->conditions }}<br>@endif
-    @unless($editeur['tva_applicable'])
-        <em>TVA non applicable, article 293 B du CGI.</em><br>
-    @endunless
+    @if((float) $devis->taux_tva === 0.0)
+        <em>TVA non applicable.</em><br>
+    @endif
     Devis gratuit et sans engagement. Passé le {{ $devis->valableJusquau()->format('d/m/Y') }}, les prix
     indiqués ne sont plus garantis.
 </div>
@@ -115,7 +111,7 @@
 </div>
 
 <div class="pied">
-    {{ $editeur['nom'] }} — Devis {{ $devis->reference }} — page généré le {{ now()->format('d/m/Y à H:i') }}
+    {{ $prestataire['nom'] }} — Devis {{ $devis->reference }} — page générée le {{ now()->format('d/m/Y à H:i') }}
 </div>
 
 </body>

@@ -139,13 +139,30 @@ class MotDePasseProvisoireTest extends TestCase
         $this->post('/login', ['username' => $agent->username, 'password' => $clair]);
 
         $this->post('/password/change-required', [
-            'password'              => 'nouveau-mot-de-passe',
-            'password_confirmation' => 'nouveau-mot-de-passe',
+            'password'              => 'nouveau-mot-de-passe-9',
+            'password_confirmation' => 'nouveau-mot-de-passe-9',
         ])->assertRedirect();
 
         $agent->refresh();
-        $this->assertTrue(Hash::check('nouveau-mot-de-passe', $agent->password));
+        $this->assertTrue(Hash::check('nouveau-mot-de-passe-9', $agent->password));
 
         $this->get('/apps')->assertOk();
+    }
+
+    public function test_un_mot_de_passe_trop_faible_est_refuse(): void
+    {
+        $agent = $this->agent();
+        $clair = $agent->genererPasswordProvisoire();
+
+        $this->post('/login', ['username' => $agent->username, 'password' => $clair]);
+
+        // « 00000000 » : trop court et sans lettre → refusé par la politique
+        $this->from('/password/change-required')->post('/password/change-required', [
+            'password'              => '00000000',
+            'password_confirmation' => '00000000',
+        ])->assertSessionHasErrors('password');
+
+        // Le mot de passe habituel n'a pas été remplacé par la valeur faible
+        $this->assertFalse(Hash::check('00000000', $agent->refresh()->password));
     }
 }

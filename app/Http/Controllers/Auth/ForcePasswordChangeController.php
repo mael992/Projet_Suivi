@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 
 class ForcePasswordChangeController extends Controller
 {
@@ -17,7 +18,7 @@ class ForcePasswordChangeController extends Controller
     public function update(Request $request)
     {
         $request->validate([
-            'password' => 'required|min:8|confirmed',
+            'password' => ['required', 'confirmed', Password::defaults()],
         ]);
 
         $user = auth()->user();

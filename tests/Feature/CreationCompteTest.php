@@ -149,12 +149,12 @@ class CreationCompteTest extends TestCase
             'prenom'   => 'Root',
             'nom'      => 'Admin',
             'role'     => 'admin',
-            'password' => 'motdepasse-admin',
+            'password' => 'motdepasse-admin-1',
         ])->assertRedirect();
 
         $admin = User::where('nom', 'Admin')->where('role', 'admin')->firstOrFail();
 
-        $this->assertTrue(Hash::check('motdepasse-admin', $admin->password));
+        $this->assertTrue(Hash::check('motdepasse-admin-1', $admin->password));
         $this->assertNull($admin->temp_password);
         $this->assertFalse($admin->must_change_password);
     }

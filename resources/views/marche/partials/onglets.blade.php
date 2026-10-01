@@ -17,6 +17,10 @@
             <a class="nav-link {{ request()->routeIs('marche.demandes') ? 'active' : '' }}"
                href="{{ route('marche.demandes', request()->only('mairie')) }}">🤝 {{ __('Demandes & codes') }}</a>
         </li>
+        <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('marche.devis.*') ? 'active' : '' }}"
+               href="{{ route('marche.devis.index', request()->only('mairie')) }}">🧾 {{ __('Estimations') }}</a>
+        </li>
     </ul>
 
     {{-- Sélecteur de mairie (admins uniquement) --}}
