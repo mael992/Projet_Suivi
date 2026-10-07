@@ -42,7 +42,7 @@ class MarcheExposantTest extends TestCase
     {
         $this->get('/marche-exposants')->assertOk()->assertSee('Mairie Test');
 
-        $this->post('/marche-exposants', [
+        $this->post('/marche-exposants', $this->jetonFormulaire() + [
             'mairie_id' => $this->mairie->id,
             'prenom'    => 'Paul',
             'nom'       => 'Fromager',
@@ -63,7 +63,7 @@ class MarcheExposantTest extends TestCase
     {
         $this->mairie->update(['marche_inscription_ouverte' => false]);
 
-        $this->post('/marche-exposants', [
+        $this->post('/marche-exposants', $this->jetonFormulaire() + [
             'mairie_id' => $this->mairie->id,
             'prenom'    => 'Paul', 'nom' => 'Fromager', 'activite' => 'Fromagerie',
             'telephone' => '0612345678', 'email' => 'paul@example.fr',
