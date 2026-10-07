@@ -27,10 +27,14 @@ Route::get('/infos',      [PageController::class, 'infos'])->name('infos');
 Route::get('/nouveautes', [PageController::class, 'nouveautes'])->name('nouveautes');
 Route::get('/contact',    [PageController::class, 'contact'])->name('contact');
 
+// Formulaires publics : anti-robots (champ piège, délai minimum, limite par IP).
+// « :limite » ne garde que la limite par IP (saisie d'un code ou d'un numéro).
+$antiRobot = \App\Http\Middleware\ProtectionFormulairePublic::class;
+
 // Marché côté public : demande d'inscription des commerçants + plan par code
 Route::get('/marche-exposants',       [\App\Http\Controllers\MarchePublicController::class, 'index'])->name('marche.public');
-Route::post('/marche-exposants',      [\App\Http\Controllers\MarchePublicController::class, 'store'])->name('marche.public.store');
-Route::post('/marche-exposants/plan', [\App\Http\Controllers\MarchePublicController::class, 'plan'])->name('marche.public.plan');
+Route::post('/marche-exposants',      [\App\Http\Controllers\MarchePublicController::class, 'store'])->name('marche.public.store')->middleware($antiRobot);
+Route::post('/marche-exposants/plan', [\App\Http\Controllers\MarchePublicController::class, 'plan'])->name('marche.public.plan')->middleware($antiRobot . ':limite');
 
 // Conditions générales d'utilisation (consultables par tous)
 Route::get('/cgu', fn () => view('cgu'))->name('cgu');
@@ -46,9 +50,9 @@ Route::post('/cgu', function (\Illuminate\Http\Request $request) {
 
 // Page publique « Contacter votre Mairie » (formulaire → ticket)
 Route::get('/contacter-mairie',  [\App\Http\Controllers\PublicContactController::class, 'create'])->name('contact.mairie');
-Route::post('/contacter-mairie', [\App\Http\Controllers\PublicContactController::class, 'store'])->name('contact.mairie.store');
-Route::post('/contacter-mairie/adhesion-marche', [\App\Http\Controllers\PublicContactController::class, 'storeMarche'])->name('contact.marche.store');
-Route::post('/mon-ticket',       [\App\Http\Controllers\PublicContactController::class, 'suivi'])->name('contact.ticket.suivi');
+Route::post('/contacter-mairie', [\App\Http\Controllers\PublicContactController::class, 'store'])->name('contact.mairie.store')->middleware($antiRobot);
+Route::post('/contacter-mairie/adhesion-marche', [\App\Http\Controllers\PublicContactController::class, 'storeMarche'])->name('contact.marche.store')->middleware($antiRobot);
+Route::post('/mon-ticket',       [\App\Http\Controllers\PublicContactController::class, 'suivi'])->name('contact.ticket.suivi')->middleware($antiRobot . ':limite');
 Route::get('/mon-ticket/{ticket}', [\App\Http\Controllers\PublicContactController::class, 'voirTicket'])->name('contact.ticket.voir');
 Route::post('/mon-ticket/{ticket}/repondre', [\App\Http\Controllers\PublicContactController::class, 'repondreCitoyen'])->name('contact.ticket.repondre');
 Route::post('/mon-ticket/{ticket}/cloturer', [\App\Http\Controllers\PublicContactController::class, 'cloturerCitoyen'])->name('contact.ticket.cloturer');

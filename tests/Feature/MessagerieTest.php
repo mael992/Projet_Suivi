@@ -50,7 +50,7 @@ class MessagerieTest extends TestCase
 
     public function test_habitant_peut_envoyer_un_ticket(): void
     {
-        $this->post('/contacter-mairie', [
+        $this->post('/contacter-mairie', $this->jetonFormulaire() + [
             'mairie_id' => $this->mairie->id,
             'service'   => 12,
             'nom'       => 'Dupont',
@@ -89,7 +89,7 @@ class MessagerieTest extends TestCase
         ]);
         $this->receptionniste($autre);
 
-        $envoyer = fn (Mairie $m, string $sujet) => $this->post('/contacter-mairie', [
+        $envoyer = fn (Mairie $m, string $sujet) => $this->post('/contacter-mairie', $this->jetonFormulaire() + [
             'mairie_id' => $m->id,
             'nom'       => 'Dupont', 'prenom' => 'Marie',
             'telephone' => '0612345678', 'email' => 'marie@example.fr',
@@ -560,7 +560,7 @@ class MessagerieTest extends TestCase
 
     public function test_champs_vides_ou_un_caractere_refuses(): void
     {
-        $this->post('/contacter-mairie', [
+        $this->post('/contacter-mairie', $this->jetonFormulaire() + [
             'mairie_id' => $this->mairie->id,
             'nom'       => 'A',
             'prenom'    => '  ',
@@ -718,7 +718,7 @@ class MessagerieTest extends TestCase
 
         // Et un envoi forgé sur ces mairies est refusé
         foreach ([$sansAgent, $expiree] as $mairie) {
-            $this->post('/contacter-mairie', [
+            $this->post('/contacter-mairie', $this->jetonFormulaire() + [
                 'mairie_id' => $mairie->id,
                 'nom'       => 'Dupont', 'prenom' => 'Marie',
                 'telephone' => '0612345678', 'email' => 'marie@example.fr',

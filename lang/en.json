@@ -228,7 +228,6 @@
     "Envoyer ma demande": "Send my request",
     "Erreur lors de la sauvegarde.": "Error while saving.",
     "Estimations": "Estimates",
-    "Estimations": "Estimates",
     "Estimations du marché": "Market estimates",
     "Ex. droit de place — emplacement sur le marché": "E.g. pitch fee — market stand location",
     "Ex. dès l'attribution de l'emplacement": "E.g. once the pitch is allocated",
@@ -668,5 +667,9 @@
     "Êtes-vous sûr de vouloir supprimer cette note ?": "Are you sure you want to delete this note?",
     "Êtes-vous sûr de vouloir supprimer le rappel du": "Are you sure you want to delete the reminder of",
     "Être notifié par e-mail de cette note": "Be notified by email about this note",
-    "à": "to"
+    "à": "to",
+    "Trop d'envois en peu de temps. Merci de patienter une minute avant de réessayer.": "Too many submissions in a short time. Please wait a minute before trying again.",
+    "Votre envoi n'a pas pu être vérifié. Merci de réessayer.": "Your submission could not be verified. Please try again.",
+    "Merci de patienter quelques secondes avant d'envoyer le formulaire.": "Please wait a few seconds before submitting the form.",
+    "Laissez ce champ vide": "Leave this field empty"
 }

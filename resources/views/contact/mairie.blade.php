@@ -32,6 +32,7 @@
     <div id="ongletAide">
         <form method="POST" action="{{ route('contact.mairie.store') }}" enctype="multipart/form-data" class="card shadow-sm">
             @csrf
+            <x-anti-robot />
             <div class="card-body">
                 <div class="row g-3">
                     <div class="col-12">
@@ -136,6 +137,7 @@
     <div id="ongletMarche" class="d-none">
         <form method="POST" action="{{ route('contact.marche.store') }}" class="card shadow-sm">
             @csrf
+            <x-anti-robot />
             <div class="card-body">
                 <p class="text-muted" style="font-size:13px;">
                     {{ __('Vous souhaitez tenir un stand sur le marché ? Remplissez ce formulaire : la mairie vous répondra dans la même conversation, et pourra vous poser des questions avant de décider.') }}

@@ -48,7 +48,7 @@ class AdhesionMarcheTest extends TestCase
 
     private function demander(array $extra = []): Ticket
     {
-        $this->post('/contacter-mairie/adhesion-marche', array_merge([
+        $this->post('/contacter-mairie/adhesion-marche', $this->jetonFormulaire() + array_merge([
             'mairie_id'          => $this->mairie->id,
             'prenom'             => 'Luc',
             'nom'                => 'Martin',
@@ -101,7 +101,7 @@ class AdhesionMarcheTest extends TestCase
     {
         $this->mairie->update(['marche_inscription_ouverte' => false]);
 
-        $this->post('/contacter-mairie/adhesion-marche', [
+        $this->post('/contacter-mairie/adhesion-marche', $this->jetonFormulaire() + [
             'mairie_id' => $this->mairie->id,
             'prenom'    => 'Luc', 'nom' => 'Martin',
             'activite'  => 'Primeur',

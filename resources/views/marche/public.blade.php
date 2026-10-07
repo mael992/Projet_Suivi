@@ -30,6 +30,7 @@
         @else
             <form method="POST" action="{{ route('marche.public.store') }}" class="card shadow-sm">
                 @csrf
+                <x-anti-robot />
                 <div class="card-body">
                     <p class="text-muted" style="font-size:14px;">
                         {{ __('Vous êtes commerçant et souhaitez rejoindre un marché ? Remplissez ce formulaire : la mairie vous recontactera.') }}
