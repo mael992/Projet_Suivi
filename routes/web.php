@@ -25,11 +25,18 @@ Route::get('/lang/{locale}', [LanguageController::class, 'switch'])->name('lang.
 Route::get('/',           [PageController::class, 'home'])->name('home');
 Route::get('/infos',      [PageController::class, 'infos'])->name('infos');
 Route::get('/nouveautes', [PageController::class, 'nouveautes'])->name('nouveautes');
-Route::get('/contact',    [PageController::class, 'contact'])->name('contact');
 
 // Formulaires publics : anti-robots (champ piège, délai minimum, limite par IP).
 // « :limite » ne garde que la limite par IP (saisie d'un code ou d'un numéro).
 $antiRobot = \App\Http\Middleware\ProtectionFormulairePublic::class;
+
+// Support technique MGDS (page Contact) : assistant à étapes, puis conseiller.
+// Ouvert aux agents connectés comme aux personnes sans compte (lien secret).
+Route::get('/contact',  [\App\Http\Controllers\SupportController::class, 'index'])->name('contact');
+Route::post('/contact', [\App\Http\Controllers\SupportController::class, 'store'])->name('contact.store')->middleware($antiRobot);
+Route::get('/support/{jeton}',            [\App\Http\Controllers\SupportController::class, 'suivi'])->name('support.suivi');
+Route::post('/support/{jeton}/repondre',  [\App\Http\Controllers\SupportController::class, 'repondre'])->name('support.repondre')->middleware($antiRobot . ':limite');
+Route::post('/support/{jeton}/cloturer',  [\App\Http\Controllers\SupportController::class, 'cloturer'])->name('support.cloturer')->middleware($antiRobot . ':limite');
 
 // Marché côté public : demande d'inscription des commerçants + plan par code
 Route::get('/marche-exposants',       [\App\Http\Controllers\MarchePublicController::class, 'index'])->name('marche.public');
@@ -238,8 +245,11 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/logs',          [ActivityLogController::class, 'index'])->name('admin.logs.index');
     Route::get('/admin/logs/download', [ActivityLogController::class, 'download'])->name('admin.logs.download');
 
-    // Messages (à venir — sera programmé plus tard)
-    Route::get('/admin/messages', fn () => view('admin.messages.index'))->name('admin.messages.index');
+    // Message Support : demandes au support technique (réponses signées « Admin »)
+    Route::get('/admin/messages',                     [\App\Http\Controllers\Admin\SupportController::class, 'index'])->name('admin.messages.index');
+    Route::get('/admin/messages/{demande}',           [\App\Http\Controllers\Admin\SupportController::class, 'show'])->name('admin.messages.show');
+    Route::post('/admin/messages/{demande}/repondre', [\App\Http\Controllers\Admin\SupportController::class, 'repondre'])->name('admin.messages.repondre');
+    Route::post('/admin/messages/{demande}/cloturer', [\App\Http\Controllers\Admin\SupportController::class, 'cloturer'])->name('admin.messages.cloturer');
 
     // RGPD : export complet et destruction attestée des données d'une mairie
     Route::get('/admin/donnees', [\App\Http\Controllers\Admin\DonneesController::class, 'index'])->name('admin.donnees.index');
