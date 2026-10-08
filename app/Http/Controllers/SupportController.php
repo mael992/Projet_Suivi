@@ -130,13 +130,14 @@ class SupportController extends Controller
 
     /**
      * Le lien secret suffit pour une personne sans compte. Une demande
-     * ouverte depuis un compte ne s'affiche qu'à ce compte.
+     * ouverte depuis un compte ne s'affiche qu'à ce compte (et plus à
+     * personne si le compte a été supprimé).
      */
     private function demandeAccessible(Request $request, string $jeton): SupportDemande
     {
         $demande = SupportDemande::where('jeton', $jeton)->firstOrFail();
 
-        if ($demande->avec_compte && $request->user()?->id !== $demande->user_id) {
+        if ($demande->avec_compte && ($demande->user_id === null || $request->user()?->id !== $demande->user_id)) {
             abort(404);
         }
 
