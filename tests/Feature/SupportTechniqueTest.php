@@ -150,6 +150,12 @@ class SupportTechniqueTest extends TestCase
         $autre = User::factory()->create(['mairie_id' => $this->mairie->id]);
         $this->actingAs($autre)->get('/support/' . $demande->jeton)->assertNotFound();
         $this->actingAs($this->agent)->get('/support/' . $demande->jeton)->assertOk();
+
+        // Compte supprimé : le lien ne s'ouvre plus pour personne
+        $this->agent->delete();
+        auth()->logout();
+        $this->get('/support/' . $demande->jeton)->assertNotFound();
+        $this->actingAs($this->admin)->get('/admin/messages/' . $demande->id)->assertOk()->assertSee('Compte supprimé');
     }
 
     public function test_seuls_les_admins_voient_les_demandes(): void
