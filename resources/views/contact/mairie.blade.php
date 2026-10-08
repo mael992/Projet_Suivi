@@ -6,6 +6,10 @@
 <div class="container py-4" style="max-width:760px;">
 
     <h1 class="h3 mb-3">✉️ {{ __('Contacter votre Mairie') }}</h1>
+    <p class="text-muted" style="font-size:13px;">
+        {{ __('Un problème avec le site MGDS lui-même (connexion, mairie introuvable…) ?') }}
+        <a href="{{ route('contact') }}">🛟 {{ __('Contacter le Support technique') }}</a>
+    </p>
 
     @if(session('ticket_ok'))
         <div class="alert alert-success">

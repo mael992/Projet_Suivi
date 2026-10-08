@@ -94,6 +94,13 @@
         </div>
         @endif
 
+        {{-- Problème avant connexion : support technique MGDS --}}
+        <div class="text-center mt-2">
+            <a href="{{ route('contact') }}" style="font-size:12px;color:#888;text-decoration:none;">
+                🛟 {{ __('Un problème pour vous connecter ? Contacter le support') }}
+            </a>
+        </div>
+
     </form>
 
     <script>

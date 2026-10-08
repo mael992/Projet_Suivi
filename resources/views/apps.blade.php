@@ -304,7 +304,8 @@
                         <a href="{{ route('users.index') }}" class="badge text-decoration-none" style="background:var(--brand);">{{ __('Gestion des utilisateurs') }}</a>
                         <a href="{{ route('mairies.index') }}" class="badge text-decoration-none" style="background:var(--gold);">Accès mairie</a>
                         <a href="{{ route('admin.logs.index') }}" class="badge bg-dark text-decoration-none">Logs</a>
-                        <a href="{{ route('admin.messages.index') }}" class="badge bg-secondary text-decoration-none">Support</a>
+                        @php $nbSupport = \App\Models\SupportDemande::enAttente(); @endphp
+                        <a href="{{ route('admin.messages.index') }}" class="badge bg-secondary text-decoration-none">Support @if($nbSupport)<span class="badge bg-danger ms-1">{{ $nbSupport }}</span>@endif</a>
                     </div>
                 </div>
             </div>
