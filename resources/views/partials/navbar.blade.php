@@ -13,7 +13,8 @@
 
     // Bouton Contact : support (connecté) ou formulaire mairie (public)
     $libelleContact = $isLoggedIn ? __('Contacter le Support technique') : __('Contacter votre Mairie');
-    $lienContact    = $isLoggedIn ? route('contact') : route('contact.mairie');
+    $routeContact   = $isLoggedIn ? 'contact' : 'contact.mairie';
+    $lienContact    = route($routeContact);
 @endphp
 
 <nav class="navbar">
@@ -29,7 +30,10 @@
             <li><a href="{{ route('home') }}" class="{{ $actif('home') }}">{{ __('mgds.nav_home') }}</a></li>
             <li><a href="{{ route('infos') }}" class="{{ $actif('infos') }}">{{ __('mgds.nav_infos') }}</a></li>
             <li><a href="{{ route('nouveautes') }}" class="{{ $actif('nouveautes') }}">{{ __('mgds.nav_news') }}</a></li>
-            <li><a href="{{ $lienContact }}" class="{{ $actif('contact') }}">{{ $libelleContact }}</a></li>
+            @if($isLoggedIn)
+                <li><a href="{{ route('contact.mairie') }}" class="{{ $actif('contact.mairie') }}">{{ __('Contacter votre Mairie') }}</a></li>
+            @endif
+            <li><a href="{{ $lienContact }}" class="{{ $actif($routeContact) }}">{{ $libelleContact }}</a></li>
 
             @if($isLoggedIn)
                 <li><a href="{{ route('apps') }}" style="font-weight:600;" class="{{ $actif('apps') }}">{{ __('mgds.nav_apps') }}</a></li>
@@ -128,7 +132,10 @@
         <a href="{{ route('home') }}"       onclick="closeNavMenu()" class="{{ $actif('home') }}"><span class="nav-mobile-icon">🏠</span>{{ __('mgds.nav_home') }}</a>
         <a href="{{ route('infos') }}"      onclick="closeNavMenu()" class="{{ $actif('infos') }}"><span class="nav-mobile-icon">ℹ️</span>{{ __('mgds.nav_infos') }}</a>
         <a href="{{ route('nouveautes') }}" onclick="closeNavMenu()" class="{{ $actif('nouveautes') }}"><span class="nav-mobile-icon">🆕</span>{{ __('mgds.nav_news') }}</a>
-        <a href="{{ $lienContact }}"    onclick="closeNavMenu()" class="{{ $actif('contact') }}"><span class="nav-mobile-icon">✉️</span>{{ $libelleContact }}</a>
+        @if($isLoggedIn)
+            <a href="{{ route('contact.mairie') }}" onclick="closeNavMenu()" class="{{ $actif('contact.mairie') }}"><span class="nav-mobile-icon">🏛️</span>{{ __('Contacter votre Mairie') }}</a>
+        @endif
+        <a href="{{ $lienContact }}"    onclick="closeNavMenu()" class="{{ $actif($routeContact) }}"><span class="nav-mobile-icon">✉️</span>{{ $libelleContact }}</a>
 
         @auth
             <div class="nav-mobile-divider"></div>
