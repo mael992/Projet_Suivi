@@ -194,7 +194,8 @@ class MgdsPagesTest extends TestCase
         $this->actingAs($admin)->get('/mairies/create')->assertOk();
         $this->actingAs($admin)->get('/mairies/' . $this->mairie->id . '/edit')->assertOk();
         $this->actingAs($admin)->get('/admin/logs')->assertOk();
-        $this->actingAs($admin)->get('/admin/messages')->assertOk();
+        $this->actingAs($admin)->get('/admin/messages')->assertRedirect();
+        $this->actingAs($admin)->get('/messagerie?onglet=support')->assertOk();
     }
 
     public function test_admin_pages_are_forbidden_for_mairie_user(): void

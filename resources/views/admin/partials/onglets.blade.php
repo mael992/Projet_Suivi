@@ -14,10 +14,8 @@
         <a class="nav-link {{ request()->routeIs('admin.logs.*') ? 'active' : '' }}"
            href="{{ route('admin.logs.index') }}">{{ __("Logs d'activité") }}</a>
     </li>
-    <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.messages.*') ? 'active' : '' }}"
-           href="{{ route('admin.messages.index') }}">{{ __('Message Support') }}</a>
-    </li>
+    {{-- Les demandes au support se traitent dans Centre de messagerie /
+         Message Support. --}}
     <li class="nav-item">
         <a class="nav-link {{ request()->routeIs('admin.donnees.*') ? 'active' : '' }}"
            href="{{ route('admin.donnees.index') }}">🗄️ {{ __('Données (RGPD)') }}</a>

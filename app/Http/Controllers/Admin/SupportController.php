@@ -10,38 +10,26 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 
 /**
- * Onglet « Message Support » de l'administration : les demandes au
- * support technique. Les réponses partent signées « Admin », sans dire
- * quel admin a répondu.
+ * Réponses de l'équipe MGDS aux demandes au support technique. Les
+ * conversations se lisent dans Centre de messagerie / Message Support ; les
+ * réponses partent signées « Admin », sans dire quel admin a répondu.
  */
 class SupportController extends Controller
 {
+    /** Ancienne page de Paramètres administratifs : tout est dans la messagerie. */
     public function index(Request $request)
     {
-        $dossier = $request->query('dossier', SupportDemande::STATUT_RECEPTION);
-        if (! array_key_exists($dossier, SupportDemande::STATUTS)) {
-            $dossier = SupportDemande::STATUT_RECEPTION;
-        }
+        $dossier = $request->query('dossier');
 
-        $compteurs = [];
-        foreach (array_keys(SupportDemande::STATUTS) as $statut) {
-            $compteurs[$statut] = SupportDemande::where('statut', $statut)->count();
-        }
-
-        $demandes = SupportDemande::with('user.mairie')
-            ->where('statut', $dossier)
-            ->latest('updated_at')
-            ->paginate(30)
-            ->withQueryString();
-
-        return view('admin.messages.index', compact('demandes', 'dossier', 'compteurs'));
+        return redirect()->route('messagerie.index', array_filter([
+            'onglet'  => 'support',
+            'support' => array_key_exists((string) $dossier, SupportDemande::STATUTS) ? $dossier : null,
+        ]));
     }
 
     public function show(SupportDemande $demande)
     {
-        $demande->load('messages', 'user.mairie');
-
-        return view('admin.messages.show', compact('demande'));
+        return redirect($demande->lienMessagerie());
     }
 
     public function repondre(Request $request, SupportDemande $demande)
@@ -62,7 +50,7 @@ class SupportController extends Controller
             }
         }
 
-        return redirect()->route('admin.messages.show', $demande)
+        return redirect($demande->lienMessagerie())
             ->with('success', __('Réponse envoyée.'));
     }
 
@@ -72,7 +60,7 @@ class SupportController extends Controller
             $demande->update(['statut' => SupportDemande::STATUT_CLOTURE, 'cloture_at' => now()]);
         }
 
-        return redirect()->route('admin.messages.index')
+        return redirect($demande->lienMessagerie())
             ->with('success', __('Demande clôturée.'));
     }
 }

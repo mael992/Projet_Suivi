@@ -101,6 +101,21 @@ class SupportDemande extends Model
         return $this->user->username . ($this->user->mairie ? ' — ' . $this->user->mairie->nom : '');
     }
 
+    /**
+     * Où suivre la conversation : le Centre de messagerie (onglet « Message
+     * Support ») pour une demande ouverte depuis un compte, comme pour
+     * l'équipe MGDS ; le lien secret pour une personne sans compte.
+     */
+    public function lienMessagerie(): string
+    {
+        return route('messagerie.index', ['onglet' => 'support', 'demande' => $this->id]);
+    }
+
+    public function lienSuivi(): string
+    {
+        return $this->avec_compte ? $this->lienMessagerie() : route('support.suivi', $this->jeton);
+    }
+
     /** Adresse à prévenir quand l'équipe répond. */
     public function emailDemandeur(): ?string
     {

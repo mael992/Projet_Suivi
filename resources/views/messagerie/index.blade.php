@@ -22,8 +22,8 @@
     <div class="d-flex justify-content-between align-items-end flex-wrap gap-2 mb-2">
         <ul class="nav nav-tabs" style="flex:1;">
             <li class="nav-item"><button class="nav-link" onclick="ongletMsg('interne', this)">📨 {{ __('Message Interne') }}</button></li>
-            <li class="nav-item"><button class="nav-link active" onclick="ongletMsg('externe', this)">🌐 {{ __('Message Externe') }}</button></li>
-            <li class="nav-item"><button class="nav-link" onclick="ongletMsg('support', this)">🛟 {{ __('Message Support') }}</button></li>
+            <li class="nav-item"><button class="nav-link {{ $onglet === 'externe' ? 'active' : '' }}" onclick="ongletMsg('externe', this)">🌐 {{ __('Message Externe') }}</button></li>
+            <li class="nav-item"><button class="nav-link {{ $onglet === 'support' ? 'active' : '' }}" onclick="ongletMsg('support', this)">🛟 {{ __('Message Support') }}</button></li>
         </ul>
         @if($admin)
             @include('partials.tri-mairie', ['route' => 'messagerie.index'])
@@ -38,7 +38,7 @@
     </div>
 
     {{-- ── Message Externe ── --}}
-    <div id="msgExterne">
+    <div id="msgExterne" class="{{ $onglet === 'externe' ? '' : 'd-none' }}">
         <div class="row g-3">
 
             {{-- Dossiers --}}
@@ -190,11 +190,9 @@
         </div>
     </div>
 
-    {{-- ── Message Support (à venir) ── --}}
-    <div id="msgSupport" class="d-none">
-        <div class="card shadow-sm"><div class="card-body text-center text-muted py-5">
-            🛟 {{ __('Le support sera paramétré prochainement.') }}
-        </div></div>
+    {{-- ── Message Support : demandes au support technique MGDS ── --}}
+    <div id="msgSupport" class="{{ $onglet === 'support' ? '' : 'd-none' }}">
+        @include('messagerie._support')
     </div>
 </div>
 

@@ -292,7 +292,6 @@
     "Largeur de la zone (m)": "Zone width (m)",
     "Largeur des allées": "Aisle width",
     "Le suivi de ticket sera bientôt disponible. Conservez votre numéro de ticket ; votre mairie vous recontactera par e-mail.": "Ticket tracking will be available soon. Keep your ticket number; your town hall will contact you by email.",
-    "Le support sera paramétré prochainement.": "Support will be configured soon.",
     "Le système le tire au sort ; il figure sur le courrier d'identifiants et l'utilisateur devra le changer à sa prochaine connexion.": "The system draws it at random; it appears on the credentials letter and the user must change it at their next sign-in.",
     "Le tout dans un espace sécurisé propre à chaque service.": "All in a secure space dedicated to each department.",
     "Lecture seule — vous ne pouvez pas répondre à ce message.": "Read-only — you cannot reply to this message.",
@@ -565,7 +564,7 @@
     "Une commune peut récupérer l'intégralité de ses données avant de partir, ou en demander la destruction définitive avec attestation.": "A town can retrieve all of its data before leaving, or ask for permanent deletion with a certificate.",
     "Utilisateur": "User",
     "Utilisateurs": "Users",
-    "Utilisateurs, accès mairies, logs, support": "Users, town hall access, logs, support",
+    "Utilisateurs, accès mairies, logs, données": "Users, town hall access, logs, data",
     "Utilisé": "Used",
     "VAR.": "DIFF.",
     "Valable jusqu'au": "Valid until",
@@ -729,5 +728,11 @@
     "Pour quelle personne ?": "For which person?",
     "Merci d'indiquer les personnes concernées.": "Please list the people concerned.",
     "Quelle mairie ?": "Which town hall?",
-    "Quelle est votre commune ?": "What is your municipality?"
+    "Quelle est votre commune ?": "What is your municipality?",
+    "Nouvelle demande": "New request",
+    "Demandes": "Requests",
+    "Voir mes demandes": "View my requests",
+    "Vos demandes au support se suivent dans le Centre de messagerie, onglet « Message Support ».": "Your support requests are followed up in the Message Centre, “Support Messages” tab.",
+    "Vous n'avez encore envoyé aucune demande au support.": "You have not sent any request to support yet.",
+    "Choisissez une demande pour afficher la conversation.": "Choose a request to display the conversation."
 }
