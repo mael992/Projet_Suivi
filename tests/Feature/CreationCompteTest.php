@@ -47,6 +47,7 @@ class CreationCompteTest extends TestCase
         $this->actingAs($this->gestionnaire())->post('/gestion/utilisateurs', array_merge([
             'prenom'  => 'Camille',
             'nom'     => 'Durand',
+            'email'   => 'camille.durand@example.fr',
             'service' => 12,
             'grade'   => Referentiel::GRADE_EMPLOYE,
         ], $extra))->assertRedirect();
@@ -83,6 +84,7 @@ class CreationCompteTest extends TestCase
         $this->actingAs($this->gestionnaire())->post('/gestion/utilisateurs', [
             'prenom'  => 'Alex',
             'nom'     => 'Bernard',
+            'email'   => 'alex.bernard@example.fr',
             'service' => 12,
             'grade'   => Referentiel::GRADE_EMPLOYE,
         ])->assertRedirect();
@@ -99,7 +101,7 @@ class CreationCompteTest extends TestCase
         // La création laisse le gestionnaire connecté : /login lui est interdit
         $this->post('/logout');
 
-        $this->post('/login', [
+        $this->seConnecter([
             'username' => $cree->username,
             'password' => $cree->temp_password,
         ])->assertRedirect();
@@ -113,9 +115,10 @@ class CreationCompteTest extends TestCase
         $cree    = $this->creer();
         $ancien  = $cree->temp_password;
 
-        $this->actingAs($this->gestionnaire())->put("/gestion/utilisateurs/{$cree->id}", [
+        $this->actingAs($this->gestionnaire())->avecCodeA2F()->put("/gestion/utilisateurs/{$cree->id}", [
             'prenom'            => 'Camille',
             'nom'               => 'Durand',
+            'email'             => $cree->email,
             'service'           => 12,
             'grade'             => Referentiel::GRADE_EMPLOYE,
             'reinitialiser_mdp' => '1',
@@ -135,6 +138,7 @@ class CreationCompteTest extends TestCase
         $this->actingAs($this->gestionnaire())->put("/gestion/utilisateurs/{$cree->id}", [
             'prenom'  => 'Camille',
             'nom'     => 'Durand',
+            'email'   => $cree->email,
             'service' => 12,
             'grade'   => Referentiel::GRADE_EMPLOYE,
         ])->assertRedirect();
@@ -148,6 +152,7 @@ class CreationCompteTest extends TestCase
         $this->actingAs(User::factory()->admin()->create())->post('/users', [
             'prenom'   => 'Root',
             'nom'      => 'Admin',
+            'email'    => 'root.admin@example.fr',
             'role'     => 'admin',
             'password' => 'motdepasse-admin-1',
         ])->assertRedirect();

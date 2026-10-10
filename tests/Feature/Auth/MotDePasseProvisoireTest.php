@@ -64,7 +64,7 @@ class MotDePasseProvisoireTest extends TestCase
         $this->assertTrue($agent->passwordProvisoireActif());
 
         // L'ancien mot de passe fonctionne toujours
-        $this->post('/login', ['username' => $agent->username, 'password' => 'ancien-mot-de-passe'])
+        $this->seConnecter(['username' => $agent->username, 'password' => 'ancien-mot-de-passe'])
             ->assertRedirect();
         $this->assertAuthenticatedAs($agent);
     }
@@ -85,7 +85,7 @@ class MotDePasseProvisoireTest extends TestCase
         $agent = $this->agent();
         $clair = $agent->genererPasswordProvisoire();
 
-        $this->post('/login', ['username' => $agent->username, 'password' => $clair])
+        $this->seConnecter(['username' => $agent->username, 'password' => $clair])
             ->assertRedirect();
         $this->assertAuthenticatedAs($agent);
 
@@ -103,12 +103,12 @@ class MotDePasseProvisoireTest extends TestCase
 
         $this->travel(User::HEURES_PASSWORD_PROVISOIRE + 1)->hours();
 
-        $this->post('/login', ['username' => $agent->username, 'password' => $clair])
+        $this->seConnecter(['username' => $agent->username, 'password' => $clair])
             ->assertSessionHasErrors('username');
         $this->assertGuest();
 
         // Et le mot de passe habituel n'a pas bougé
-        $this->post('/login', ['username' => $agent->username, 'password' => 'ancien-mot-de-passe'])
+        $this->seConnecter(['username' => $agent->username, 'password' => 'ancien-mot-de-passe'])
             ->assertRedirect();
         $this->assertAuthenticatedAs($agent);
     }
@@ -119,7 +119,7 @@ class MotDePasseProvisoireTest extends TestCase
         $clair = $agent->genererPasswordProvisoire();
 
         // Connexion avec le provisoire, puis départ sans choisir de mot de passe
-        $this->post('/login', ['username' => $agent->username, 'password' => $clair]);
+        $this->seConnecter(['username' => $agent->username, 'password' => $clair]);
         $this->post('/logout');
 
         $agent->refresh();
@@ -127,7 +127,7 @@ class MotDePasseProvisoireTest extends TestCase
         $this->assertTrue(Hash::check('ancien-mot-de-passe', $agent->password));
 
         // La connexion habituelle se fait sans écran imposé
-        $this->post('/login', ['username' => $agent->username, 'password' => 'ancien-mot-de-passe']);
+        $this->seConnecter(['username' => $agent->username, 'password' => 'ancien-mot-de-passe']);
         $this->get('/apps')->assertOk();
     }
 
@@ -136,7 +136,7 @@ class MotDePasseProvisoireTest extends TestCase
         $agent = $this->agent();
         $clair = $agent->genererPasswordProvisoire();
 
-        $this->post('/login', ['username' => $agent->username, 'password' => $clair]);
+        $this->seConnecter(['username' => $agent->username, 'password' => $clair]);
 
         $this->post('/password/change-required', [
             'password'              => 'nouveau-mot-de-passe-9',
@@ -154,7 +154,7 @@ class MotDePasseProvisoireTest extends TestCase
         $agent = $this->agent();
         $clair = $agent->genererPasswordProvisoire();
 
-        $this->post('/login', ['username' => $agent->username, 'password' => $clair]);
+        $this->seConnecter(['username' => $agent->username, 'password' => $clair]);
 
         // « 00000000 » : trop court et sans lettre → refusé par la politique
         $this->from('/password/change-required')->post('/password/change-required', [

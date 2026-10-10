@@ -585,12 +585,32 @@ class MessagerieTest extends TestCase
         $this->post('/mon-ticket', ['reference' => '1', 'email' => 'faux@example.fr'])
             ->assertSessionHasErrors('ticket');
 
-        // Bon couple ref + email → redirection vers la conversation (page GET)
+        // Bon couple ref + email → code envoyé à l'e-mail du ticket (A2F)
+        $this->simulerEmails();
         $this->post('/mon-ticket', ['reference' => '1', 'email' => 'marie@example.fr'])
+            ->assertRedirect(route('contact.ticket.code', absolute: false));
+        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\CodeVerification::class, fn ($m) => $m->hasTo('marie@example.fr'));
+        $this->get(route('contact.ticket.code'))->assertOk()->assertSee('ma***@example.fr');
+
+        // Sans le code, pas de conversation ; un mauvais code est refusé
+        $this->get("/mon-ticket/{$ticket->id}")->assertForbidden();
+        $this->post('/mon-ticket-verification', ['code' => '000000'])->assertSessionHasErrors('code');
+        $this->get("/mon-ticket/{$ticket->id}")->assertForbidden();
+
+        // Bon code → redirection vers la conversation (page GET)
+        $this->post('/mon-ticket-verification', ['code' => $this->dernierCodeA2F()])
             ->assertRedirect(route('contact.ticket.voir', $ticket, absolute: false));
 
         // La conversation est consultable et rafraîchissable
         $this->get("/mon-ticket/{$ticket->id}")->assertOk()->assertSee('Voirie');
+    }
+
+    /** « J'ai déjà un ticket » : numéro + e-mail, puis le code reçu par e-mail. */
+    private function suivreTicket(string $reference, string $email): void
+    {
+        $this->simulerEmails();
+        $this->post('/mon-ticket', ['reference' => $reference, 'email' => $email])->assertRedirect();
+        $this->post('/mon-ticket-verification', ['code' => $this->dernierCodeA2F()])->assertRedirect();
     }
 
     public function test_cycle_cloture_reouverture(): void
@@ -622,7 +642,7 @@ class MessagerieTest extends TestCase
             ->assertForbidden();
 
         // Le citoyen demande la réouverture
-        $this->post('/mon-ticket', ['reference' => '1', 'email' => 'marie@example.fr'])->assertRedirect();
+        $this->suivreTicket('1', 'marie@example.fr');
         $this->post("/mon-ticket/{$ticket->id}/reouverture", ['motif' => 'Le problème persiste.'])->assertRedirect();
         $this->assertSame(Ticket::STATUT_REOUVERTURE, $ticket->fresh()->statut);
 
@@ -653,7 +673,7 @@ class MessagerieTest extends TestCase
 
         $this->assertFalse($ticket->reouverturePossible());
 
-        $this->post('/mon-ticket', ['reference' => '1', 'email' => 'marie@example.fr'])->assertRedirect();
+        $this->suivreTicket('1', 'marie@example.fr');
         $this->post("/mon-ticket/{$ticket->id}/reouverture", ['motif' => 'Trop tard'])
             ->assertSessionHasErrors('reouverture');
     }

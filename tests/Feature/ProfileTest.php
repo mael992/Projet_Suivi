@@ -27,6 +27,7 @@ class ProfileTest extends TestCase
 
         $response = $this
             ->actingAs($user)
+            ->avecCodeA2F()
             ->patch('/profile', [
                 'email'            => 'test@example.com',
                 'current_password' => 'password',
@@ -81,6 +82,7 @@ class ProfileTest extends TestCase
 
         $response = $this
             ->actingAs($user)
+            ->avecCodeA2F()
             ->delete('/profile', [
                 'password' => 'password',
             ]);

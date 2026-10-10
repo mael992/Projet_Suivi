@@ -7,6 +7,7 @@ use App\Models\Mairie;
 use App\Models\MarcheDemande;
 use App\Models\Ticket;
 use App\Models\TicketMessage;
+use App\Services\DoubleAuthentification as A2F;
 use App\Support\Referentiel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -185,11 +186,14 @@ class PublicContactController extends Controller
                 ->withInput();
         }
 
-        // Jeton simple en session pour autoriser la consultation et la réponse
-        session(['ticket_suivi_' . $ticket->id => true]);
+        // Double authentification : un code est envoyé à l'e-mail du ticket ;
+        // la conversation ne s'ouvre qu'une fois ce code saisi
+        if (! A2F::envoyerCode($request, A2F::BUT_TICKET, $ticket->email, ['ticket_id' => $ticket->id])) {
+            return back()->withErrors(['ticket' => __('Le code de vérification n\'a pas pu être envoyé. Merci de réessayer dans quelques instants.')])
+                ->withInput();
+        }
 
-        // Redirection en GET : la page reste rafraîchissable (F5, auto-refresh)
-        return redirect()->route('contact.ticket.voir', $ticket);
+        return redirect()->route('contact.ticket.code');
     }
 
     /** Affiche la conversation d'un ticket déjà authentifié en session. */

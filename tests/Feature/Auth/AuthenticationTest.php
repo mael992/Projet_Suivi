@@ -32,7 +32,7 @@ class AuthenticationTest extends TestCase
         $mairie = $this->mairie();
         $user   = User::factory()->create(['mairie_id' => $mairie->id]);
 
-        $response = $this->post('/login', [
+        $response = $this->seConnecter([
             'username'  => $user->username,
             'password'  => 'password',
         ]);
@@ -45,7 +45,7 @@ class AuthenticationTest extends TestCase
     {
         $admin = User::factory()->admin()->create();
 
-        $response = $this->post('/login', [
+        $response = $this->seConnecter([
             'username' => $admin->username,
             'password' => 'password',
         ]);
@@ -60,7 +60,7 @@ class AuthenticationTest extends TestCase
         $mairie = $this->mairie(['date_fin_abonnement' => now()->toDateString()]);
         $user   = User::factory()->create(['mairie_id' => $mairie->id]);
 
-        $this->post('/login', [
+        $this->seConnecter([
             'username' => $user->username,
             'password' => 'password',
         ]);
@@ -73,7 +73,7 @@ class AuthenticationTest extends TestCase
         $mairie = $this->mairie(['date_fin_abonnement' => now()->subDay()->toDateString()]);
         $user   = User::factory()->create(['mairie_id' => $mairie->id]);
 
-        $this->post('/login', [
+        $this->seConnecter([
             'username'  => $user->username,
             'password'  => 'password',
         ]);
@@ -86,7 +86,7 @@ class AuthenticationTest extends TestCase
         $mairie = $this->mairie();
         $user   = User::factory()->create(['mairie_id' => $mairie->id]);
 
-        $this->post('/login', [
+        $this->seConnecter([
             'username'  => $user->username,
             'password'  => 'wrong-password',
         ]);

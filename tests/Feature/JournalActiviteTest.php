@@ -64,7 +64,7 @@ class JournalActiviteTest extends TestCase
         $this->bloquerLeJournal();
         $admin = User::factory()->admin()->create();
 
-        $response = $this->post('/login', [
+        $response = $this->seConnecter([
             'username' => $admin->username,
             'password' => 'password',
         ]);
