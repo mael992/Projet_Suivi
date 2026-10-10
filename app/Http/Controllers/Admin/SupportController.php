@@ -23,7 +23,7 @@ class SupportController extends Controller
 
         return redirect()->route('messagerie.index', array_filter([
             'onglet'  => 'support',
-            'support' => array_key_exists((string) $dossier, SupportDemande::STATUTS) ? $dossier : null,
+            'support' => is_string($dossier) && array_key_exists($dossier, SupportDemande::STATUTS) ? $dossier : null,
         ]));
     }
 
