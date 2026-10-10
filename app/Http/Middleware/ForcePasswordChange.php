@@ -17,7 +17,7 @@ class ForcePasswordChange
         // changement est exigé pour cette session seulement. Si la personne
         // repart sans le faire, son mot de passe habituel reste intact.
         if ($user && ! $user->must_change_password && $request->session()->get('mdp_provisoire_utilise')) {
-            if (! $request->routeIs('password.force-change', 'password.force-change.update', 'logout')) {
+            if (! $request->routeIs('password.force-change', 'password.force-change.update', 'logout', 'a2f.action*')) {
                 return redirect()->route('password.force-change');
             }
 
@@ -41,7 +41,9 @@ class ForcePasswordChange
             if (
                 !$request->routeIs('password.force-change') &&
                 !$request->routeIs('password.force-change.update') &&
-                !$request->routeIs('logout')
+                !$request->routeIs('logout') &&
+                // Code de double authentification demandé avant le changement
+                !$request->routeIs('a2f.action*')
             ) {
                 return redirect()->route('password.force-change');
             }

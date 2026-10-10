@@ -17,6 +17,7 @@ class PasswordUpdateTest extends TestCase
 
         $response = $this
             ->actingAs($user)
+            ->avecCodeA2F()
             ->from('/profile')
             ->put('/password', [
                 'current_password' => 'password',

@@ -60,6 +60,10 @@ Route::get('/contacter-mairie',  [\App\Http\Controllers\PublicContactController:
 Route::post('/contacter-mairie', [\App\Http\Controllers\PublicContactController::class, 'store'])->name('contact.mairie.store')->middleware($antiRobot);
 Route::post('/contacter-mairie/adhesion-marche', [\App\Http\Controllers\PublicContactController::class, 'storeMarche'])->name('contact.marche.store')->middleware($antiRobot);
 Route::post('/mon-ticket',       [\App\Http\Controllers\PublicContactController::class, 'suivi'])->name('contact.ticket.suivi')->middleware($antiRobot . ':limite');
+// Double authentification : code envoyé à l'e-mail du ticket avant d'ouvrir la conversation
+Route::get('/mon-ticket-verification',           [\App\Http\Controllers\Auth\DoubleAuthentificationController::class, 'ticket'])->name('contact.ticket.code');
+Route::post('/mon-ticket-verification',          [\App\Http\Controllers\Auth\DoubleAuthentificationController::class, 'verifierTicket'])->name('contact.ticket.code.verifier')->middleware('throttle:10,1');
+Route::post('/mon-ticket-verification/renvoyer', [\App\Http\Controllers\Auth\DoubleAuthentificationController::class, 'renvoyerTicket'])->name('contact.ticket.code.renvoyer')->middleware('throttle:3,1');
 Route::get('/mon-ticket/{ticket}', [\App\Http\Controllers\PublicContactController::class, 'voirTicket'])->name('contact.ticket.voir');
 Route::post('/mon-ticket/{ticket}/repondre', [\App\Http\Controllers\PublicContactController::class, 'repondreCitoyen'])->name('contact.ticket.repondre');
 Route::post('/mon-ticket/{ticket}/cloturer', [\App\Http\Controllers\PublicContactController::class, 'cloturerCitoyen'])->name('contact.ticket.cloturer');

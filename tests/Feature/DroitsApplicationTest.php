@@ -121,6 +121,7 @@ class DroitsApplicationTest extends TestCase
         $this->actingAs($gestionnaire)->post('/gestion/utilisateurs', [
             'prenom'   => 'Camille',
             'nom'      => 'Durand',
+            'email'    => 'camille.durand@example.fr',
             'service'  => 12,
             'grade'    => Referentiel::GRADE_EMPLOYE,
             'droits'   => ['contacts_modification', 'marche_gestion'],
@@ -142,6 +143,7 @@ class DroitsApplicationTest extends TestCase
         $this->actingAs($gestionnaire)->post('/gestion/utilisateurs', [
             'prenom'   => 'Camille',
             'nom'      => 'Durand',
+            'email'    => 'camille.durand@example.fr',
             'service'  => 12,
             'grade'    => Referentiel::GRADE_EMPLOYE,
             'droits'   => ['administrateur_supreme'],

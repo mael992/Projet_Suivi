@@ -26,6 +26,8 @@ class AccepterCgu
             'cgu', 'cgu.accepter', 'logout', 'lang.switch',
             'password.force-change', 'password.force-change.update',
             'password.request', 'password.email', 'password.reset', 'password.store', 'password.update',
+            // Code de double authentification (changement de mot de passe imposé)
+            'a2f.action', 'a2f.action.verifier', 'a2f.action.renvoyer',
         ];
 
         if ($user && ! $user->cgu_acceptees_at && ! $request->routeIs(...$routesLibres)) {

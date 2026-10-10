@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
+use App\Http\Controllers\Auth\DoubleAuthentificationController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Auth\ForcePasswordChangeController;
@@ -22,6 +23,16 @@ Route::middleware('guest')->group(function () {
         ->name('login');
 
     Route::post('login', [AuthenticatedSessionController::class, 'store']);
+
+    // Double authentification : code reçu par e-mail après le mot de passe
+    Route::get('verification-connexion', [DoubleAuthentificationController::class, 'connexion'])
+        ->name('a2f.connexion');
+    Route::post('verification-connexion', [DoubleAuthentificationController::class, 'verifierConnexion'])
+        ->middleware('throttle:10,1')
+        ->name('a2f.connexion.verifier');
+    Route::post('verification-connexion/renvoyer', [DoubleAuthentificationController::class, 'renvoyerConnexion'])
+        ->middleware('throttle:3,1')
+        ->name('a2f.connexion.renvoyer');
 
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
         ->name('password.request');
@@ -59,6 +70,16 @@ Route::middleware('auth')->group(function () {
     Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
 
     Route::put('password', [PasswordController::class, 'update'])->name('password.update');
+
+    // Double authentification avant une modification importante du compte
+    Route::get('verification-modification', [DoubleAuthentificationController::class, 'action'])
+        ->name('a2f.action');
+    Route::post('verification-modification', [DoubleAuthentificationController::class, 'verifierAction'])
+        ->middleware('throttle:10,1')
+        ->name('a2f.action.verifier');
+    Route::post('verification-modification/renvoyer', [DoubleAuthentificationController::class, 'renvoyerAction'])
+        ->middleware('throttle:3,1')
+        ->name('a2f.action.renvoyer');
 
     // Changement de mot de passe obligatoire (première connexion)
     Route::get('password/change-required',  [ForcePasswordChangeController::class, 'show'])->name('password.force-change');

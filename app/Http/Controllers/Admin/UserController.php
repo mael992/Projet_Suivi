@@ -7,6 +7,7 @@ use App\Mail\CourrierIdentifiants;
 use App\Models\Mairie;
 use App\Models\User;
 use App\Services\ActivityLogger;
+use App\Services\DoubleAuthentification as A2F;
 use App\Support\Referentiel;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -56,7 +57,7 @@ class UserController extends Controller
             'communication'       => 'nullable|array',
             'communication.*'     => 'string|in:inconnu',
             'binome_id'           => 'nullable|exists:users,id',
-            'email'               => 'nullable|email|unique:users,email',
+            'email'               => 'required|email|max:255|unique:users,email',
             'telephone_indicatif' => 'nullable|string|max:8',
             'telephone'           => 'nullable|string|max:20',
             // Seul un compte administrateur garde un mot de passe choisi :
@@ -131,7 +132,7 @@ class UserController extends Controller
             'communication'       => 'nullable|array',
             'communication.*'     => 'string|in:inconnu',
             'binome_id'           => 'nullable|exists:users,id',
-            'email'               => 'nullable|email|unique:users,email,' . $user->id,
+            'email'               => 'required|email|max:255|unique:users,email,' . $user->id,
             'telephone_indicatif' => 'nullable|string|max:8',
             'telephone'           => 'nullable|string|max:20',
             'password'            => ['nullable', Password::defaults()],   // administrateur uniquement
@@ -142,6 +143,14 @@ class UserController extends Controller
 
         if (! $estAdmin && ! in_array((int) $data['grade'], Referentiel::gradesAutorises((int) $data['service']), true)) {
             return back()->withInput()->withErrors(['grade' => 'Ce statut n\'est pas autorisé pour ce service.']);
+        }
+
+        // Double authentification : changer l'e-mail ou le mot de passe d'un
+        // compte est une modification importante, confirmée par un code
+        $emailChange = (($data['email'] ?? null) ?: null) !== $user->email;
+        $mdpChange   = $estAdmin ? ! empty($data['password']) : $request->boolean('reinitialiser_mdp');
+        if (($emailChange || $mdpChange) && ! A2F::confirmeRecemment($request)) {
+            return A2F::exigerConfirmation($request, route('users.edit', $user));
         }
 
         $nomChange = $data['prenom'] !== $user->prenom || $data['nom'] !== $user->nom;
@@ -179,6 +188,11 @@ class UserController extends Controller
         }
 
         $user->save();
+
+        // Accès changés : les appareils de confiance de ce compte ne valent plus
+        if ($emailChange || $mdpChange) {
+            A2F::oublierAppareils($user);
+        }
 
         ActivityLogger::user('UPDATE', "Utilisateur modifié par admin : \"{$user->username}\"");
 

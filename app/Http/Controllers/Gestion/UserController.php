@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Mail\CourrierIdentifiants;
 use App\Models\User;
 use App\Services\ActivityLogger;
+use App\Services\DoubleAuthentification as A2F;
 use App\Support\Referentiel;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -60,7 +61,7 @@ class UserController extends Controller
             'communication'       => 'nullable|array',
             'communication.*'     => 'string|in:inconnu',
             'binome_id'           => 'nullable|exists:users,id',
-            'email'               => 'nullable|email|unique:users,email',
+            'email'               => 'required|email|max:255|unique:users,email',
             'telephone_indicatif' => 'nullable|string|max:8',
             'telephone'           => 'nullable|string|max:20',
         ]);
@@ -130,7 +131,7 @@ class UserController extends Controller
             'communication'       => 'nullable|array',
             'communication.*'     => 'string|in:inconnu',
             'binome_id'           => 'nullable|exists:users,id',
-            'email'               => 'nullable|email|unique:users,email,' . $user->id,
+            'email'               => 'required|email|max:255|unique:users,email,' . $user->id,
             'telephone_indicatif' => 'nullable|string|max:8',
             'telephone'           => 'nullable|string|max:20',
             'reinitialiser_mdp'   => 'nullable|boolean',
@@ -138,6 +139,14 @@ class UserController extends Controller
 
         if (! in_array((int) $data['grade'], Referentiel::gradesAutorises((int) $data['service']), true)) {
             return back()->withInput()->withErrors(['grade' => 'Ce statut n\'est pas autorisé pour ce service.']);
+        }
+
+        // Double authentification : changer l'e-mail d'un agent ou lui donner
+        // un nouveau mot de passe est une modification importante
+        $emailChange = (($data['email'] ?? null) ?: null) !== $user->email;
+        $mdpChange   = $request->boolean('reinitialiser_mdp');
+        if (($emailChange || $mdpChange) && ! A2F::confirmeRecemment($request)) {
+            return A2F::exigerConfirmation($request, route('gestion.utilisateurs.edit', $user));
         }
 
         $serviceChange = (int) $data['service'] !== (int) $user->service;
@@ -167,7 +176,12 @@ class UserController extends Controller
 
         $user->save();
 
-        ActivityLogger::user('UPDATE', "Utilisateur modifié : \"{$user->username}\" (service : {$user->service_label}, grade : {$user->grade_label})");
+        // Accès changés : les appareils de confiance de ce compte ne valent plus
+        if ($emailChange || $mdpChange) {
+            A2F::oublierAppareils($user);
+        }
+
+        ActivityLogger::user('UPDATE', "Utilisateur modifié :\"{$user->username}\" (service : {$user->service_label}, grade : {$user->grade_label})");
 
         return redirect()->route('gestion.utilisateurs.index')->with('success', __('Utilisateur mis à jour.'));
     }

@@ -19,6 +19,7 @@
 @include('partials.navbar')
 
 <main>
+    @include('partials.a2f-message')
     @yield('content')
 </main>
 

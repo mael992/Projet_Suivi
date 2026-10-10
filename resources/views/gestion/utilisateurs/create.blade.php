@@ -60,8 +60,9 @@
                     <input type="text" name="telephone" value="{{ old('telephone') }}" class="form-control" placeholder="6 12 34 56 78">
                 </div>
                 <div class="col-12">
-                    <label class="form-label fw-semibold">{{ __('Adresse mail') }}</label>
-                    <input type="email" name="email" value="{{ old('email') }}" class="form-control">
+                    <label class="form-label fw-semibold">{{ __('Adresse mail') }} *</label>
+                    <input type="email" name="email" value="{{ old('email') }}" class="form-control" required>
+                    <div class="form-text">{{ __('Obligatoire : le code de vérification de connexion est envoyé à cette adresse.') }}</div>
                 </div>
                 @include('gestion.utilisateurs.partials.droits')
 
