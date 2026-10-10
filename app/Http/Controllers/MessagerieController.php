@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Mail\NouveauMessageTicket;
 use App\Models\Mairie;
+use App\Models\SupportDemande;
 use App\Models\Ticket;
 use App\Models\TicketMessage;
 use App\Services\ActivityLogger;
@@ -17,6 +18,10 @@ use Illuminate\Support\Facades\Mail;
  *   demandes de réouverture (selon les services qu'ils reçoivent).
  * - Admin : consulte tout, avec tri par mairie (lecture seule).
  * Un message envoyé ne peut être ni modifié ni supprimé.
+ *
+ * Onglet « Message Support » : les demandes au support technique MGDS.
+ * Chaque agent n'y voit que les siennes ; l'équipe MGDS (admins) les voit
+ * toutes et y répond.
  */
 class MessagerieController extends Controller
 {
@@ -103,7 +108,51 @@ class MessagerieController extends Controller
             'tri'          => $tri === 'asc' ? 'ancien' : 'recent',
             'compteurs'    => Ticket::compteursPour($user),
             'voitAdhesions' => Ticket::voitAdhesionsMarche($user),
-        ]);
+            'onglet'       => $request->input('onglet') === 'support' ? 'support' : 'externe',
+        ] + $this->support($request, $user));
+    }
+
+    /**
+     * Onglet « Message Support » : les demandes de l'agent connecté, ou
+     * toutes les demandes (classées par dossier) pour l'équipe MGDS.
+     */
+    private function support(Request $request, \App\Models\User $user): array
+    {
+        $admin   = $user->isAdmin();
+        $dossier = $request->input('support', SupportDemande::STATUT_RECEPTION);
+        if (! is_string($dossier) || ! array_key_exists($dossier, SupportDemande::STATUTS)) {
+            $dossier = SupportDemande::STATUT_RECEPTION;
+        }
+
+        // Ce que la personne a le droit de voir
+        $visibles = fn () => $admin
+            ? SupportDemande::query()
+            : SupportDemande::where('avec_compte', true)->where('user_id', $user->id);
+
+        $compteurs = [];
+        if ($admin) {
+            foreach (array_keys(SupportDemande::STATUTS) as $statut) {
+                $compteurs[$statut] = SupportDemande::where('statut', $statut)->count();
+            }
+        }
+
+        $demandes = $visibles()
+            ->with('user.mairie')
+            ->when($admin, fn ($q) => $q->where('statut', $dossier))
+            ->latest('updated_at')
+            ->limit(200)
+            ->get();
+
+        $ouverte = $request->filled('demande')
+            ? $visibles()->with('messages', 'user.mairie')->find((int) $request->input('demande'))
+            : null;
+
+        return [
+            'supportDemandes'  => $demandes,
+            'supportOuverte'   => $ouverte,
+            'supportDossier'   => $dossier,
+            'supportCompteurs' => $compteurs,
+        ];
     }
 
     /**

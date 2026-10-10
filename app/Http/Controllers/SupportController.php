@@ -16,9 +16,10 @@ use Illuminate\Validation\Rule;
  * questions préformatées, puis transmet toutes les réponses à l'équipe MGDS
  * (les admins) quand la personne demande un vrai conseiller.
  *
- * Ouvert à tous : agent connecté (la demande est rattachée à son compte) ou
- * personne sans compte (problème avant connexion), qui suit sa demande par
- * un lien secret.
+ * Ouvert à tous : agent connecté (la demande est rattachée à son compte et
+ * se suit dans Centre de messagerie / Message Support) ou personne sans
+ * compte (problème avant connexion), qui suit sa demande par un lien secret.
+ * La page Contact ne sert qu'à créer la demande.
  */
 class SupportController extends Controller
 {
@@ -29,9 +30,6 @@ class SupportController extends Controller
         return view('contact', [
             'choix'      => $user ? SupportDemande::CHOIX_CONNECTE : SupportDemande::CHOIX_PUBLIC,
             'precisions' => SupportDemande::QUESTIONS_PRECISION,
-            'demandes'   => $user
-                ? SupportDemande::where('user_id', $user->id)->latest()->get()
-                : collect(),
         ]);
     }
 
@@ -84,14 +82,22 @@ class SupportController extends Controller
         $this->notifierAdmins($demande);
         $this->notifierDemandeur($demande);
 
-        return redirect()->route('support.suivi', $demande->jeton)
+        return redirect($demande->lienSuivi())
             ->with('success', __('Votre demande a bien été transmise au support. Un conseiller vous répondra au plus vite.'));
     }
 
-    /** Conversation (lien secret ; le compte qui l'a ouverte s'il y en a un). */
+    /**
+     * Conversation par le lien secret. Une demande ouverte depuis un compte
+     * se suit dans le Centre de messagerie.
+     */
     public function suivi(Request $request, string $jeton)
     {
         $demande = $this->demandeAccessible($request, $jeton);
+
+        if ($demande->avec_compte) {
+            return redirect($demande->lienMessagerie());
+        }
+
         $demande->load('messages');
 
         return view('support.suivi', compact('demande'));
@@ -109,7 +115,7 @@ class SupportController extends Controller
         $demande->ajouterMessage(SupportMessage::AUTEUR_DEMANDEUR, $data['corps']);
         $this->notifierAdmins($demande);
 
-        return redirect()->route('support.suivi', $demande->jeton)
+        return redirect($demande->lienSuivi())
             ->with('success', __('Votre message a bien été envoyé au support.'));
     }
 
@@ -122,7 +128,7 @@ class SupportController extends Controller
             $demande->update(['statut' => SupportDemande::STATUT_CLOTURE, 'cloture_at' => now()]);
         }
 
-        return redirect()->route('support.suivi', $demande->jeton)
+        return redirect($demande->lienSuivi())
             ->with('success', __('Votre demande au support est clôturée.'));
     }
 

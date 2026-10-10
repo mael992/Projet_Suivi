@@ -29,25 +29,14 @@
         </div>
     @endif
 
-    {{-- Demandes déjà envoyées par l'agent connecté --}}
-    @if($demandes->isNotEmpty())
-        <div class="card shadow-sm mb-3">
-            <div class="card-header fw-semibold">{{ __('Mes demandes au support') }}</div>
-            <ul class="list-group list-group-flush">
-                @foreach($demandes as $d)
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <a href="{{ route('support.suivi', $d->jeton) }}" class="text-decoration-none">
-                            {{ $d->reference }} — {{ $d->concerne_label }}
-                            <small class="text-muted">· {{ $d->created_at->format('d/m/Y') }}</small>
-                        </a>
-                        <span class="badge {{ $d->statut === 'reponse' ? 'bg-success' : ($d->estCloture() ? 'bg-secondary' : 'bg-warning text-dark') }}">
-                            {{ $d->statut_label }}
-                        </span>
-                    </li>
-                @endforeach
-            </ul>
+    {{-- Cette page ne sert qu'à créer la demande : l'agent connecté suit ses
+         conversations dans Centre de messagerie / Message Support --}}
+    @auth
+        <div class="alert alert-info py-2" style="font-size:14px;">
+            🛟 {{ __('Vos demandes au support se suivent dans le Centre de messagerie, onglet « Message Support ».') }}
+            <a href="{{ route('messagerie.index', ['onglet' => 'support']) }}">{{ __('Voir mes demandes') }}</a>
         </div>
-    @endif
+    @endauth
 
     <form method="POST" action="{{ route('contact.store') }}" id="assistantSupport" class="card shadow-sm">
         @csrf

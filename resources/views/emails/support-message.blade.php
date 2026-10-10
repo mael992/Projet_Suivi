@@ -22,7 +22,7 @@ body { font-family: Arial, sans-serif; color: #111; background:#f4f6f9; margin:0
                 🎫 <strong>Demande :</strong> {{ $demande->reference }}<br>
                 👤 <strong>De :</strong> {{ $demande->libelleDemandeur() }}
             </div>
-            <a href="{{ route('admin.messages.show', $demande) }}" style="display:inline-block;margin-top:4px;padding:10px 22px;background:#1d3a63;color:white;text-decoration:none;border-radius:6px;font-size:14px;font-weight:600;">
+            <a href="{{ $demande->lienMessagerie() }}" style="display:inline-block;margin-top:4px;padding:10px 22px;background:#1d3a63;color:white;text-decoration:none;border-radius:6px;font-size:14px;font-weight:600;">
                 Ouvrir la demande →
             </a>
         @else
@@ -34,11 +34,17 @@ body { font-family: Arial, sans-serif; color: #111; background:#f4f6f9; margin:0
                     Le support technique MGDS a <strong>répondu</strong> à votre demande <strong>{{ $demande->reference }}</strong>.
                 @endif
             </p>
-            <div class="info">
-                🔒 Ce lien est personnel : il vous permet de suivre votre demande et de répondre au support.
-                Ne le transmettez pas.
-            </div>
-            <a href="{{ route('support.suivi', $demande->jeton) }}" style="display:inline-block;margin-top:4px;padding:10px 22px;background:#1d3a63;color:white;text-decoration:none;border-radius:6px;font-size:14px;font-weight:600;">
+            @if($demande->avec_compte)
+                <div class="info">
+                    📬 Retrouvez la conversation dans votre Centre de messagerie, onglet « Message Support ».
+                </div>
+            @else
+                <div class="info">
+                    🔒 Ce lien est personnel : il vous permet de suivre votre demande et de répondre au support.
+                    Ne le transmettez pas.
+                </div>
+            @endif
+            <a href="{{ $demande->lienSuivi() }}" style="display:inline-block;margin-top:4px;padding:10px 22px;background:#1d3a63;color:white;text-decoration:none;border-radius:6px;font-size:14px;font-weight:600;">
                 Voir ma demande →
             </a>
         @endif

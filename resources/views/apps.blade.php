@@ -257,6 +257,8 @@
                     </a>
                     <div class="mt-auto d-flex gap-2 flex-wrap">
                         <a href="{{ route('messagerie.index') }}" class="badge text-decoration-none" style="background:var(--brand);">🌐 {{ __('Messages externes') }}</a>
+                        @php $nbSupport = $user->isAdmin() ? \App\Models\SupportDemande::enAttente() : 0; @endphp
+                        <a href="{{ route('messagerie.index', ['onglet' => 'support']) }}" class="badge bg-secondary text-decoration-none">🛟 {{ __('Message Support') }} @if($nbSupport)<span class="badge bg-danger ms-1">{{ $nbSupport }}</span>@endif</a>
                         @if(\App\Models\Ticket::adhesionsEnAttentePour($user) > 0)
                             <a href="{{ route('messagerie.index', ['dossier' => \App\Models\Ticket::DOSSIER_ADHESION]) }}"
                                class="badge text-decoration-none" style="background:#2e86de;">
@@ -297,15 +299,13 @@
                         <span style="font-size:44px;line-height:1;">⚙️</span>
                         <span>
                             <span class="h5 d-block mb-1" style="color:var(--brand);">{{ __('Paramètres Administration') }}</span>
-                            <span class="text-muted" style="font-size:13px;">{{ __('Utilisateurs, accès mairies, logs, support') }}</span>
+                            <span class="text-muted" style="font-size:13px;">{{ __('Utilisateurs, accès mairies, logs, données') }}</span>
                         </span>
                     </a>
                     <div class="mt-auto d-flex gap-2 flex-wrap">
                         <a href="{{ route('users.index') }}" class="badge text-decoration-none" style="background:var(--brand);">{{ __('Gestion des utilisateurs') }}</a>
                         <a href="{{ route('mairies.index') }}" class="badge text-decoration-none" style="background:var(--gold);">Accès mairie</a>
                         <a href="{{ route('admin.logs.index') }}" class="badge bg-dark text-decoration-none">Logs</a>
-                        @php $nbSupport = \App\Models\SupportDemande::enAttente(); @endphp
-                        <a href="{{ route('admin.messages.index') }}" class="badge bg-secondary text-decoration-none">Support @if($nbSupport)<span class="badge bg-danger ms-1">{{ $nbSupport }}</span>@endif</a>
                     </div>
                 </div>
             </div>

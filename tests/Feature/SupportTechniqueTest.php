@@ -128,7 +128,7 @@ class SupportTechniqueTest extends TestCase
 
     public function test_agent_connecte_la_demande_est_rattachee_a_son_compte(): void
     {
-        $this->actingAs($this->agent)->post('/contact', $this->jetonFormulaire() + [
+        $reponse = $this->actingAs($this->agent)->post('/contact', $this->jetonFormulaire() + [
             'concerne' => 'compte',
             // Coordonnées ignorées : on prend le compte
             'nom'      => 'Autre', 'email' => 'autre@example.fr',
@@ -141,21 +141,76 @@ class SupportTechniqueTest extends TestCase
         $this->assertNull($demande->email);
         $this->assertStringContainsString($this->agent->username, $demande->messages[0]->corps);
 
-        // Retrouvée dans « Mes demandes »
-        $this->actingAs($this->agent)->get('/contact')->assertSee($demande->reference);
+        // Redirigé sur la conversation, dans Centre de messagerie / Message Support
+        $lien = $demande->lienMessagerie();
+        $reponse->assertRedirect($lien);
+        $this->actingAs($this->agent)->get($lien)->assertOk()
+            ->assertSee($demande->reference)
+            ->assertSee('application Marché');
+
+        // La page Contact ne sert qu'à créer la demande
+        $this->actingAs($this->agent)->get('/contact')->assertDontSee($demande->reference);
 
         // Le lien seul ne suffit pas : il faut être ce compte
         auth()->logout();
         $this->get('/support/' . $demande->jeton)->assertNotFound();
         $autre = User::factory()->create(['mairie_id' => $this->mairie->id]);
         $this->actingAs($autre)->get('/support/' . $demande->jeton)->assertNotFound();
-        $this->actingAs($this->agent)->get('/support/' . $demande->jeton)->assertOk();
+        $this->actingAs($this->agent)->get('/support/' . $demande->jeton)->assertRedirect($lien);
 
         // Compte supprimé : le lien ne s'ouvre plus pour personne
         $this->agent->delete();
         auth()->logout();
         $this->get('/support/' . $demande->jeton)->assertNotFound();
-        $this->actingAs($this->admin)->get('/admin/messages/' . $demande->id)->assertOk()->assertSee('Compte supprimé');
+        $this->actingAs($this->admin)->get($lien)->assertOk()->assertSee('Compte supprimé');
+    }
+
+    public function test_l_agent_repond_et_cloture_depuis_la_messagerie(): void
+    {
+        $this->actingAs($this->agent)->post('/contact', $this->jetonFormulaire() + [
+            'concerne' => 'compte',
+            'message'  => 'Je ne vois pas l\'application Marché.',
+        ])->assertSessionHasNoErrors();
+        $demande = SupportDemande::firstOrFail();
+        $lien    = $demande->lienMessagerie();
+
+        $this->actingAs($this->agent)->post('/support/' . $demande->jeton . '/repondre', ['corps' => 'Toujours rien ce matin.'])
+            ->assertRedirect($lien);
+        $this->actingAs($this->agent)->post('/support/' . $demande->jeton . '/cloturer')->assertRedirect($lien);
+        $this->assertTrue($demande->fresh()->estCloture());
+
+        // L'e-mail de l'agent mène à la messagerie, pas au lien secret
+        $mail = new SupportNouveauMessage($demande->fresh(), pourAdmin: false, nouvelle: true);
+        $mail->assertSeeInHtml('onglet=support', false);
+        $mail->assertDontSeeInHtml($demande->jeton, false);
+    }
+
+    public function test_un_agent_ne_voit_que_ses_propres_demandes_au_support(): void
+    {
+        $this->actingAs($this->agent)->post('/contact', $this->jetonFormulaire() + [
+            'concerne' => 'compte',
+            'message'  => 'Message tres confidentiel de l\'agent.',
+        ])->assertSessionHasNoErrors();
+        $demande = SupportDemande::firstOrFail();
+        auth()->logout();
+        $publique = $this->demandePublique();
+
+        $collegue = User::factory()->create([
+            'mairie_id' => $this->mairie->id,
+            'grade'     => \App\Support\Referentiel::GRADE_MAIRE,
+        ]);
+
+        // Ni la demande d'un collègue, ni celle d'une personne sans compte
+        foreach ([$demande, $publique] as $d) {
+            $this->actingAs($collegue)->get('/messagerie?onglet=support&demande=' . $d->id)->assertOk()
+                ->assertDontSee($d->reference . ' —')
+                ->assertDontSee('tres confidentiel')
+                ->assertDontSee('paul@example.fr');
+        }
+
+        $this->actingAs($this->agent)->get('/messagerie?onglet=support')->assertOk()
+            ->assertSee($demande->reference . ' —')
+            ->assertDontSee($publique->reference . ' —');
     }
 
     public function test_seuls_les_admins_voient_les_demandes(): void
@@ -170,10 +225,16 @@ class SupportTechniqueTest extends TestCase
         $this->actingAs($responsable)->get('/admin/messages')->assertForbidden();
         $this->actingAs($responsable)->get('/admin/messages/' . $demande->id)->assertForbidden();
 
-        $this->actingAs($this->admin)->get('/admin/messages')->assertOk()->assertSee($demande->reference);
-        $this->actingAs($this->admin)->get('/admin/messages/' . $demande->id)->assertOk()
+        // L'onglet de Paramètres administratifs renvoie vers Centre de messagerie / Message Support
+        $this->actingAs($this->admin)->get('/admin/messages')->assertRedirect(route('messagerie.index', ['onglet' => 'support']));
+        $this->actingAs($this->admin)->get('/admin/messages/' . $demande->id)->assertRedirect($demande->lienMessagerie());
+        $this->actingAs($this->admin)->get('/users')->assertDontSee(route('admin.messages.index'));
+
+        $this->actingAs($this->admin)->get('/messagerie?onglet=support')->assertOk()->assertSee($demande->reference);
+        $this->actingAs($this->admin)->get($demande->lienMessagerie())->assertOk()
             ->assertSee('paul@example.fr')
-            ->assertSee('Sans compte MGDS');
+            ->assertSee('Sans compte MGDS')
+            ->assertSee(route('admin.messages.repondre', $demande), false);
     }
 
     public function test_reponse_de_l_admin_signee_admin_sans_son_nom(): void
